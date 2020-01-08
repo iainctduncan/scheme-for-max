@@ -18,6 +18,7 @@
 typedef struct _scm4max {
 	t_object obj;
     s7_scheme *s7;
+    t_symbol *source_file; // main source file (if one passed as object arg)
     void * out_1;
 } t_scm4max;
 
@@ -30,7 +31,6 @@ void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s);
 // generic message handler
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv);
 
-void scm4max_in1(t_scm4max *x, long n);
 void scm4max_output_result(t_scm4max *x);
 
 void scm4max_read(t_scm4max *x, t_symbol *s);
@@ -92,8 +92,6 @@ static s7_pointer s7_output_int(s7_scheme *s7, s7_pointer args) {
     return s7_make_integer(s7, int_to_output);
 }
 
-
-
 // log to the max console
 // TODO: make this smarter, it only handles strings rightnow
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
@@ -101,9 +99,6 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
     char *msg = s7_string( s7_car(args) );
     post("s4m-post: %s", msg);
 }
-
-
-
 
 void ext_main(void *r){
 	t_class *c;
@@ -115,17 +110,51 @@ void ext_main(void *r){
     // bind up a generic message handler
     class_addmethod(c, (method)scm4max_msg, "anything", A_GIMME, 0);
 
-    // specific typed message handlers
-    class_addmethod(c, (method)scm4max_bang, "bang", 0);
-    class_addmethod(c, (method)scm4max_int, "int", A_LONG, 0);
-    class_addmethod(c, (method)scm4max_in1, "in1", A_LONG, 0);
-
 	/* you CAN'T call this from the patcher */
 	class_addmethod(c, (method)scm4max_assist, "assist", A_CANT, 0);
 	class_register(CLASS_BOX, c); /* CLASS_NOBOX */
-	scm4max_class = c;
-    post("scm4max ext_main()");
+	
+    scm4max_class = c;
+    post("scm4max ext_main() done");
 }
+
+void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
+	t_scm4max *x = NULL;
+	long i;
+
+	x = (t_scm4max *)object_alloc(scm4max_class); 
+    // create an inlet   
+    intin(x, 1);    
+    // create an outlet
+    x->out_1 = intout((t_object *)x); 
+
+    // S7 initialization, it's possible this should actually happen in main and be attached
+    // to the class as opposed to the instance. Not sure about that.
+    // initialize interpreter
+    x->s7 = s7_init();
+
+    // define functions that will be implemented in C and available from scheme
+    s7_define_function(x->s7, "bang", s7_output_bang, 0, 0, false, "(bang) outs a bang");
+    s7_define_function(x->s7, "out-int", s7_output_int, 1, 0, false, "(output-int 99) outputs 99 out outlet 1");
+    s7_define_function(x->s7, "post", s7_post, 1, 0, false, "send strings to the max log");
+       
+    // make the address of this object available in scheme as "maxobj" so that 
+    // scheme functions can get access to our C functions
+    uintptr_t max_obj_ptr = (uintptr_t)x;
+    s7_define_variable(x->s7, "maxobj", s7_make_integer(x->s7, max_obj_ptr));  
+   
+    // boostrap the scheme code
+    scm4max_doread(x, gensym("scm4max.scm"));
+    // load code given from a user arg
+    if(argc){
+        atom_arg_getsym(&x->source_file, 0, argc, argv);
+        post("loading source file: %s", x->source_file->s_name);    
+        scm4max_doread(x, x->source_file);
+    }
+    // add done 
+	return (x);
+}
+
 
 // the read method defers to a low priority method
 void scm4max_read(t_scm4max *x, t_symbol *s){
@@ -183,35 +212,6 @@ void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s){
 	}
 }
 void scm4max_free(t_scm4max *x){ }
-
-void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
-	t_scm4max *x = NULL;
-	long i;
-
-	x = (t_scm4max *)object_alloc(scm4max_class); 
-    // create an inlet   
-    intin(x, 1);    
-    // create an outlet
-    x->out_1 = intout((t_object *)x); 
-
-    // S7 initialization, it's possible this should actually happen in main and be attached
-    // to the class as opposed to the instance. Not sure about that.
-    // initialize interpreter
-    x->s7 = s7_init();
-
-    s7_define_function(x->s7, "bang", s7_output_bang, 0, 0, false, "(bang) outs a bang");
-    s7_define_function(x->s7, "out-int", s7_output_int, 1, 0, false, "(output-int 99) outputs 99 out outlet 1");
-    
-    // api methods
-    s7_define_function(x->s7, "post", s7_post, 1, 0, false, "send strings to the max log");
-       
-
-    // attempt to send the pointer to our max object into s7 so we can use max methods
-    uintptr_t max_obj_ptr = (uintptr_t)x;
-    s7_define_variable(x->s7, "maxobj", s7_make_integer(x->s7, max_obj_ptr));  
-  
-	return (x);
-}
 
 // a generic message hander, dispatches on symbol messages
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
