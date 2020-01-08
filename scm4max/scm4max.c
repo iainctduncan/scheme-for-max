@@ -19,9 +19,6 @@ typedef struct _scm4max {
 	t_object obj;
     s7_scheme *s7;
     void * out_1;
-    long last_int_left;
-    long last_int_right;
-    long result;
 } t_scm4max;
 
 // function prototypes
@@ -33,8 +30,6 @@ void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s);
 // generic message handler
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv);
 
-void scm4max_bang(t_scm4max *x);
-void scm4max_int(t_scm4max *x, long n);
 void scm4max_in1(t_scm4max *x, long n);
 void scm4max_output_result(t_scm4max *x);
 
@@ -199,11 +194,6 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     // create an outlet
     x->out_1 = intout((t_object *)x); 
 
-    // initialize data members
-    x->last_int_left = NULL;
-    x->last_int_right = NULL;
-    x->result = NULL;
-
     // S7 initialization, it's possible this should actually happen in main and be attached
     // to the class as opposed to the instance. Not sure about that.
     // initialize interpreter
@@ -221,32 +211,6 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     s7_define_variable(x->s7, "maxobj", s7_make_integer(x->s7, max_obj_ptr));  
   
 	return (x);
-}
-
-// handler for int in left inlet
-void scm4max_int(t_scm4max *x, long n){
-    x->last_int_left = n;
-    post("last_int_left updated to %i\n", x->last_int_left);
-}
-
-// handler for int in inlet 1
-void scm4max_in1(t_scm4max *x, long n){
-    x->last_int_right = n;
-    post("scm4max_in1() - last_int_right updated to: %i\n", x->last_int_right);
-}
-
-// handler for bang message
-void scm4max_bang(t_scm4max *x){
-    x->result = x->last_int_left + x->last_int_right;
-    post("bang - result: %i\n", x->result);
-    scm4max_output_result(x);
-}
-// local function to output current result
-void scm4max_output_result(t_scm4max *x){
-    post("scm4max_output_result()"); 
-    if( x->result ){
-        outlet_int(x->out_1, x->result);
-    }
 }
 
 // a generic message hander, dispatches on symbol messages
