@@ -38,6 +38,11 @@ void scm4max_int(t_scm4max *x, long n);
 void scm4max_in1(t_scm4max *x, long n);
 void scm4max_output_result(t_scm4max *x);
 
+void scm4max_read(t_scm4max *x, t_symbol *s);
+void scm4max_doread(t_scm4max *x, t_symbol *s);
+void scm4max_openfile(t_scm4max *x, char *filename, short path);
+
+
 //////////////////////// global class pointer variable
 void *scm4max_class;
 
@@ -110,6 +115,8 @@ void ext_main(void *r){
 	c = class_new("scm4max", (method)scm4max_new, (method)scm4max_free,
          (long)sizeof(t_scm4max), 0L /* leave NULL!! */, A_GIMME, 0);
 
+    class_addmethod(c, (method)scm4max_read, "read", A_DEFSYM, 0);
+
     // bind up a generic message handler
     class_addmethod(c, (method)scm4max_msg, "anything", A_GIMME, 0);
 
@@ -125,6 +132,53 @@ void ext_main(void *r){
     post("scm4max ext_main()");
 }
 
+// the read method defers to a low priority method
+void scm4max_read(t_scm4max *x, t_symbol *s){
+    defer(x, (method)scm4max_doread, s, 0, NULL);
+}
+// read function to either pass on a filename or open the file selector box
+// lifted right out of the sdk docs
+void scm4max_doread(t_scm4max *x, t_symbol *s){
+    t_fourcc filetype = 'TEXT', outtype;
+    short numtypes = 1;
+    char filename[MAX_PATH_CHARS];
+    short path;
+    if (s == gensym("")) {      // if no argument supplied, ask for file
+        if (open_dialog(filename, &path, &outtype, &filetype, 1))       // non-zero: user cancelled
+            return;
+    } else {
+        strcpy(filename, s->s_name);    // must copy symbol before calling locatefile_extended
+        post("filename: %s", filename);
+        if (locatefile_extended(filename, &path, &outtype, &filetype, 1)) { // non-zero: not found
+            object_error(x, "scm4max: %s: not found", s->s_name);
+            return;
+        }
+    }
+    // we have a file
+    scm4max_openfile(x, filename, path);
+}
+void scm4max_openfile(t_scm4max *x, char *filename, short path){
+    t_filehandle fh;
+    char *buffer;
+    long size;
+    if (path_opensysfile(filename, path, &fh, READ_PERM)) {
+        object_error(x, "error opening %s", filename);
+        return;
+    }
+    // allocate memory block that is the size of the file
+    sysfile_geteof(fh, &size);
+    buffer = sysmem_newptr(size);
+    // read in the file
+    sysfile_read(fh, &size, buffer);
+    sysfile_close(fh);
+    // eval the string contents
+    s7_pointer res;
+    res = s7_eval_c_string(x->s7, buffer); 
+    post("scm4max: loaded file %s : %s", filename, s7_object_to_c_string(x->s7, res));
+    // post("contents: %s", buffer); 
+    sysmem_freeptr(buffer);     // must free allocated memory
+}
+
 void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s){
 	if (m == ASSIST_INLET) { // inlet
 		sprintf(s, "I am inlet %ld", a);
@@ -133,7 +187,6 @@ void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s){
 		sprintf(s, "I am outlet %ld", a);
 	}
 }
-
 void scm4max_free(t_scm4max *x){ }
 
 void *scm4max_new(t_symbol *s, long argc, t_atom *argv){

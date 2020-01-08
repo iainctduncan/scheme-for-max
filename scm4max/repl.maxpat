@@ -39,12 +39,24 @@
 		"subpatcher_template" : "",
 		"boxes" : [ 			{
 				"box" : 				{
+					"id" : "obj-17",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 358.0, 509.0, 249.0, 22.0 ],
+					"text" : "read ~/scheme4max/scm4max/scm_test.scm"
+				}
+
+			}
+, 			{
+				"box" : 				{
 					"id" : "obj-18",
 					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 349.0, 539.0, 69.0, 22.0 ],
+					"patching_rect" : [ 708.0, 615.0, 69.0, 22.0 ],
 					"text" : "adder 1 2 3"
 				}
 
@@ -68,8 +80,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 14.0, 456.0, 586.0, 22.0 ],
-					"text" : "load \"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/basics/scm4max/scm4max.scm\""
+					"patching_rect" : [ 14.0, 456.0, 623.0, 22.0 ],
+					"text" : "load \"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/scm4max/scm4max.scm\""
 				}
 
 			}
@@ -103,7 +115,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 349.0, 497.0, 155.0, 22.0 ],
+					"patching_rect" : [ 697.0, 579.0, 155.0, 22.0 ],
 					"text" : "handle foo \\\"bar\\\" 'baz"
 				}
 
@@ -138,7 +150,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "int" ],
-					"patching_rect" : [ 174.5, 542.0, 60.0, 22.0 ],
+					"patching_rect" : [ 292.5, 587.0, 60.0, 22.0 ],
 					"text" : "scm4max"
 				}
 
@@ -294,7 +306,7 @@
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 174.5, 576.0, 66.0, 22.0 ],
+					"patching_rect" : [ 292.5, 621.0, 66.0, 22.0 ],
 					"text" : "print"
 				}
 
@@ -456,7 +468,14 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-1", 0 ],
-					"midpoints" : [ 59.0, 411.0, 184.0, 411.0 ],
+					"source" : [ "obj-17", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-1", 0 ],
+					"midpoints" : [ 59.0, 411.0, 302.0, 411.0 ],
 					"source" : [ "obj-50", 0 ]
 				}
 
@@ -471,7 +490,7 @@
  ],
 		"dependency_cache" : [ 			{
 				"name" : "scm.file_load.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/basics/scm4max",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/scm4max",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
