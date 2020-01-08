@@ -5,7 +5,7 @@
 
 (define s4m-add-listener
   (lambda (sym fun) 
-    (post "add-listener")
+    (post (string-append "add-listener " (symbol->string sym) ))
     (set! (s4m-listeners sym) fun)))
 
 (define handle
@@ -18,6 +18,7 @@
     (post (string-append "adder arg count: " (number->string (length args))))
     (apply + args)))
 
+(define foo "bar")
 
 (define s4m-dispatch
   (lambda args
@@ -25,8 +26,9 @@
     ;;(set! debug-args args)
     ((s4m-listeners (car args)) (cdr args))))
 
-
 ;; register our listeners
 (s4m-add-listener 'handle handle)
 (s4m-add-listener 'adder adder)
+
+(post "bootstrap complete")
 

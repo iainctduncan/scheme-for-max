@@ -148,7 +148,6 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     // load code given from a user arg
     if(argc){
         atom_arg_getsym(&x->source_file, 0, argc, argv);
-        post("loading source file: %s", x->source_file->s_name);    
         scm4max_doread(x, x->source_file);
     }
     // add done 
@@ -166,43 +165,27 @@ void scm4max_doread(t_scm4max *x, t_symbol *s){
     t_fourcc filetype = 'TEXT', outtype;
     short numtypes = 1;
     char filename[MAX_PATH_CHARS];
-    short path;
+    short path_id;
     if (s == gensym("")) {      // if no argument supplied, ask for file
-        if (open_dialog(filename, &path, &outtype, &filetype, 1))       // non-zero: user cancelled
+        if (open_dialog(filename, &path_id, &outtype, &filetype, 1))       // non-zero: user cancelled
             return;
     } else {
         strcpy(filename, s->s_name);    // must copy symbol before calling locatefile_extended
-        post("filename: %s", filename);
-        if (locatefile_extended(filename, &path, &outtype, &filetype, 1)) { // non-zero: not found
+        if (locatefile_extended(filename, &path_id, &outtype, &filetype, 1)) { // non-zero: not found
             object_error(x, "scm4max: %s: not found", s->s_name);
             return;
         }
     }
-    // we have a file
-    scm4max_openfile(x, filename, path);
-}
-void scm4max_openfile(t_scm4max *x, char *filename, short path){
-    t_filehandle fh;
-    char *buffer;
-    long size;
-    if (path_opensysfile(filename, path, &fh, READ_PERM)) {
-        object_error(x, "error opening %s", filename);
-        return;
+    // we have a file and a path short, need to convert it to abs path for scheme load
+    char full_path[1024]; 
+    path_toabsolutesystempath(path_id, filename, full_path);
+    path_nameconform(full_path, full_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
+ 
+    post("scm4max: s7 loading %s", full_path);
+    if( !s7_load(x->s7, full_path) ){
+        post("scm4max: error loading %s", full_path);
     }
-    // allocate memory block that is the size of the file
-    sysfile_geteof(fh, &size);
-    buffer = sysmem_newptr(size);
-    // read in the file
-    sysfile_read(fh, &size, buffer);
-    sysfile_close(fh);
-    // eval the string contents
-    s7_pointer res;
-    res = s7_eval_c_string(x->s7, buffer); 
-    post("scm4max: loaded file %s : %s", filename, s7_object_to_c_string(x->s7, res));
-    // post("contents: %s", buffer); 
-    sysmem_freeptr(buffer);     // must free allocated memory
 }
-
 void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s){
 	if (m == ASSIST_INLET) { // inlet
 		sprintf(s, "I am inlet %ld", a);

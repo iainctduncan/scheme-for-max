@@ -56,8 +56,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 21.0, 366.0, 563.0, 22.0 ],
-					"text" : "\"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/basics/scm4max/scm_test.scm\""
+					"patching_rect" : [ 21.0, 366.0, 619.0, 22.0 ],
+					"text" : "\"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/scm4max/scm4max.scm\""
 				}
 
 			}
@@ -225,8 +225,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 21.0, 234.0, 559.0, 22.0 ],
-					"text" : "\"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/basics/scm4max/scm_test.scm\""
+					"patching_rect" : [ 21.0, 234.0, 619.0, 22.0 ],
+					"text" : "\"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/scm4max/scm4max.scm\""
 				}
 
 			}
@@ -305,7 +305,7 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-16", 1 ],
-					"midpoints" : [ 30.5, 346.0, 574.5, 346.0 ],
+					"midpoints" : [ 30.5, 346.0, 630.5, 346.0 ],
 					"order" : 0,
 					"source" : [ "obj-12", 0 ]
 				}

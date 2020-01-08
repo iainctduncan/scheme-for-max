@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 54.0, 79.0, 902.0, 695.0 ],
+		"rect" : [ 54.0, 79.0, 937.0, 695.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -39,13 +39,37 @@
 		"subpatcher_template" : "",
 		"boxes" : [ 			{
 				"box" : 				{
-					"id" : "obj-17",
+					"id" : "obj-8",
 					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 358.0, 509.0, 249.0, 22.0 ],
-					"text" : "read ~/scheme4max/scm4max/scm_test.scm"
+					"patching_rect" : [ 195.0, 418.0, 620.0, 22.0 ],
+					"text" : "load \"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/scm4max/scm_test.scm\""
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-7",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 228.0, 450.0, 109.0, 22.0 ],
+					"text" : "read scm_test.scm"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-23",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 557.0, 487.0, 85.0, 22.0 ],
+					"text" : "handle foo 1 2"
 				}
 
 			}
@@ -56,55 +80,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 708.0, 615.0, 69.0, 22.0 ],
+					"patching_rect" : [ 684.0, 545.0, 69.0, 22.0 ],
 					"text" : "adder 1 2 3"
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-12",
-					"maxclass" : "button",
-					"numinlets" : 1,
-					"numoutlets" : 1,
-					"outlettype" : [ "bang" ],
-					"parameter_enable" : 0,
-					"patching_rect" : [ 19.0, 422.0, 24.0, 24.0 ]
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-8",
-					"maxclass" : "message",
-					"numinlets" : 2,
-					"numoutlets" : 1,
-					"outlettype" : [ "" ],
-					"patching_rect" : [ 14.0, 456.0, 623.0, 22.0 ],
-					"text" : "load \"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/scm4max/scm4max.scm\""
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-7",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 129.0, 424.0, 81.0, 22.0 ],
-					"text" : "print loading.."
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-2",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 1,
-					"outlettype" : [ "bang" ],
-					"patching_rect" : [ 58.5, 422.0, 58.0, 22.0 ],
-					"text" : "loadbang"
 				}
 
 			}
@@ -115,7 +92,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 697.0, 579.0, 155.0, 22.0 ],
+					"patching_rect" : [ 660.0, 496.0, 155.0, 22.0 ],
 					"text" : "handle foo \\\"bar\\\" 'baz"
 				}
 
@@ -127,8 +104,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 143.0, 30.0, 599.0, 22.0 ],
-					"text" : "\"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/basics/scm4max/scm_test.scm\""
+					"patching_rect" : [ 143.0, 30.0, 643.0, 22.0 ],
+					"text" : "\"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/scm4max/scm4max.scm\""
 				}
 
 			}
@@ -150,7 +127,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "int" ],
-					"patching_rect" : [ 292.5, 587.0, 60.0, 22.0 ],
+					"patching_rect" : [ 171.0, 557.0, 60.0, 22.0 ],
 					"text" : "scm4max"
 				}
 
@@ -222,7 +199,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 2,
 					"outlettype" : [ "", "" ],
-					"patching_rect" : [ 171.0, 301.0, 59.0, 22.0 ],
+					"patching_rect" : [ 171.0, 292.0, 59.0, 22.0 ],
 					"text" : "route text"
 				}
 
@@ -258,7 +235,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 2,
 					"outlettype" : [ "", "" ],
-					"patching_rect" : [ 242.0, 301.0, 53.0, 22.0 ],
+					"patching_rect" : [ 242.0, 292.0, 53.0, 22.0 ],
 					"text" : "route 13"
 				}
 
@@ -295,7 +272,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 171.0, 338.0, 57.0, 22.0 ],
+					"patching_rect" : [ 171.0, 335.0, 57.0, 22.0 ],
 					"text" : "tosymbol"
 				}
 
@@ -330,7 +307,7 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-6", 1 ],
-					"midpoints" : [ 12.0, 84.0, 12.0, 14.0, 732.5, 14.0 ],
+					"midpoints" : [ 12.0, 84.0, 12.0, 14.0, 776.5, 14.0 ],
 					"order" : 0,
 					"source" : [ "obj-11", 0 ]
 				}
@@ -338,15 +315,8 @@
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-8", 0 ],
-					"source" : [ "obj-12", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
 					"destination" : [ "obj-14", 0 ],
-					"midpoints" : [ 251.5, 330.0, 152.0, 330.0, 152.0, 97.0, 179.5, 97.0 ],
+					"midpoints" : [ 251.5, 327.0, 152.0, 327.0, 152.0, 97.0, 179.5, 97.0 ],
 					"source" : [ "obj-13", 0 ]
 				}
 
@@ -395,22 +365,6 @@
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-7", 0 ],
-					"order" : 0,
-					"source" : [ "obj-2", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-8", 0 ],
-					"order" : 1,
-					"source" : [ "obj-2", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
 					"destination" : [ "obj-11", 1 ],
 					"source" : [ "obj-20", 0 ]
 				}
@@ -427,6 +381,13 @@
 				"patchline" : 				{
 					"destination" : [ "obj-11", 2 ],
 					"source" : [ "obj-22", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-1", 0 ],
+					"source" : [ "obj-23", 0 ]
 				}
 
 			}
@@ -454,7 +415,14 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-1", 0 ],
-					"source" : [ "obj-5", 0 ]
+					"source" : [ "obj-7", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-1", 0 ],
+					"source" : [ "obj-8", 0 ]
 				}
 
 			}
@@ -468,22 +436,7 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-1", 0 ],
-					"source" : [ "obj-17", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-1", 0 ],
-					"midpoints" : [ 59.0, 411.0, 302.0, 411.0 ],
-					"source" : [ "obj-50", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-1", 0 ],
-					"source" : [ "obj-8", 0 ]
+					"source" : [ "obj-5", 0 ]
 				}
 
 			}
