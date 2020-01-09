@@ -92,12 +92,13 @@ static s7_pointer s7_output_int(s7_scheme *s7, s7_pointer args) {
     return s7_make_integer(s7, int_to_output);
 }
 
-// log to the max console
-// TODO: make this smarter, it only handles strings rightnow
+// log to the max console, added 
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     char *msg = s7_string( s7_car(args) );
     post("s4m-post: %s", msg);
+    // What to return??
+    return s7_make_integer(s7, 0);
 }
 
 void ext_main(void *r){
@@ -136,7 +137,7 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     // define functions that will be implemented in C and available from scheme
     s7_define_function(x->s7, "bang", s7_output_bang, 0, 0, false, "(bang) outs a bang");
     s7_define_function(x->s7, "out-int", s7_output_int, 1, 0, false, "(output-int 99) outputs 99 out outlet 1");
-    s7_define_function(x->s7, "post", s7_post, 1, 0, false, "send strings to the max log");
+    s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
        
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
