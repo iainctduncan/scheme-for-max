@@ -85,7 +85,7 @@ static s7_pointer s7_output_int(s7_scheme *s7, s7_pointer args) {
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     t_scm4max *x = get_max_obj(s7);
     int int_to_output = s7_integer( s7_car(args) );
-    post("  int to output: %i", int_to_output);
+    // post("  int to output: %i", int_to_output);
     // call the max methods, a side-effect to scheme
     outlet_int(x->out_1, int_to_output);   
     // do return logic in scheme
@@ -100,6 +100,25 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
     // What to return??
     return s7_make_integer(s7, 0);
 }
+
+// write an integer to a named table index (max tables only store ints)
+static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args) {
+    char *table_name = s7_string( s7_car(args) );
+    int index = s7_integer( s7_cadr(args) );
+    long value = s7_integer(s7_caddr(args));
+    t_scm4max *x = get_max_obj(s7);
+    scm4max_table_write(x, table_name, index, value);
+    // return the value written to s7
+    // I dunno what to return for side effects
+    //return s7_make_integer(s7, s7_caddr(args) );
+    return s7_make_integer(s7, 0);
+}
+
+
+
+/********************************************************************************
+* main C code 
+*/
 
 void ext_main(void *r){
 	t_class *c;
@@ -136,8 +155,9 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
 
     // define functions that will be implemented in C and available from scheme
     s7_define_function(x->s7, "bang", s7_output_bang, 0, 0, false, "(bang) outs a bang");
-    s7_define_function(x->s7, "out-int", s7_output_int, 1, 0, false, "(output-int 99) outputs 99 out outlet 1");
+    s7_define_function(x->s7, "s4m-output-int", s7_output_int, 1, 0, false, "(s4m-output-int 99) outputs 99 out outlet 1");
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
+    s7_define_function(x->s7, "s4m-tabw", s7_table_write, 3, 0, false, "(s4m-tabw 'foo' 4 127) writes value 4 to index 127 of table foo");
        
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
@@ -197,6 +217,20 @@ void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s){
 }
 void scm4max_free(t_scm4max *x){ }
 
+// get a max named table, write a single data point, and set table to dirty 
+int scm4max_table_write(t_scm4max *x, char *table_name, int index, int value){
+    //post("scm4max_table_write() %s i:%i v:%i", table_name, index, value);
+    long **data = NULL;
+    long i, size;
+    int res = table_get(gensym(table_name), &data, &size);
+    if(!res){
+        (*data)[index] = value;
+        table_dirty( gensym(table_name) );
+        //post("table %s updated and set to dirty");
+        return 0;
+    }else{ return res; }
+} 
+
 // a generic message hander, dispatches on symbol messages
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
     t_atom *ap;
@@ -224,7 +258,6 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
     // LOAD
     // tell S7 to load a scheme source file
     // expects a message of: load "full/path/to/file".
-    // TODO; this could be smarter and eventually take the max included paths
     // and add them to the s7 load path.
     else if( gensym("load") == gensym(s->s_name) ){
         char *load_input = atom_getsym(argv)->s_name; 
@@ -232,8 +265,16 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         sprintf(load_sexp, "(load \"%s\")", load_input);
         post("load sexp: %s", load_sexp);
         res = s7_eval_c_string(x->s7, load_sexp); 
-        post("s7: %s", s7_object_to_c_string(x->s7, res) ); 
+        post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
     }
+
+    // XXX: crashing!! RESET, wipe and rebootstrap s7
+    //else if( gensym("reset") == gensym(s->s_name) ){
+    //    post("s7 RESET");
+    //    x->s7 = s7_init();
+    //    //scm4max_doread(x, x->source_file);
+    //    //post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
+    //}
 
     // All other messages are considered to be calls we want
     // to handle inside S7. 
@@ -245,7 +286,7 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
     else{ 
         // the message string will become the first item in our list to dispatch
         char *message = s->s_name;
-        post("scm4max_msg() got a %s", message);
+        // post("scm4max_msg() got a %s", message);
     
         // convert max args into an s7_list of s7 args and then use them to call
 
@@ -264,7 +305,7 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
                     s7_args = s7_cons(x->s7, s7_make_real(x->s7, atom_getfloat(ap)), s7_args); 
                     break;
                 case A_SYM:
-                    post("A_SYM %ld: %s",i+1,atom_getsym(ap)->s_name);
+                    // post("A_SYM %ld: %s",i+1,atom_getsym(ap)->s_name);
                     // if sent \"foobar\" from max, we want an S7 string "foobar"
                     if( in_quotes(atom_getsym(ap)->s_name) ){
                         char *trimmed_sym = trim_quotes(atom_getsym(ap)->s_name);
@@ -283,7 +324,7 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         }
         // add the first message to the arg list (always a symbol)
         s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, message), s7_args); 
-        post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        // post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
         // call the s7 dispatch function, sending in all args as an s7 list
         res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
         post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 

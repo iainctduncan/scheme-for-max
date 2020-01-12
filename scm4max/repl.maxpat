@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 54.0, 79.0, 937.0, 695.0 ],
+		"rect" : [ 60.0, 79.0, 934.0, 927.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -39,25 +39,63 @@
 		"subpatcher_template" : "",
 		"boxes" : [ 			{
 				"box" : 				{
-					"id" : "obj-8",
-					"maxclass" : "message",
+					"editor_rect" : [ 100.0, 100.0, 300.0, 300.0 ],
+					"embed" : 0,
+					"id" : "obj-5",
+					"maxclass" : "newobj",
 					"numinlets" : 2,
-					"numoutlets" : 1,
-					"outlettype" : [ "" ],
-					"patching_rect" : [ 195.0, 418.0, 620.0, 22.0 ],
-					"text" : "load \"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/scm4max/scm_test.scm\""
+					"numoutlets" : 2,
+					"outlettype" : [ "int", "bang" ],
+					"patching_rect" : [ 663.0, 488.0, 55.0, 22.0 ],
+					"saved_object_attributes" : 					{
+						"embed" : 0,
+						"name" : "foo",
+						"parameter_enable" : 0,
+						"parameter_mappable" : 0,
+						"range" : 128,
+						"showeditor" : 0,
+						"size" : 4
+					}
+,
+					"showeditor" : 0,
+					"text" : "table foo"
 				}
 
 			}
 , 			{
 				"box" : 				{
-					"id" : "obj-7",
+					"editor_rect" : [ 526.0, 92.0, 375.0, 300.0 ],
+					"embed" : 0,
+					"id" : "obj-2",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 2,
+					"outlettype" : [ "int", "bang" ],
+					"patching_rect" : [ 597.0, 391.0, 101.0, 22.0 ],
+					"saved_object_attributes" : 					{
+						"embed" : 0,
+						"name" : "foo",
+						"parameter_enable" : 0,
+						"parameter_mappable" : 0,
+						"range" : 128,
+						"showeditor" : 0,
+						"size" : 4
+					}
+,
+					"showeditor" : 1,
+					"text" : "table foo @size 4"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-17",
 					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 228.0, 450.0, 109.0, 22.0 ],
-					"text" : "read scm_test.scm"
+					"patching_rect" : [ 218.0, 412.0, 87.0, 22.0 ],
+					"text" : "tabw foo 1 100"
 				}
 
 			}
@@ -68,8 +106,56 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 557.0, 487.0, 85.0, 22.0 ],
-					"text" : "handle foo 1 2"
+					"patching_rect" : [ 425.0, 473.0, 48.0, 22.0 ],
+					"text" : "sub 5 4"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-10",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 30.0, 461.0, 35.0, 22.0 ],
+					"text" : "reset"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-12",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 65.0, 427.0, 113.0, 22.0 ],
+					"text" : "read scm4max.scm"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-8",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 329.0, 562.0, 231.0, 22.0 ],
+					"text" : "3"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-7",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 65.0, 397.0, 109.0, 22.0 ],
+					"text" : "read scm_test.scm"
 				}
 
 			}
@@ -80,20 +166,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 684.0, 545.0, 69.0, 22.0 ],
-					"text" : "adder 1 2 3"
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-5",
-					"maxclass" : "message",
-					"numinlets" : 2,
-					"numoutlets" : 1,
-					"outlettype" : [ "" ],
-					"patching_rect" : [ 660.0, 496.0, 155.0, 22.0 ],
-					"text" : "handle foo \\\"bar\\\" 'baz"
+					"patching_rect" : [ 424.0, 443.0, 49.0, 22.0 ],
+					"text" : "add 1 2"
 				}
 
 			}
@@ -105,7 +179,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 143.0, 30.0, 643.0, 22.0 ],
-					"text" : "\"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/scm4max/scm4max.scm\""
+					"text" : "\"/Users/iainduncan/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/scm4max/scm_test.scm\""
 				}
 
 			}
@@ -127,7 +201,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "int" ],
-					"patching_rect" : [ 171.0, 557.0, 60.0, 22.0 ],
+					"patching_rect" : [ 173.0, 515.0, 60.0, 22.0 ],
 					"text" : "scm4max"
 				}
 
@@ -283,16 +357,32 @@
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 292.5, 621.0, 66.0, 22.0 ],
-					"text" : "print"
+					"patching_rect" : [ 147.0, 563.0, 89.0, 22.0 ],
+					"text" : "print from-scm:"
 				}
 
 			}
  ],
 		"lines" : [ 			{
 				"patchline" : 				{
-					"destination" : [ "obj-9", 0 ],
+					"destination" : [ "obj-8", 1 ],
+					"order" : 0,
 					"source" : [ "obj-1", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-9", 0 ],
+					"order" : 1,
+					"source" : [ "obj-1", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-1", 0 ],
+					"source" : [ "obj-10", 0 ]
 				}
 
 			}
@@ -310,6 +400,13 @@
 					"midpoints" : [ 12.0, 84.0, 12.0, 14.0, 776.5, 14.0 ],
 					"order" : 0,
 					"source" : [ "obj-11", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-1", 0 ],
+					"source" : [ "obj-12", 0 ]
 				}
 
 			}
@@ -415,14 +512,15 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-1", 0 ],
-					"source" : [ "obj-7", 0 ]
+					"midpoints" : [ 59.0, 452.0, 182.5, 452.0 ],
+					"source" : [ "obj-50", 0 ]
 				}
 
 			}
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-1", 0 ],
-					"source" : [ "obj-8", 0 ]
+					"source" : [ "obj-7", 0 ]
 				}
 
 			}
@@ -436,7 +534,7 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-1", 0 ],
-					"source" : [ "obj-5", 0 ]
+					"source" : [ "obj-17", 0 ]
 				}
 
 			}
