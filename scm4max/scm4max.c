@@ -1,11 +1,3 @@
-/**
-	@file
-	scheme - a max object shell
-	jeremy bernstein - jeremy@bootsquad.com
-
-	@ingroup	examples
-*/
-
 #include "ext.h"							// standard Max include, always required
 #include "ext_obex.h"						// required for new style Max object
 #include "s7.h"
@@ -101,9 +93,43 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
     return s7_make_integer(s7, 0);
 }
 
+// read an integer from a named table and index (max tables only store ints)
+// becomes scheme function 'tabr'
+static s7_pointer s7_table_read(s7_scheme *s7, s7_pointer args) {
+    // table names could come in from s7 as either strings or symbols, if using keyword table names
+    char *table_name;
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        table_name = s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        table_name = s7_string( s7_car(args) );
+    }else{
+        post("s4m: ERROR in tabr, table name is not a keyword, string, or symbol");
+        return;
+    }
+    long index = s7_integer( s7_cadr(args) );
+    long value; 
+    t_scm4max *x = get_max_obj(s7);
+    int res = scm4max_table_read(x, table_name, index, &value);
+    if(!res){
+        return s7_make_integer(s7, value);
+    }else{
+        post("s4m: ERROR reading table %s index %i", table_name, index);
+    }
+}
+
 // write an integer to a named table index (max tables only store ints)
+// becomes scheme function 'tabw'
 static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args) {
-    char *table_name = s7_string( s7_car(args) );
+    // table names could come in from s7 as either strings or symbols, if using keyword table names
+    char *table_name;
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        table_name = s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        table_name = s7_string( s7_car(args) );
+    }else{
+        post("s4m: ERROR in tabw, table name is not a keyword, string, or symbol");
+        return;
+    }
     int index = s7_integer( s7_cadr(args) );
     long value = s7_integer(s7_caddr(args));
     t_scm4max *x = get_max_obj(s7);
@@ -113,7 +139,6 @@ static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args) {
     //return s7_make_integer(s7, s7_caddr(args) );
     return s7_make_integer(s7, 0);
 }
-
 
 
 /********************************************************************************
@@ -157,7 +182,8 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     s7_define_function(x->s7, "bang", s7_output_bang, 0, 0, false, "(bang) outs a bang");
     s7_define_function(x->s7, "s4m-output-int", s7_output_int, 1, 0, false, "(s4m-output-int 99) outputs 99 out outlet 1");
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
-    s7_define_function(x->s7, "s4m-tabw", s7_table_write, 3, 0, false, "(s4m-tabw 'foo' 4 127) writes value 4 to index 127 of table foo");
+    s7_define_function(x->s7, "tabr", s7_table_read, 2, 0, false, "(tabr :foo 4) returns value at index 4 from table :foo");
+    s7_define_function(x->s7, "tabw", s7_table_write, 3, 0, false, "(tabw :foo 4 127) writes value 4 to index 127 of table :foo");
        
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
@@ -217,19 +243,46 @@ void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s){
 }
 void scm4max_free(t_scm4max *x){ }
 
+// get a max named table, write a single data point, and return it
+// hmm, I guess this needs to write the result into a pointer in order
+// to allow returning error codes. damn it
+int scm4max_table_read(t_scm4max *x, char *table_name, long index, long *value){
+    //post("scm4max_table_read() %s i:%i", table_name, index);
+    long **data = NULL;
+    long i, size;
+    if( table_get(gensym(table_name), &data, &size) ){
+        post("s4m: ERROR: could not load table %s", table_name);
+        return 1;
+    }
+    if( index < 0 || index >= size){
+        post("s4m: ERROR: index %i out of range for table %s", index, table_name);
+        return 1;
+    }
+    // copy the data into our value int and return success
+    *value = (*data)[index];
+    return 0;
+    
+} 
+
 // get a max named table, write a single data point, and set table to dirty 
 int scm4max_table_write(t_scm4max *x, char *table_name, int index, int value){
     //post("scm4max_table_write() %s i:%i v:%i", table_name, index, value);
     long **data = NULL;
     long i, size;
     int res = table_get(gensym(table_name), &data, &size);
-    if(!res){
-        (*data)[index] = value;
-        table_dirty( gensym(table_name) );
-        //post("table %s updated and set to dirty");
-        return 0;
-    }else{ return res; }
+    if(res){
+        post("s4m: ERROR: could not load table %s", table_name);
+        return res; 
+    }
+    if( index < 0 || index >= size){
+        post("s4m: ERROR: index %i out of range for table %s", index, table_name);
+        return 1;
+    }
+    (*data)[index] = value;
+    table_dirty( gensym(table_name) );
+    return 0;
 } 
+
 
 // a generic message hander, dispatches on symbol messages
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
