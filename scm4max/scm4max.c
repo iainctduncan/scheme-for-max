@@ -14,9 +14,14 @@ typedef struct _scm4max {
 	t_object obj;
     s7_scheme *s7;
     t_symbol *source_file; // main source file (if one passed as object arg)
+    
     long num_inlets;
+    long proxy_num;
+    void *inlet_proxies[MAX_NUM_INLETS];
+
     long num_outlets;
     void *outlets[MAX_NUM_OUTLETS]; // should be a dynamic array, but I'm crashing too much
+    
     
 } t_scm4max;
 
@@ -170,7 +175,7 @@ void ext_main(void *r){
 	class_register(CLASS_BOX, c); /* CLASS_NOBOX */
 
     CLASS_ATTR_LONG(c, "ins", 0, t_scm4max, num_inlets);
-    CLASS_ATTR_ACCESSORS(c, "ins", NULL, scm4max_outlets_set);
+    CLASS_ATTR_ACCESSORS(c, "ins", NULL, scm4max_inlets_set);
     CLASS_ATTR_SAVE(c, "ins", 0);   // save with patcher
     CLASS_ATTR_LONG(c, "outs", 0, t_scm4max, num_outlets);
     CLASS_ATTR_ACCESSORS(c, "outs", NULL, scm4max_outlets_set);
@@ -193,20 +198,24 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     attr_args_process(x, argc, argv);
 
     // create generic outlets (from right to left)
-    post("time to make %i outlets", x->num_outlets);
     if( x->num_outlets > MAX_NUM_OUTLETS ){
         post("ERROR: only up to %i outlets supported", MAX_NUM_OUTLETS);
     }else{
+        // outlet creation is right to left, hence we count down
         for(int i=x->num_outlets-1; i >= 0; i--){
             x->outlets[i] = outlet_new(x, NULL);     
         }
-        post("created %i outlets", x->num_outlets);
     }
 
-    // create an inlet   
-    //intin(x, 1);    
-    // create an outlet
-    //x->out_1 = intout((t_object *)x); 
+    // create the proxy inlets
+    if( x->num_inlets > MAX_NUM_INLETS ){
+        post("ERROR: only up to %i inlets supported", MAX_NUM_INLETS);
+    }else{
+        // create proxies, proxy_num is the value messages will receive
+        for(int proxy_num= x->num_inlets; proxy_num > 0; proxy_num--){
+            x->inlet_proxies[proxy_num-1] = proxy_new((t_object *)x, proxy_num, &x->proxy_num);
+        }
+    }
 
     // S7 initialization, it's possible this should actually happen in main and be attached
     // to the class as opposed to the instance. Not sure about that.
@@ -339,13 +348,19 @@ int scm4max_table_write(t_scm4max *x, char *table_name, int index, int value){
 } 
 
 
-// a generic message hander, dispatches on symbol messages
+// the generic message hander, dispatches on symbol messages
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
     t_atom *ap;
     //post("scm4max_msg(): selector is %s",s->s_name);
     //post("scm4max_msg(): there are %ld arguments",argc);
 
+    int inlet_num = proxy_getinlet((t_object *)x);
+    post("message came from inlet %i", inlet_num);
+
     s7_pointer res;
+
+    // for messages that come from inlets over 0, we will pass the message to S7
+
 
     // handle messages that mean something to the scm4max object
     // 'sexp', 'load', (more later)
