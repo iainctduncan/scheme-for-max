@@ -6,12 +6,18 @@
 #include "stdbool.h"
 #include "stdlib.h"
 
+#define MAX_NUM_OUTLETS 32
+#define MAX_NUM_INLETS 32
+
 // object struct
 typedef struct _scm4max {
 	t_object obj;
     s7_scheme *s7;
     t_symbol *source_file; // main source file (if one passed as object arg)
-    void * out_1;
+    long num_inlets;
+    long num_outlets;
+    void *outlets[MAX_NUM_OUTLETS]; // should be a dynamic array, but I'm crashing too much
+    
 } t_scm4max;
 
 // function prototypes
@@ -29,6 +35,9 @@ void scm4max_read(t_scm4max *x, t_symbol *s);
 void scm4max_doread(t_scm4max *x, t_symbol *s);
 void scm4max_openfile(t_scm4max *x, char *filename, short path);
 
+// customer getters and setters for attributes 'outs' and 'ins'
+t_max_err scm4max_inlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv);
+t_max_err scm4max_outlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv);
 
 //////////////////////// global class pointer variable
 void *scm4max_class;
@@ -64,25 +73,25 @@ t_scm4max *get_max_obj(s7_scheme *s7){
 }
 
 // my attempt to add an outbang function to be called from scheme, working!!!
-static s7_pointer s7_output_bang(s7_scheme *s7, s7_pointer args) {
-    post("s7_output_bang() called from scheme");
-    // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
-    t_scm4max *x = get_max_obj(s7);
-    // now I can call api methods
-    outlet_bang(x->out_1);    
-}
-// output an integer in max
-static s7_pointer s7_output_int(s7_scheme *s7, s7_pointer args) {
-    post("s7_output_int() called from scheme");
-    // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
-    t_scm4max *x = get_max_obj(s7);
-    int int_to_output = s7_integer( s7_car(args) );
-    // post("  int to output: %i", int_to_output);
-    // call the max methods, a side-effect to scheme
-    outlet_int(x->out_1, int_to_output);   
-    // do return logic in scheme
-    return s7_make_integer(s7, int_to_output);
-}
+//static s7_pointer s7_output_bang(s7_scheme *s7, s7_pointer args) {
+//    post("s7_output_bang() called from scheme");
+//    // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
+//    t_scm4max *x = get_max_obj(s7);
+//    // now I can call api methods
+//    outlet_bang(x->out_1);    
+//}
+//// output an integer in max
+//static s7_pointer s7_output_int(s7_scheme *s7, s7_pointer args) {
+//    post("s7_output_int() called from scheme");
+//    // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
+//    t_scm4max *x = get_max_obj(s7);
+//    int int_to_output = s7_integer( s7_car(args) );
+//    // post("  int to output: %i", int_to_output);
+//    // call the max methods, a side-effect to scheme
+//    outlet_int(x->out_1, int_to_output);   
+//    // do return logic in scheme
+//    return s7_make_integer(s7, int_to_output);
+//}
 
 // log to the max console, added 
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
@@ -146,6 +155,7 @@ static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args) {
 */
 
 void ext_main(void *r){
+    post("ext_main()");
 	t_class *c;
 	c = class_new("scm4max", (method)scm4max_new, (method)scm4max_free,
          (long)sizeof(t_scm4max), 0L /* leave NULL!! */, A_GIMME, 0);
@@ -158,20 +168,45 @@ void ext_main(void *r){
 	/* you CAN'T call this from the patcher */
 	class_addmethod(c, (method)scm4max_assist, "assist", A_CANT, 0);
 	class_register(CLASS_BOX, c); /* CLASS_NOBOX */
-	
+
+    CLASS_ATTR_LONG(c, "ins", 0, t_scm4max, num_inlets);
+    CLASS_ATTR_ACCESSORS(c, "ins", NULL, scm4max_outlets_set);
+    CLASS_ATTR_SAVE(c, "ins", 0);   // save with patcher
+    CLASS_ATTR_LONG(c, "outs", 0, t_scm4max, num_outlets);
+    CLASS_ATTR_ACCESSORS(c, "outs", NULL, scm4max_outlets_set);
+    CLASS_ATTR_SAVE(c, "outs", 0);   // save with patcher
+
     scm4max_class = c;
     post("scm4max ext_main() done");
 }
 
 void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
+    post("scm4max_new(), arg count: %i", argc);
 	t_scm4max *x = NULL;
 	long i;
 
-	x = (t_scm4max *)object_alloc(scm4max_class); 
+	x = (t_scm4max *)object_alloc(scm4max_class);
+    // setup internal member defaults 
+    x->num_inlets = 1;
+    x->num_outlets = 1;
+    // process @ args, which will likely override the above
+    attr_args_process(x, argc, argv);
+
+    // create generic outlets (from right to left)
+    post("time to make %i outlets", x->num_outlets);
+    if( x->num_outlets > MAX_NUM_OUTLETS ){
+        post("ERROR: only up to %i outlets supported", MAX_NUM_OUTLETS);
+    }else{
+        for(int i=x->num_outlets-1; i >= 0; i--){
+            x->outlets[i] = outlet_new(x, NULL);     
+        }
+        post("created %i outlets", x->num_outlets);
+    }
+
     // create an inlet   
-    intin(x, 1);    
+    //intin(x, 1);    
     // create an outlet
-    x->out_1 = intout((t_object *)x); 
+    //x->out_1 = intout((t_object *)x); 
 
     // S7 initialization, it's possible this should actually happen in main and be attached
     // to the class as opposed to the instance. Not sure about that.
@@ -179,8 +214,8 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     x->s7 = s7_init();
 
     // define functions that will be implemented in C and available from scheme
-    s7_define_function(x->s7, "bang", s7_output_bang, 0, 0, false, "(bang) outs a bang");
-    s7_define_function(x->s7, "s4m-output-int", s7_output_int, 1, 0, false, "(s4m-output-int 99) outputs 99 out outlet 1");
+    //s7_define_function(x->s7, "bang", s7_output_bang, 0, 0, false, "(bang) outs a bang");
+    //s7_define_function(x->s7, "s4m-output-int", s7_output_int, 1, 0, false, "(s4m-output-int 99) outputs 99 out outlet 1");
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
     s7_define_function(x->s7, "tabr", s7_table_read, 2, 0, false, "(tabr :foo 4) returns value at index 4 from table :foo");
     s7_define_function(x->s7, "tabw", s7_table_write, 3, 0, false, "(tabw :foo 4 127) writes value 4 to index 127 of table :foo");
@@ -198,8 +233,26 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
         scm4max_doread(x, x->source_file);
     }
     // add done 
+    post("scm4max_new complete");
 	return (x);
 }
+
+
+t_max_err scm4max_inlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv){
+    long num_inlets = atom_getlong(argv);
+    x->num_inlets = num_inlets;
+    post("scm4max->num_inlets now %i", x->num_inlets); 
+    return 0;
+}
+
+t_max_err scm4max_outlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv){
+    post("scm4max_outlets_set()");
+    long num_outlets = atom_getlong(argv);
+    x->num_outlets = num_outlets;
+    post("scm4max->num_outlets now %i", x->num_outlets); 
+    return 0;
+}
+
 
 
 // the read method defers to a low priority method
@@ -228,7 +281,7 @@ void scm4max_doread(t_scm4max *x, t_symbol *s){
     path_toabsolutesystempath(path_id, filename, full_path);
     path_nameconform(full_path, full_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
  
-    post("scm4max: s7 loading %s", full_path);
+    //post("scm4max: s7 loading %s", full_path);
     if( !s7_load(x->s7, full_path) ){
         post("scm4max: error loading %s", full_path);
     }
@@ -241,7 +294,9 @@ void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s){
 		sprintf(s, "I am outlet %ld", a);
 	}
 }
-void scm4max_free(t_scm4max *x){ }
+void scm4max_free(t_scm4max *x){ 
+    post("scm4max_free()");
+}
 
 // get a max named table, write a single data point, and return it
 // hmm, I guess this needs to write the result into a pointer in order
@@ -268,7 +323,7 @@ int scm4max_table_read(t_scm4max *x, char *table_name, long index, long *value){
 int scm4max_table_write(t_scm4max *x, char *table_name, int index, int value){
     //post("scm4max_table_write() %s i:%i v:%i", table_name, index, value);
     long **data = NULL;
-    long i, size;
+    long size;
     int res = table_get(gensym(table_name), &data, &size);
     if(res){
         post("s4m: ERROR: could not load table %s", table_name);
