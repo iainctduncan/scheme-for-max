@@ -77,26 +77,6 @@ t_scm4max *get_max_obj(s7_scheme *s7){
     return scm4max_ptr;
 }
 
-// my attempt to add an outbang function to be called from scheme, working!!!
-//static s7_pointer s7_output_bang(s7_scheme *s7, s7_pointer args) {
-//    post("s7_output_bang() called from scheme");
-//    // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
-//    t_scm4max *x = get_max_obj(s7);
-//    // now I can call api methods
-//    outlet_bang(x->out_1);    
-//}
-//// output an integer in max
-//static s7_pointer s7_output_int(s7_scheme *s7, s7_pointer args) {
-//    post("s7_output_int() called from scheme");
-//    // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
-//    t_scm4max *x = get_max_obj(s7);
-//    int int_to_output = s7_integer( s7_car(args) );
-//    // post("  int to output: %i", int_to_output);
-//    // call the max methods, a side-effect to scheme
-//    outlet_int(x->out_1, int_to_output);   
-//    // do return logic in scheme
-//    return s7_make_integer(s7, int_to_output);
-//}
 
 // log to the max console, added 
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
@@ -105,6 +85,65 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
     post("s4m-post: %s", msg);
     // What to return??
     return s7_make_integer(s7, 0);
+}
+
+// function to send generic output out an outlet
+static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
+    // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
+    int outlet_num = s7_integer( s7_car(args) );
+    post("s7_max_output, outlet: %i", outlet_num);
+    t_scm4max *x = get_max_obj(s7);
+
+    // check if outlet number exists
+    if( outlet_num > x->num_outlets || outlet_num < 0 ){
+        post("ERROR: invalid outlet number %i", outlet_num);
+        return s7_nil(s7);
+    }
+
+    s7_pointer s7_out_val = s7_cadr(args);
+    t_atom output_atom; 
+
+    // figure out what type the s7 args second member is 
+    // then make and send out the corresponding max atom
+    if( s7_is_integer( s7_out_val ) ){
+        long value = s7_integer( s7_cadr(args) );
+        atom_setlong(&output_atom, value);
+        outlet_anything( x->outlets[outlet_num], gensym("int"), 1, &output_atom);
+
+    }else if( s7_is_real( s7_out_val ) ){
+        double value = s7_real( s7_out_val );
+        atom_setfloat(&output_atom, value);
+        outlet_anything( x->outlets[outlet_num], gensym("float"), 1, &output_atom);
+
+    }else if( s7_is_string( s7_out_val ) ){
+        const char * value = s7_string( s7_out_val );
+        outlet_anything( x->outlets[outlet_num], gensym(value), 0, NULL);
+
+    }else if( s7_is_symbol( s7_out_val ) ){
+        const char * value = s7_symbol_name( s7_out_val );
+        outlet_anything( x->outlets[outlet_num], gensym(value), 0, NULL);
+
+    }else if( s7_is_list(s7, s7_out_val)){
+        // we can output a list of simple types, as a max list style message
+        int length = s7_list_length(s7, s7_out_val);
+        t_atom out_list[length];
+        for(int i=0; i<length; i++){
+            s7_pointer list_item = s7_list_ref(s7, s7_out_val, i);
+            if( s7_is_integer( list_item ) ){
+                atom_setlong( out_list + i, s7_integer(list_item) );             
+            }else if( s7_is_real( list_item ) ){
+                atom_setfloat( out_list + i, s7_integer(list_item) );             
+            }else if( s7_is_symbol( list_item ) ){
+                atom_setsym( out_list + i, gensym( s7_symbol_name( list_item ) ) );
+            }else if( s7_is_string( list_item ) ){ 
+                atom_setsym( out_list + i, gensym( s7_string( list_item ) ) );
+            }
+        }   
+        outlet_anything( x->outlets[outlet_num], gensym(""), length, out_list);     
+ 
+    }
+    // returns the value output, less the outlet number, so these can be chained
+    return s7_out_val;
 }
 
 // read an integer from a named table and index (max tables only store ints)
@@ -188,7 +227,6 @@ void ext_main(void *r){
 void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     post("scm4max_new(), arg count: %i", argc);
 	t_scm4max *x = NULL;
-	long i;
 
 	x = (t_scm4max *)object_alloc(scm4max_class);
     // setup internal member defaults 
@@ -228,6 +266,7 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
     s7_define_function(x->s7, "tabr", s7_table_read, 2, 0, false, "(tabr :foo 4) returns value at index 4 from table :foo");
     s7_define_function(x->s7, "tabw", s7_table_write, 3, 0, false, "(tabw :foo 4 127) writes value 4 to index 127 of table :foo");
+    s7_define_function(x->s7, "max-output", s7_max_output, 2, 0, false, "(max-output 1 99) sends value 99 out outlet 1");
        
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
@@ -235,14 +274,14 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     s7_define_variable(x->s7, "maxobj", s7_make_integer(x->s7, max_obj_ptr));  
    
     // boostrap the scheme code
+    // might make this optional later
     scm4max_doread(x, gensym("scm4max.scm"));
     // load code given from a user arg
     if(argc){
         atom_arg_getsym(&x->source_file, 0, argc, argv);
         scm4max_doread(x, x->source_file);
     }
-    // add done 
-    post("scm4max_new complete");
+    // post("scm4max_new complete");
 	return (x);
 }
 
