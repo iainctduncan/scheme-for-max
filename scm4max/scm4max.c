@@ -394,49 +394,94 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
     //post("scm4max_msg(): there are %ld arguments",argc);
 
     int inlet_num = proxy_getinlet((t_object *)x);
-    post("message came from inlet %i", inlet_num);
+    //post("message came from inlet %i", inlet_num);
 
     s7_pointer res;
 
-    // for messages that come from inlets over 0, we will pass the message to S7
+    // for messages that come from inlets over 0, we interecept
+    // messages handled by max (set, load, reset) and pass
+    // on all others to s7 as sexps
+    // if the message does not have surrounding brackets, we add them
+    if(inlet_num == 0){
 
+        // LOAD
+        // tell S7 to load a scheme source file
+        // expects a message of: load "full/path/to/file".
+        // and add them to the s7 load path.
+        if( gensym(s->s_name) == gensym("load") ){
+            char *load_input = atom_getsym(argv)->s_name; 
+            char load_sexp[256];
+            sprintf(load_sexp, "(load \"%s\")", load_input);
+            post("load sexp: %s", load_sexp);
+            res = s7_eval_c_string(x->s7, load_sexp); 
+            post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
+            return;
+        }
 
-    // handle messages that mean something to the scm4max object
-    // 'sexp', 'load', (more later)
+        // handle messages from the text editor other string inpu
+        // to max, this message looks like: eval-string "(list 1 2 3)" and will
+        // be passed to S7 as a c string to eval
+        if( gensym(s->s_name) == gensym("eval-string") ){
+            char *sexp_input = atom_getsym(argv)->s_name; 
+            post("s7-in> %s", sexp_input);
+            res = s7_eval_c_string(x->s7, sexp_input); 
+            post("s7: %s", s7_object_to_c_string(x->s7, res) ); 
+            return;
+        }
+  
+        // TODO: implement reset
+        // XXX: crashing!! RESET, wipe and rebootstrap s7
+        //else if( gensym("reset") == gensym(s->s_name) ){
+        //    post("s7 RESET");
+        //    x->s7 = s7_init();
+        //    //scm4max_doread(x, x->source_file);
+        //    //post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
+        //}
 
-    // SEXP
-    // for incoming sexp messages, the message consists of two parts
-    // symbol sexp, string of a sexp in scheme. We will pass the sexp
-    // directly to the s7 interpreter. This is for live coding, we're
-    // expectin a message in max like: sexp (+ 1 2)
-    if( gensym("sexp") == gensym(s->s_name) ){
-        char *sexp_input = atom_getsym(argv)->s_name; 
-        post("s7> %s", sexp_input);
-        // call eval
-        res = s7_eval_c_string(x->s7, sexp_input); 
-        post("s7: %s", s7_object_to_c_string(x->s7, res) ); 
-    }
+        // for all other input to inlet 0, we treat as list of atoms, so
+        // make an S7 list out of them, and send to S7 to eval (treat them as code list)
+        // this assumes the first word is a valid first word in an s7 form (ie not a number)
 
-    // LOAD
-    // tell S7 to load a scheme source file
-    // expects a message of: load "full/path/to/file".
-    // and add them to the s7 load path.
-    else if( gensym("load") == gensym(s->s_name) ){
-        char *load_input = atom_getsym(argv)->s_name; 
-        char load_sexp[256];
-        sprintf(load_sexp, "(load \"%s\")", load_input);
-        post("load sexp: %s", load_sexp);
-        res = s7_eval_c_string(x->s7, load_sexp); 
+        // make an empty scheme list
+        s7_pointer s7_args = s7_nil(x->s7); 
+        // loop through the args backwards to build the cons list 
+        for(int i = argc-1; i >= 0; i--) {
+            ap = argv + i;
+            switch (atom_gettype(ap)) {
+                case A_LONG:
+                    //post("int %ld: %ld",i+1,atom_getlong(ap));
+                    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, atom_getlong(ap)), s7_args); 
+                    break;
+                case A_FLOAT:
+                    //post("float %ld: %.2f",i+1,atom_getfloat(ap));
+                    s7_args = s7_cons(x->s7, s7_make_real(x->s7, atom_getfloat(ap)), s7_args); 
+                    break;
+                case A_SYM:
+                    //post("A_SYM %ld: %s",i+1,atom_getsym(ap)->s_name);
+                    // if sent \"foobar\" from max, we want an S7 string "foobar"
+                    if( in_quotes(atom_getsym(ap)->s_name) ){
+                        char *trimmed_sym = trim_quotes(atom_getsym(ap)->s_name);
+                        s7_args = s7_cons(x->s7, s7_make_string(x->s7, trimmed_sym), s7_args); 
+                    }else{
+                    // otherwise, make it an s7 symbol
+                    // NB: foo -> foo, 'foo -> (symbol "foo")
+                        s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, atom_getsym(ap)->s_name), s7_args); 
+                    }
+                    break;
+                default:
+                    // unhandled types should not get passed on to S7
+                    post("ERROR: %ld: unknown atom type (%ld)", i+1, atom_gettype(ap));
+                    return;
+            }
+        }
+        // add the first message to the arg list (always a symbol)
+        s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, s->s_name), s7_args); 
+        post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        // call the s7 dispatch function, sending in all args as an s7 list
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-eval"), s7_args); 
         post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
+        
     }
-
-    // XXX: crashing!! RESET, wipe and rebootstrap s7
-    //else if( gensym("reset") == gensym(s->s_name) ){
-    //    post("s7 RESET");
-    //    x->s7 = s7_init();
-    //    //scm4max_doread(x, x->source_file);
-    //    //post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
-    //}
 
     // All other messages are considered to be calls we want
     // to handle inside S7. 

@@ -32,6 +32,17 @@
     ;;(set! debug-args args)
     ((s4m-listeners (car args)) (cdr args))))
 
+
+;; wrapper for eval to help debugging or to hook into
+;; called from C when a message is sent to max that we want treated as scheme code
+;; this called with input to inlet 0 of the scm4max object
+(define s4m-eval
+  (lambda args
+    (post "s4m-call :" args)
+    (eval args)))
+
+(define cout
+
 ;; convenience functions for output
 (define (out outlet_num args) (max-output outlet_num args))
 (define (out-0 args) (max-output 0 args))
