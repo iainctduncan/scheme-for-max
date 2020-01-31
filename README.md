@@ -1,5 +1,5 @@
 # scheme-for-max
-Scheme-for-max is a Max/MSP external to allow scripting max with S7 Scheme.
+Scheme-for-max is a Max/MSP external to allow scripting max with S7 Scheme / Lisp.
 
 This is my project directory for figuring out scheme scripting for max. At present it should be considered experimental only. Go ahead and use it if it's useful, but it is subject to change without notice and could be broken at any time!
 
