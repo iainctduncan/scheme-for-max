@@ -37,6 +37,10 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv);
 void scm4max_output_result(t_scm4max *x);
 
 void scm4max_read(t_scm4max *x, t_symbol *s);
+void scm4max_int(t_scm4max *x, long arg);
+void scm4max_float(t_scm4max *x, double arg);
+void scm4max_bang(t_scm4max *x);
+
 void scm4max_doread(t_scm4max *x, t_symbol *s);
 void scm4max_openfile(t_scm4max *x, char *filename, short path);
 
@@ -47,13 +51,20 @@ t_max_err scm4max_outlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *a
 //////////////////////// global class pointer variable
 void *scm4max_class;
 
+// misc helpers
+s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap);
 
 /********************************************************************************
 / some helpers
 */
 // return true if a string begins and ends with quotes
 int in_quotes(char *string){
-    return string[0] == '"' && string[ strlen(string)-1 ] == '"';
+    //post("in_quotes, input: %s", string);
+    if(string[0] == '"' && string[ strlen(string)-1 ] == '"'){
+        return 1;
+    }else{
+        return 0;
+    }
 }  
 char *trim_quotes(char *input){
     int length = strlen(input);
@@ -83,7 +94,7 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     char *msg = s7_string( s7_car(args) );
     post("s4m-post: %s", msg);
-    // What to return??
+    // XXX: What to return??
     return s7_make_integer(s7, 0);
 }
 
@@ -91,7 +102,7 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     int outlet_num = s7_integer( s7_car(args) );
-    post("s7_max_output, outlet: %i", outlet_num);
+    //post("s7_max_output, outlet: %i", outlet_num);
     t_scm4max *x = get_max_obj(s7);
 
     // check if outlet number exists
@@ -205,8 +216,11 @@ void ext_main(void *r){
          (long)sizeof(t_scm4max), 0L /* leave NULL!! */, A_GIMME, 0);
 
     class_addmethod(c, (method)scm4max_read, "read", A_DEFSYM, 0);
+    class_addmethod(c, (method)scm4max_bang, "bang", NULL, 0);
+    class_addmethod(c, (method)scm4max_int, "int", A_LONG, 0);
+    class_addmethod(c, (method)scm4max_float, "float", A_FLOAT, 0);
 
-    // bind up a generic message handler
+    // generic message handler for anything else
     class_addmethod(c, (method)scm4max_msg, "anything", A_GIMME, 0);
 
 	/* you CAN'T call this from the patcher */
@@ -288,16 +302,16 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
 
 t_max_err scm4max_inlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv){
     long num_inlets = atom_getlong(argv);
-    x->num_inlets = num_inlets;
-    post("scm4max->num_inlets now %i", x->num_inlets); 
+    x->num_inlets = num_inlets - 1;
+    //post("scm4max->num_inlets now %i", x->num_inlets); 
     return 0;
 }
 
 t_max_err scm4max_outlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv){
-    post("scm4max_outlets_set()");
+    //post("scm4max_outlets_set()");
     long num_outlets = atom_getlong(argv);
     x->num_outlets = num_outlets;
-    post("scm4max->num_outlets now %i", x->num_outlets); 
+    //post("scm4max->num_outlets now %i", x->num_outlets); 
     return 0;
 }
 
@@ -334,6 +348,8 @@ void scm4max_doread(t_scm4max *x, t_symbol *s){
         post("scm4max: error loading %s", full_path);
     }
 }
+
+// TODO: make this more helpful... lol
 void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s){
 	if (m == ASSIST_INLET) { // inlet
 		sprintf(s, "I am inlet %ld", a);
@@ -386,8 +402,44 @@ int scm4max_table_write(t_scm4max *x, char *table_name, int index, int value){
     return 0;
 } 
 
+// for a bang message, the list of args to the s7 listener will be (:bang)
+void scm4max_bang(t_scm4max *x){
+    int inlet_num = proxy_getinlet((t_object *)x);
+    //post("scm4max_bang() message from inlet %i", inlet_num);
+    s7_pointer s7_args = s7_nil(x->s7); 
+    s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, ":bang"), s7_args); 
+    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args);
+    //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+    // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
+    s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
+    post("s7-res: %s", s7_object_to_c_string(x->s7, res) );
+}
 
-// the generic message hander, dispatches on symbol messages
+void scm4max_int(t_scm4max *x, long arg){
+    int inlet_num = proxy_getinlet((t_object *)x);
+    //post("scm4max_int() message from inlet %i, arg: %i", inlet_num, arg);
+    s7_pointer s7_args = s7_nil(x->s7); 
+    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, arg), s7_args); 
+    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args);
+    //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+    // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
+    s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
+    post("s7-res: %s", s7_object_to_c_string(x->s7, res) );
+}
+
+void scm4max_float(t_scm4max *x, double arg){
+    int inlet_num = proxy_getinlet((t_object *)x);
+    //post("scm4max_float() message from inlet %i, arg: %i", inlet_num, arg);
+    s7_pointer s7_args = s7_nil(x->s7); 
+    s7_args = s7_cons(x->s7, s7_make_real(x->s7, arg), s7_args); 
+    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args);
+    //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+    // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
+    s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
+    post("s7-res: %s", s7_object_to_c_string(x->s7, res) );
+}
+
+// the generic message hander, fires on any symbol messages, which includes lists of numbers or strings
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
     t_atom *ap;
     //post("scm4max_msg(): selector is %s",s->s_name);
@@ -403,7 +455,6 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
     // on all others to s7 as sexps
     // if the message does not have surrounding brackets, we add them
     if(inlet_num == 0){
-
         // LOAD
         // tell S7 to load a scheme source file
         // expects a message of: load "full/path/to/file".
@@ -418,7 +469,7 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
             return;
         }
 
-        // handle messages from the text editor other string inpu
+        // handle messages from the text editor other string input
         // to max, this message looks like: eval-string "(list 1 2 3)" and will
         // be passed to S7 as a c string to eval
         if( gensym(s->s_name) == gensym("eval-string") ){
@@ -429,7 +480,7 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
             return;
         }
   
-        // TODO: implement reset
+        // TODO: implement reset to wipe the s7 slate
         // XXX: crashing!! RESET, wipe and rebootstrap s7
         //else if( gensym("reset") == gensym(s->s_name) ){
         //    post("s7 RESET");
@@ -441,38 +492,11 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         // for all other input to inlet 0, we treat as list of atoms, so
         // make an S7 list out of them, and send to S7 to eval (treat them as code list)
         // this assumes the first word is a valid first word in an s7 form (ie not a number)
-
-        // make an empty scheme list
         s7_pointer s7_args = s7_nil(x->s7); 
         // loop through the args backwards to build the cons list 
         for(int i = argc-1; i >= 0; i--) {
             ap = argv + i;
-            switch (atom_gettype(ap)) {
-                case A_LONG:
-                    //post("int %ld: %ld",i+1,atom_getlong(ap));
-                    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, atom_getlong(ap)), s7_args); 
-                    break;
-                case A_FLOAT:
-                    //post("float %ld: %.2f",i+1,atom_getfloat(ap));
-                    s7_args = s7_cons(x->s7, s7_make_real(x->s7, atom_getfloat(ap)), s7_args); 
-                    break;
-                case A_SYM:
-                    //post("A_SYM %ld: %s",i+1,atom_getsym(ap)->s_name);
-                    // if sent \"foobar\" from max, we want an S7 string "foobar"
-                    if( in_quotes(atom_getsym(ap)->s_name) ){
-                        char *trimmed_sym = trim_quotes(atom_getsym(ap)->s_name);
-                        s7_args = s7_cons(x->s7, s7_make_string(x->s7, trimmed_sym), s7_args); 
-                    }else{
-                    // otherwise, make it an s7 symbol
-                    // NB: foo -> foo, 'foo -> (symbol "foo")
-                        s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, atom_getsym(ap)->s_name), s7_args); 
-                    }
-                    break;
-                default:
-                    // unhandled types should not get passed on to S7
-                    post("ERROR: %ld: unknown atom type (%ld)", i+1, atom_gettype(ap));
-                    return;
-            }
+            s7_args = s7_cons(x->s7, max_atom_to_s7_obj(x->s7, ap), s7_args); 
         }
         // add the first message to the arg list (always a symbol)
         s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, s->s_name), s7_args); 
@@ -480,58 +504,34 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         // call the s7 dispatch function, sending in all args as an s7 list
         res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-eval"), s7_args); 
         post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
-        
     }
 
-    // All other messages are considered to be calls we want
-    // to handle inside S7. 
-    // our S7 source includes a dispatch function to handle this
-    // so if we don't explicitly handle a message above, we assume
-    // it should be dispatched to scheme as a standard list-as-function-call
-    // i.e. max "foobar 1 2 3" -> scheme (foobar 1 foo)
-    // args format according
+    // messages to non-zero inlets
     else{ 
+        // make an s7 list so it can be passed to a listener
         // the message string will become the first item in our list to dispatch
-        char *message = s->s_name;
-        // post("scm4max_msg() got a %s", message);
+        // unless it is the symbol "list", which we drop (max prepends "list" to a 1 2 3 message)
     
-        // convert max args into an s7_list of s7 args and then use them to call
-
-        // make an empty scheme list
+        // need to loop through the args backwards to build the cons list 
         s7_pointer s7_args = s7_nil(x->s7); 
-        // we need to loop through the args backwards to build the cons list 
         for(int i = argc-1; i >= 0; i--) {
             ap = argv + i;
-            switch (atom_gettype(ap)) {
-                case A_LONG:
-                    //post("int %ld: %ld",i+1,atom_getlong(ap));
-                    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, atom_getlong(ap)), s7_args); 
-                    break;
-                case A_FLOAT:
-                    //post("float %ld: %.2f",i+1,atom_getfloat(ap));
-                    s7_args = s7_cons(x->s7, s7_make_real(x->s7, atom_getfloat(ap)), s7_args); 
-                    break;
-                case A_SYM:
-                    // post("A_SYM %ld: %s",i+1,atom_getsym(ap)->s_name);
-                    // if sent \"foobar\" from max, we want an S7 string "foobar"
-                    if( in_quotes(atom_getsym(ap)->s_name) ){
-                        char *trimmed_sym = trim_quotes(atom_getsym(ap)->s_name);
-                        s7_args = s7_cons(x->s7, s7_make_string(x->s7, trimmed_sym), s7_args); 
-                    }else{
-                    // otherwise, make it an s7 symbol
-                    // NB: foo -> foo, 'foo -> (symbol "foo")
-                        s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, atom_getsym(ap)->s_name), s7_args); 
-                    }
-                    break;
-                default:
-                    // unhandled types should not get passed on to S7
-                    post("ERROR: %ld: unknown atom type (%ld)", i+1, atom_gettype(ap));
-                    return;
+            s7_args = s7_cons(x->s7, max_atom_to_s7_obj(x->s7, ap), s7_args); 
+        }
+        // if first max item was symbol, we add that to the args, as it wont
+        // have been in the atom array and is instead at s->s_name
+        if( gensym(s->s_name) != gensym("list") ){
+            if( in_quotes(s->s_name) ){
+                char *trimmed_sym = trim_quotes(s->s_name);
+                s7_args = s7_cons(x->s7, s7_make_string(x->s7, trimmed_sym), s7_args); 
+            }else{
+                s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, s->s_name), s7_args); 
             }
         }
-        // add the first message to the arg list (always a symbol)
-        s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, message), s7_args); 
-        // post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        // now we need to add the inlet number to the beginning of the args so that 
+        // the actual list sent to s7 is ({inlet} ....) for dispatching
+        s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args); 
+        //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
         // call the s7 dispatch function, sending in all args as an s7 list
         res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
         post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
@@ -539,5 +539,36 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
 
 }
 
+// convert a max atom to the appropriate type of s7 pointer
+s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
+    //post("max_atom_to_s7_obj()");
+    s7_pointer s7_obj;
 
-
+    switch (atom_gettype(ap)) {
+        case A_LONG:
+            //post("int %ld", atom_getlong(ap));
+            s7_obj = s7_make_integer(s7, atom_getlong(ap));
+            break;
+        case A_FLOAT:
+            //post("float %.2f", atom_getfloat(ap));
+            s7_obj = s7_make_real(s7, atom_getfloat(ap));
+            break;
+        case A_SYM: 
+            // post("A_SYM %ld: %s", atom_getsym(ap)->s_name);
+            // if sent \"foobar\" from max, we want an S7 string "foobar"
+            if( in_quotes(atom_getsym(ap)->s_name) ){
+                char *trimmed_sym = trim_quotes(atom_getsym(ap)->s_name);
+                s7_obj = s7_make_string(s7, trimmed_sym);
+            }else{
+            // otherwise, make it an s7 symbol
+            // NB: foo -> foo, 'foo -> (symbol "foo")
+                s7_obj = s7_make_symbol(s7, atom_getsym(ap)->s_name);
+            }
+            break;
+        default:
+            // unhandled types return an s7 nil
+            post("ERROR: unknown atom type (%ld)", atom_gettype(ap));
+            s7_obj = s7_nil(s7);
+    }
+    return s7_obj;
+}

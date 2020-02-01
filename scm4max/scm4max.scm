@@ -21,15 +21,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define s4m-listeners (make-hash-table))
 
-(define s4m-listen
-  (lambda (sym fun) 
-    (post (string-append "add-listener " (symbol->string sym) ))
-    (set! (s4m-listeners sym) fun)))
+(define listen
+  (lambda (inlet fun) 
+    (post "adding listener on inlet " inlet) 
+    (set! (s4m-listeners inlet) fun)))
 
+;; dispatch is called from C, and expects a list where the first item
+;; is the inlet number, and the rest are to be passed as arg list to listener
 (define s4m-dispatch
   (lambda args
-    (post "s4m-dispatch :" (car args) (cdr args))
-    ;;(set! debug-args args)
+    ;;(post "s4m-dispatch :" args)
     ((s4m-listeners (car args)) (cdr args))))
 
 
@@ -38,10 +39,9 @@
 ;; this called with input to inlet 0 of the scm4max object
 (define s4m-eval
   (lambda args
-    (post "s4m-call :" args)
+    (post "s4m-eval :" args)
     (eval args)))
 
-(define cout
 
 ;; convenience functions for output
 (define (out outlet_num args) (max-output outlet_num args))
