@@ -312,12 +312,9 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
 }
 
 
-
-
 /********************************************************************************
 * main C code 
 */
-
 void ext_main(void *r){
     post("ext_main()");
 	t_class *c;
