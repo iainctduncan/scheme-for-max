@@ -1,10 +1,13 @@
 #include "ext.h"							// standard Max include, always required
 #include "ext_obex.h"						// required for new style Max object
+#include "ext_strings.h"
+#include "ext_dictobj.h"
 #include "s7.h"
 #include "stdint.h"
 #include "string.h"
 #include "stdbool.h"
 #include "stdlib.h"
+
 
 #define MAX_NUM_OUTLETS 32
 #define MAX_NUM_INLETS 32
@@ -21,7 +24,8 @@ typedef struct _scm4max {
 
     long num_outlets;
     void *outlets[MAX_NUM_OUTLETS]; // should be a dynamic array, but I'm crashing too much
-    
+   
+    t_atom_long dict_value; 
     
 } t_scm4max;
 
@@ -204,6 +208,55 @@ static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args) {
     return s7_make_integer(s7, 0);
 }
 
+// read a value from a named dict, scheme function dict-get
+// at present, only supports simple types for values and keywords or symbols for keys
+static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args) {
+    //post("s7_dict_get()");
+    // table names could come in from s7 as either strings or symbols, if using keyword table names
+    t_scm4max *x = get_max_obj(s7);
+    char *dict_name;
+    char *dict_key;
+    s7_pointer *s7_value = NULL;
+    t_max_err err;
+
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        dict_name = s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        dict_name = s7_string( s7_car(args) );
+    }else{
+        post("s4m: ERROR in dict-get, dict name is not a keyword, string, or symbol");
+        return;
+    }   
+
+    // TODO later: support integer keys as strings as max does
+    if( s7_is_symbol( s7_cadr(args) ) ){ 
+        dict_key = s7_symbol_name( s7_cadr(args) );
+    }else if( s7_is_string( s7_cadr(args) ) ){
+        dict_key = s7_string( s7_cadr(args) );
+    }else{
+        object_error((t_object *)x, "dict-get: Only symbol or string dict keys supported.");                
+    }
+
+    t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
+    if( !dict ){
+        object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
+        return;
+    }
+    t_atom value;
+    err = dictionary_getatom(dict, gensym(dict_key), &value);
+    if(err){
+        object_error((t_object *)x, "No key %s in dict %s, returning Nil", dict_key, dict_name);                
+        s7_value = s7_nil(s7);
+    }else{    
+        s7_value = max_atom_to_s7_obj(s7, &value); 
+    }
+    // when done with dicts, we must release the ref count
+    err = dictobj_release(dict);
+    return s7_value;
+}
+
+
+
 
 /********************************************************************************
 * main C code 
@@ -281,6 +334,8 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     s7_define_function(x->s7, "tabr", s7_table_read, 2, 0, false, "(tabr :foo 4) returns value at index 4 from table :foo");
     s7_define_function(x->s7, "tabw", s7_table_write, 3, 0, false, "(tabw :foo 4 127) writes value 4 to index 127 of table :foo");
     s7_define_function(x->s7, "max-output", s7_max_output, 2, 0, false, "(max-output 1 99) sends value 99 out outlet 1");
+    s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
+    
        
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
@@ -442,6 +497,7 @@ void scm4max_float(t_scm4max *x, double arg){
 // the generic message hander, fires on any symbol messages, which includes lists of numbers or strings
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
     t_atom *ap;
+    t_max_err err;
     //post("scm4max_msg(): selector is %s",s->s_name);
     //post("scm4max_msg(): there are %ld arguments",argc);
 
@@ -479,7 +535,49 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
             post("s7: %s", s7_object_to_c_string(x->s7, res) ); 
             return;
         }
-  
+ 
+        // experimenting with reading from dicts here
+        /*
+        if( gensym(s->s_name) == gensym("dict-get") ){
+            post("dict-get() received");
+            if(argc != 2){
+                post("ERROR, wrong number of args to dict-get, expecting 2, got %i", argc);
+                return;
+            }
+            // args are dict-name, key
+            t_symbol *dict_name = atom_getsym(argv); 
+            t_symbol *dict_key = atom_getsym(argv+1);
+            //post("retrieving %s %s", dict_name, dict_key); 
+
+            //t_dictionary *dict = dictobj_findregistered_retain( atom_getsym(argv) );
+            t_dictionary *dict = dictobj_findregistered_retain( dict_name );
+            
+            // example of getting the dict name 
+            t_symbol *dict_name_r = dictobj_namefromptr(dict);	
+            if( !dict ){
+                object_error((t_object *)x, "Unable to reference dictionary named %s", s);                
+                return;
+            }else{
+                post("got the dict");
+            }
+            post("dict was named %s", dict_name_r->s_name); 
+       
+            t_atom value;
+            err = dictionary_getatom(dict, dict_key, &value);
+
+            //err = dictionary_getlong(dict, gensym("foo"), &value);
+            if(!err){
+                //post("got something value: %i", value);
+                post("got something value: %i", value);
+            }else{
+                post("err retrieving key");
+            }
+            // when done, we must release the ref count
+            err = dictobj_release(dict);
+            return;
+        } 
+        */ 
+
         // TODO: implement reset to wipe the s7 slate
         // XXX: crashing!! RESET, wipe and rebootstrap s7
         //else if( gensym("reset") == gensym(s->s_name) ){
@@ -543,7 +641,6 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
     //post("max_atom_to_s7_obj()");
     s7_pointer s7_obj;
-
     switch (atom_gettype(ap)) {
         case A_LONG:
             //post("int %ld", atom_getlong(ap));
@@ -554,7 +651,7 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
             s7_obj = s7_make_real(s7, atom_getfloat(ap));
             break;
         case A_SYM: 
-            // post("A_SYM %ld: %s", atom_getsym(ap)->s_name);
+            // //post("A_SYM %ld: %s", atom_getsym(ap)->s_name);
             // if sent \"foobar\" from max, we want an S7 string "foobar"
             if( in_quotes(atom_getsym(ap)->s_name) ){
                 char *trimmed_sym = trim_quotes(atom_getsym(ap)->s_name);
