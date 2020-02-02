@@ -14,19 +14,20 @@
 * console posting (with arbitrary values)
 
 ### Todo - Release 1:
-* register
+* add loading of initial file from name in the scm4max object box
+* way of resetting environment
 * dict i/o for array values
 * buff i/o for handling floats in tables
 * compile as max package that can be used easily
-* threading macros for 
+* ensure multiple scm4max objects can coexist
 
-## Backlog
-* array handling for dict values
-* ? dictionary handling for dict values
+## Backlog (unordered)
+* nested dictionary handling for dict values
 * i/o for colls
 * jitter matrix i/o
 * network repl from spacemacs for hot reloading partial buffers
 * attach listeners to ITM transport for deferred handling
+* enable multiple scm4max objects to share same environment
 * threading macros (clojure style) for code in max messages
 * some benchmarks to establish cost of the interpreter vs JS, Max, Gen, C
 * documentation of API
