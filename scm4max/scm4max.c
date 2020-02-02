@@ -57,6 +57,7 @@ void *scm4max_class;
 
 // misc helpers
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap);
+t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *ap);
 
 /********************************************************************************
 / some helpers
@@ -256,6 +257,61 @@ static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args) {
 }
 
 
+static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
+    //post("s7_dict_set()");
+    // table names could come in from s7 as either strings or symbols, if using keyword table names
+    t_scm4max *x = get_max_obj(s7);
+    char *dict_name;
+    char *dict_key;
+    s7_pointer *s7_value = NULL;
+    t_max_err err;
+
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        dict_name = s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        dict_name = s7_string( s7_car(args) );
+    }else{
+        post("s4m: ERROR in dict-get, dict name is not a keyword, string, or symbol");
+        return;
+    }   
+
+    // TODO later: support integer keys as strings as max does
+    if( s7_is_symbol( s7_cadr(args) ) ){ 
+        dict_key = s7_symbol_name( s7_cadr(args) );
+    }else if( s7_is_string( s7_cadr(args) ) ){
+        dict_key = s7_string( s7_cadr(args) );
+    }else{
+        object_error((t_object *)x, "dict-get: Only symbol or string dict keys supported.");                
+    }
+
+    s7_value = s7_list_ref(s7, args, 2);
+    //post("dict %s key %s", dict_name, dict_key);
+
+    t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
+    if( !dict ){
+        object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
+        return;
+    }
+    t_atom value;
+    err = s7_obj_to_max_atom(s7, s7_value, &value);
+    if(err){
+        object_error((t_object *)x, "dict-set only handles basic types (no dicts or arrays yet)");                
+        err = dictobj_release(dict);
+        return;
+    }
+    // set the value in the dictionary now
+    err = dictionary_appendatom(dict, gensym(dict_key), &value);
+    if(err){
+        object_error((t_object *)x, "error setting value to %s %s", dict_name, dict_key);
+        err = dictobj_release(dict);
+        return;
+    } 
+    // all good, dict key has been set, now return s7_value
+    err = dictobj_release(dict);
+    return s7_value;
+}
+
+
 
 
 /********************************************************************************
@@ -335,6 +391,7 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     s7_define_function(x->s7, "tabw", s7_table_write, 3, 0, false, "(tabw :foo 4 127) writes value 4 to index 127 of table :foo");
     s7_define_function(x->s7, "max-output", s7_max_output, 2, 0, false, "(max-output 1 99) sends value 99 out outlet 1");
     s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
+    s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
     
        
     // make the address of this object available in scheme as "maxobj" so that 
@@ -668,4 +725,25 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
             s7_obj = s7_nil(s7);
     }
     return s7_obj;
+}
+
+t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
+    post("s7_obj_to_max_atom");
+   
+    // TODO: does not handle arrays or hashes yet 
+    if( s7_is_integer(s7_obj)){
+        atom_setlong(atom, s7_integer(s7_obj));
+    }else if( s7_is_real(s7_obj)){
+        atom_setfloat(atom, s7_real(s7_obj));
+    }else if( s7_is_symbol(s7_obj) ){
+        // both s7 symbols and strings are converted to max symbols
+        atom_setsym(atom, gensym( s7_symbol_name(s7_obj)));
+    }else if( s7_is_string(s7_obj) ){
+        atom_setsym(atom, gensym( s7_string(s7_obj)));
+    }else{
+        post("ERROR: unhandled s7 to atom conversion for:", s7_string(s7_obj));
+        // TODO: should return t_errs I guess?
+        return (t_max_err) 1;     
+    } 
+    return (t_max_err) 0;
 }
