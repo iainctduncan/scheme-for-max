@@ -56,4 +56,3 @@
 
 (post "scm4max.scm BOOTSTRAP COMPLETE")
 
-
