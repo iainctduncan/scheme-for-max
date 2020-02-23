@@ -613,7 +613,7 @@
 					"outlettype" : [ "", "", "", "", "", "", "", "" ],
 					"patching_rect" : [ 171.0, 601.0, 149.0, 22.0 ],
 					"saved_object_attributes" : 					{
-						"ins" : -28,
+						"ins" : -29,
 						"outs" : 8
 					}
 ,
