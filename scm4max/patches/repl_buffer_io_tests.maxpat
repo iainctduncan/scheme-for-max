@@ -710,7 +710,7 @@
 		"dependency_cache" : [ 			{
 				"name" : "scm.file_load.maxpat",
 				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/scm4max",
-				"patcherrelativepath" : ".",
+				"patcherrelativepath" : "..",
 				"type" : "JSON",
 				"implicit" : 1
 			}

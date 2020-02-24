@@ -63,8 +63,10 @@ long scm4max_scan_iterator(t_scm4max *x, t_object *b);
 int scm4max_table_read(t_scm4max *x, char *table_name, long index, long *value);
 int scm4max_table_write(t_scm4max *x, char *table_name, int index, int value);
 
-int scm4max_buffer_read(t_scm4max *x, char *buffer_name, int channel, long index, double *value);
-int scm4max_buffer_write(t_scm4max *x, char *buffer_name, int channel, long index, double value);
+int scm4max_buffer_read(t_scm4max *x, char *buffer_name, long index, double *value);
+int scm4max_buffer_write(t_scm4max *x, char *buffer_name, long index, double value);
+int scm4max_mc_buffer_read(t_scm4max *x, char *buffer_name, int channel, long index, double *value);
+int scm4max_mc_buffer_write(t_scm4max *x, char *buffer_name, int channel, long index, double value);
 
 // customer getters and setters for attributes 'outs' and 'ins'
 t_max_err scm4max_inlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv);
@@ -84,7 +86,9 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_table_read(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args);
-//static s7_pointer s7_buffer_write(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_buffer_write(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_mc_buffer_read(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_mc_buffer_write(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
 
@@ -189,10 +193,12 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     //s7_define_function(x->s7, "bang", s7_output_bang, 0, 0, false, "(bang) outs a bang");
     //s7_define_function(x->s7, "s4m-output-int", s7_output_int, 1, 0, false, "(s4m-output-int 99) outputs 99 out outlet 1");
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
-    s7_define_function(x->s7, "tabr", s7_table_read, 2, 0, false, "(tabr :foo 4) returns value at index 4 from table :foo");
-    s7_define_function(x->s7, "tabw", s7_table_write, 3, 0, false, "(tabw :foo 4 127) writes value 4 to index 127 of table :foo");
-    s7_define_function(x->s7, "buf-get", s7_buffer_read, 3, 0, false, "(buf-get :foo 0 4) returns value at channel 0, index 4 from buffer :foo");
-    //s7_define_function(x->s7, "buf-set", s7_buffer_write, 3, 0, false, "(buf-set :foo 4 127) writes value 4 to index 127 of buffer :foo");
+    s7_define_function(x->s7, "tab-get", s7_table_read, 2, 0, false, "(tab-get :foo 4) returns value at index 4 from table :foo");
+    s7_define_function(x->s7, "tab-set", s7_table_write, 3, 0, false, "(tab-set :foo 4 127) writes value 4 to index 127 of table :foo");
+    s7_define_function(x->s7, "buf-get", s7_buffer_read, 2, 0, false, "(buf-get :foo 4) returns value at channel 0, index 4 from buffer :foo");
+    s7_define_function(x->s7, "buf-set", s7_buffer_write, 3, 0, false, "(buf-set :foo 4 127) writes value 4 to index 127 of buffer :foo");
+    s7_define_function(x->s7, "mc-buf-get", s7_mc_buffer_read, 3, 0, false, "(mcbuf-get :foo 4 1) returns value at channel 1, index 4 from buffer :foo");
+    s7_define_function(x->s7, "mc-buf-set", s7_mc_buffer_write, 4, 0, false, "(mcbuf-set :foo 4 127 1) writes value 4 to index 127 of buffer :foo");
     s7_define_function(x->s7, "max-output", s7_max_output, 2, 0, false, "(max-output 1 99) sends value 99 out outlet 1");
     s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
     s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
@@ -354,8 +360,31 @@ int scm4max_table_write(t_scm4max *x, char *table_name, int index, int value){
 // get a max named buffer, write a single data point, and return it
 // hmm, I guess this needs to write the result into a pointer in order
 // to allow returning error codes. damn it
-int scm4max_buffer_read(t_scm4max *x, char *buffer_name, int channel, long index, double *value){
-    post("scm4max_buffer_read() %s c:%i i:%i", buffer_name, channel, index);
+int scm4max_buffer_read(t_scm4max *x, char *buffer_name, long index, double *value){
+    post("scm4max_buffer_read() %s i:%i", buffer_name, index);
+    
+    t_buffer_ref *buffer_ref = buffer_ref_new(x, gensym(buffer_name));
+    t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
+    if(buffer == NULL){
+        object_error((t_object *)x, "Unable to reference buffer named %s", buffer_name);                
+        return 1;
+    }
+    t_atom_long frames;
+    frames = buffer_getframecount(buffer);
+    if(index >= frames){
+        object_error((t_object *)x, "Buffer %s does not contain %i samples", buffer_name, index);                
+        return 1;
+    } 
+    float *sample_data = buffer_locksamples(buffer);
+    *value = sample_data[ index ];
+    buffer_unlocksamples(buffer);
+    object_free(buffer_ref);
+    return 0; 
+}
+
+// multi-channel buffer read, channels numbered 1 up
+int scm4max_mc_buffer_read(t_scm4max *x, char *buffer_name, int channel, long index, double *value){
+    post("scm4max_mc_buffer_read() %s c:%i i:%i", buffer_name, channel, index);
     
     t_buffer_ref *buffer_ref = buffer_ref_new(x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
@@ -365,14 +394,14 @@ int scm4max_buffer_read(t_scm4max *x, char *buffer_name, int channel, long index
     }
     t_atom_long channels;
     channels = buffer_getchannelcount(buffer);
-    if(channel >= channels){
-        object_error((t_object *)x, "Buffer %s does not contain %i channel(s) %s", buffer_name, channel+1);                
+    if(channel > channels){
+        object_error((t_object *)x, "Buffer %s does not contain %i channel(s) %s", buffer_name, channel);                
         return 1;
     }
     t_atom_long frames;
     frames = buffer_getframecount(buffer);
     if(index >= frames){
-        object_error((t_object *)x, "Buffer %s does not contain %i channel(s) %s", buffer_name, channel+1);                
+        object_error((t_object *)x, "Buffer %s does not contain %i samples", buffer_name, index);                
         return 1;
     } 
     // we need to lock the buffer before fetching from it
@@ -385,9 +414,35 @@ int scm4max_buffer_read(t_scm4max *x, char *buffer_name, int channel, long index
     return 0; 
 }
 
-// LEFT OFF HERE
-// get a max named buffer, write a single data point, and set buffer to dirty 
-int scm4max_buffer_write(t_scm4max *x, char *buffer_name, int channel, long index, double value){
+// get a max named single buffer, write a single data point, and set buffer to dirty 
+int scm4max_buffer_write(t_scm4max *x, char *buffer_name, long index, double value){
+    post("scm4max_buffer_write() b: %s i:%i v:%f", buffer_name, index, value);
+    t_buffer_ref *buffer_ref = buffer_ref_new(x, gensym(buffer_name));
+    t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
+    if(buffer == NULL){
+        object_error((t_object *)x, "Unable to reference buffer named %s", buffer_name);                
+        return 1;
+    }
+    t_atom_long frames;
+    frames = buffer_getframecount(buffer);
+    if(index >= frames){
+        object_error((t_object *)x, "Buffer %s does not contain %i samples", buffer_name, index);
+        return 1;
+    } 
+    // we need to lock the buffer before fetching from it
+    float *sample_data = buffer_locksamples(buffer);
+    // oops the the below is not right 
+    sample_data[ index ] = value;
+    // unlock and free buffer reference
+    buffer_unlocksamples(buffer);
+    buffer_setdirty(buffer);
+    object_free(buffer_ref);
+    return 0;
+}
+
+// get a max named multi-chan buffer, write a single data point, and set buffer to dirty 
+int scm4max_mc_buffer_write(t_scm4max *x, char *buffer_name, int channel, long index, double value){
+    post("scm4max_buffer_write() b: %s c:%i i:%i v:%f", buffer_name, channel, index, value);
     t_buffer_ref *buffer_ref = buffer_ref_new(x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
     if(buffer == NULL){
@@ -396,25 +451,24 @@ int scm4max_buffer_write(t_scm4max *x, char *buffer_name, int channel, long inde
     }
     t_atom_long channels;
     channels = buffer_getchannelcount(buffer);
-    if(channel >= channels){
-        object_error((t_object *)x, "Buffer %s does not contain %i channel(s) %s", buffer_name, channel+1);                
+    if(channel > channels){
+        object_error((t_object *)x, "Buffer %s does not contain %i channel(s)", buffer_name, channel);                
         return 1;
     }
     t_atom_long frames;
     frames = buffer_getframecount(buffer);
     if(index >= frames){
-        object_error((t_object *)x, "Buffer %s does not contain %i channel(s) %s", buffer_name, channel+1);                
+        object_error((t_object *)x, "Buffer %s does not contain %i samples", buffer_name, index);
         return 1;
     } 
     // we need to lock the buffer before fetching from it
     float *sample_data = buffer_locksamples(buffer);
     // oops the the below is not right 
-    *value = sample_data[ (index * channels) + channel ];
+    sample_data[ (index * channels) + channel ] = value;
     // unlock and free buffer reference
     buffer_unlocksamples(buffer);
+    buffer_setdirty(buffer);
     object_free(buffer_ref);
-    return 0; 
-
     return 0;
 }
 
@@ -760,9 +814,7 @@ static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args) {
     t_scm4max *x = get_max_obj(s7);
     scm4max_table_write(x, table_name, index, value);
     // return the value written to s7
-    // I dunno what to return for side effects
-    //return s7_make_integer(s7, s7_caddr(args) );
-    return s7_make_integer(s7, 0);
+    return s7_make_integer(s7, value);
 }
 
 // read an float from a named buffer and index 
@@ -778,14 +830,11 @@ static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args) {
         post("s4m: ERROR in buf-get, buffer name is not a keyword, string, or symbol");
         return;
     }
-    //int channel = s7_integer( s7_cadr(args) );
-    //long index = s7_integer( s7_caadr(args) );
-    int channel = s7_integer( s7_list_ref(s7, args, 1) );
-    long index = s7_integer( s7_list_ref(s7, args, 2) );
+    long index = s7_integer( s7_list_ref(s7, args, 1) );
     double value; 
-    post(" buffer: %s channel: %i, index: %i", buffer_name, channel, index);
+    post(" buffer: %s index: %i", buffer_name, index);
     t_scm4max *x = get_max_obj(s7);
-    int res = scm4max_buffer_read(x, buffer_name, channel, index, &value);
+    int res = scm4max_buffer_read(x, buffer_name, index, &value);
     post("s7_buffer_read, value: %f", value);
     if(!res){
         return s7_make_real(s7, value);
@@ -794,32 +843,78 @@ static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args) {
     }
 }
 
-/*
-// write an integer to a named table index (max tables only store ints)
-// becomes scheme function 'tabw'
+// write a float to a named buffer index (max tables only store ints)
+// becomes scheme function 'buf-set'
+// returns value written (for chaining)
 static s7_pointer s7_buffer_write(s7_scheme *s7, s7_pointer args) {
     // table names could come in from s7 as either strings or symbols, if using keyword table names
-    //char *buffer_name;
-    //if( s7_is_symbol( s7_car(args) ) ){ 
-    //    buffer_name = s7_symbol_name( s7_car(args) );
-    //} else if( s7_is_string( s7_car(args) ) ){
-    //    buffer_name = s7_string( s7_car(args) );
-    //}else{
-    //    post("s4m: ERROR in buff-set, buffer name is not a keyword, string, or symbol");
-    //    return;
-    //}
-    //int channel = s7_integer( s7_cadr(args) );
-    //long index = s7_integer( s7_caadr(args) );
-    //long value = s7_integer(s7_caddr(args));
-    //t_scm4max *x = get_max_obj(s7);
-    //scm4max_buffer_write(x, buffer_name, index, value);
-    //// return the value written to s7
-    //// I dunno what to return for side effects
-    ////return s7_make_integer(s7, s7_caddr(args) );
-    //return s7_make_integer(s7, 0);
-    return s7_nil(s7);
+    char *buffer_name;
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        buffer_name = s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        buffer_name = s7_string( s7_car(args) );
+    }else{
+        post("s4m: ERROR in buff-set, buffer name is not a keyword, string, or symbol");
+        return;
+    }
+    long index = s7_integer( s7_list_ref(s7, args, 1) );
+    double value = s7_real( s7_list_ref(s7, args, 2) );
+    t_scm4max *x = get_max_obj(s7);
+    scm4max_buffer_write(x, buffer_name, index, value);
+    // return the value written to s7
+    return s7_make_real(s7, value);
 }
-*/
+
+// read an float from a named buffer and index 
+// becomes scheme function 'buf-get'
+static s7_pointer s7_mc_buffer_read(s7_scheme *s7, s7_pointer args) {
+    // buffer names could come in from s7 as either strings or symbols, if using keyword buffer names
+    char *buffer_name;
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        buffer_name = s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        buffer_name = s7_string( s7_car(args) );
+    }else{
+        post("s4m: ERROR in buf-get, buffer name is not a keyword, string, or symbol");
+        return;
+    }
+    int channel = s7_integer( s7_list_ref(s7, args, 1) );
+    long index = s7_integer( s7_list_ref(s7, args, 2) );
+    double value; 
+    post(" buffer: %s channel: %i, index: %i", buffer_name, channel, index);
+    t_scm4max *x = get_max_obj(s7);
+    int res = scm4max_mc_buffer_read(x, buffer_name, channel, index, &value);
+    post("s7_buffer_read, value: %f", value);
+    if(!res){
+        return s7_make_real(s7, value);
+    }else{
+        post("s4m: ERROR reading buffer %s index %i", buffer_name, index);
+    }
+}
+
+// write a float to a named buffer index (max tables only store ints)
+// becomes scheme function 'buf-set'
+// returns value written (for chaining)
+static s7_pointer s7_mc_buffer_write(s7_scheme *s7, s7_pointer args) {
+    // table names could come in from s7 as either strings or symbols, if using keyword table names
+    char *buffer_name;
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        buffer_name = s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        buffer_name = s7_string( s7_car(args) );
+    }else{
+        post("s4m: ERROR in buff-set, buffer name is not a keyword, string, or symbol");
+        return;
+    }
+    int channel = s7_integer( s7_list_ref(s7, args, 1) );
+    long index = s7_integer( s7_list_ref(s7, args, 2) );
+    double value = s7_real( s7_list_ref(s7, args, 3) );
+    t_scm4max *x = get_max_obj(s7);
+    scm4max_mc_buffer_write(x, buffer_name, channel, index, value);
+    // return the value written to s7
+    return s7_make_real(s7, value);
+}
+
 
 
 
