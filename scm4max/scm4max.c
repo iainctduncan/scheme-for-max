@@ -1,5 +1,6 @@
 #include "ext.h"
 #include "math.h"
+#include "ext_common.h"
 #include "ext_buffer.h"
 #include "ext_obex.h"
 #include "ext_hashtab.h"	
@@ -82,7 +83,7 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_table_read(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args);
-//static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args);
 //static s7_pointer s7_buffer_write(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
@@ -190,7 +191,7 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
     s7_define_function(x->s7, "tabr", s7_table_read, 2, 0, false, "(tabr :foo 4) returns value at index 4 from table :foo");
     s7_define_function(x->s7, "tabw", s7_table_write, 3, 0, false, "(tabw :foo 4 127) writes value 4 to index 127 of table :foo");
-    //s7_define_function(x->s7, "buf-get", s7_buffer_read, 2, 0, false, "(buf-get :foo 4) returns value at index 4 from buffer :foo");
+    s7_define_function(x->s7, "buf-get", s7_buffer_read, 3, 0, false, "(buf-get :foo 0 4) returns value at channel 0, index 4 from buffer :foo");
     //s7_define_function(x->s7, "buf-set", s7_buffer_write, 3, 0, false, "(buf-set :foo 4 127) writes value 4 to index 127 of buffer :foo");
     s7_define_function(x->s7, "max-output", s7_max_output, 2, 0, false, "(max-output 1 99) sends value 99 out outlet 1");
     s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
@@ -353,7 +354,6 @@ int scm4max_table_write(t_scm4max *x, char *table_name, int index, int value){
 // get a max named buffer, write a single data point, and return it
 // hmm, I guess this needs to write the result into a pointer in order
 // to allow returning error codes. damn it
-
 int scm4max_buffer_read(t_scm4max *x, char *buffer_name, int channel, long index, double *value){
     post("scm4max_buffer_read() %s c:%i i:%i", buffer_name, channel, index);
     
@@ -377,31 +377,44 @@ int scm4max_buffer_read(t_scm4max *x, char *buffer_name, int channel, long index
     } 
     // we need to lock the buffer before fetching from it
     float *sample_data = buffer_locksamples(buffer);
+    // oops the the below is not right 
     *value = sample_data[ (index * channels) + channel ];
-    // we need to lock the buffer before fetching from it
+    // unlock and free buffer reference
     buffer_unlocksamples(buffer);
+    object_free(buffer_ref);
     return 0; 
 }
 
+// LEFT OFF HERE
 // get a max named buffer, write a single data point, and set buffer to dirty 
 int scm4max_buffer_write(t_scm4max *x, char *buffer_name, int channel, long index, double value){
-    //post("scm4max_buffer_write() %s i:%i v:%i", buffer_name, index, value);
-    //long **data = NULL;
-    //long size;
-    //int res = buffer_get(gensym(buffer_name), &data, &size);
-    //if(res){
-    //    post("s4m: ERROR: could not load buffer %s", buffer_name);
-    //    return res; 
-    //}
-    //if( index < 0 || index >= size){
-    //    post("s4m: ERROR: index %i out of range for buffer %s", index, buffer_name);
-    //    return 1;
-    //}
-    //(*data)[index] = value;
-    //
-    ////buffer_dirty( gensym(buffer_name) );
-    //// below is how we mark a buffer dirty 
-    ////object_method(b, gensym("dirty"));
+    t_buffer_ref *buffer_ref = buffer_ref_new(x, gensym(buffer_name));
+    t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
+    if(buffer == NULL){
+        object_error((t_object *)x, "Unable to reference buffer named %s", buffer_name);                
+        return 1;
+    }
+    t_atom_long channels;
+    channels = buffer_getchannelcount(buffer);
+    if(channel >= channels){
+        object_error((t_object *)x, "Buffer %s does not contain %i channel(s) %s", buffer_name, channel+1);                
+        return 1;
+    }
+    t_atom_long frames;
+    frames = buffer_getframecount(buffer);
+    if(index >= frames){
+        object_error((t_object *)x, "Buffer %s does not contain %i channel(s) %s", buffer_name, channel+1);                
+        return 1;
+    } 
+    // we need to lock the buffer before fetching from it
+    float *sample_data = buffer_locksamples(buffer);
+    // oops the the below is not right 
+    *value = sample_data[ (index * channels) + channel ];
+    // unlock and free buffer reference
+    buffer_unlocksamples(buffer);
+    object_free(buffer_ref);
+    return 0; 
+
     return 0;
 }
 
@@ -754,7 +767,6 @@ static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args) {
 
 // read an float from a named buffer and index 
 // becomes scheme function 'buf-get'
-/*
 static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args) {
     // buffer names could come in from s7 as either strings or symbols, if using keyword buffer names
     char *buffer_name;
@@ -766,11 +778,15 @@ static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args) {
         post("s4m: ERROR in buf-get, buffer name is not a keyword, string, or symbol");
         return;
     }
-    int channel = s7_integer( s7_cadr(args) );
-    long index = s7_integer( s7_caadr(args) );
-    long value; 
+    //int channel = s7_integer( s7_cadr(args) );
+    //long index = s7_integer( s7_caadr(args) );
+    int channel = s7_integer( s7_list_ref(s7, args, 1) );
+    long index = s7_integer( s7_list_ref(s7, args, 2) );
+    double value; 
+    post(" buffer: %s channel: %i, index: %i", buffer_name, channel, index);
     t_scm4max *x = get_max_obj(s7);
-    int res = scm4max_buffer_read(x, buffer_name, index, channel, &value);
+    int res = scm4max_buffer_read(x, buffer_name, channel, index, &value);
+    post("s7_buffer_read, value: %f", value);
     if(!res){
         return s7_make_real(s7, value);
     }else{
@@ -778,6 +794,7 @@ static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args) {
     }
 }
 
+/*
 // write an integer to a named table index (max tables only store ints)
 // becomes scheme function 'tabw'
 static s7_pointer s7_buffer_write(s7_scheme *s7, s7_pointer args) {

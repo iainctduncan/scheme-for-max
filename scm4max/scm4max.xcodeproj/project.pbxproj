@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		22CF11AE0EE9A8840054F513 /* scm4max.c in Sources */ = {isa = PBXBuildFile; fileRef = 22CF11AD0EE9A8840054F513 /* scm4max.c */; };
+		448BE51E2403383500BF21C9 /* scm4max.c in Sources */ = {isa = PBXBuildFile; fileRef = 448BE51D2403383500BF21C9 /* scm4max.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		22CF10220EE984600054F513 /* maxmspsdk.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = maxmspsdk.xcconfig; path = ../../maxmspsdk.xcconfig; sourceTree = SOURCE_ROOT; };
-		22CF11AD0EE9A8840054F513 /* scm4max.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scm4max.c; sourceTree = "<group>"; };
-		2FBBEAE508F335360078DB84 /* scm4max.mxo */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = scm4max.mxo; path = scm4max.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		2FBBEAE508F335360078DB84 /* scm4max.mxo */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = scm4max.mxo; sourceTree = BUILT_PRODUCTS_DIR; };
+		448BE51D2403383500BF21C9 /* scm4max.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scm4max.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -30,8 +30,8 @@
 		089C166AFE841209C02AAC07 /* iterator */ = {
 			isa = PBXGroup;
 			children = (
+				448BE51D2403383500BF21C9 /* scm4max.c */,
 				22CF10220EE984600054F513 /* maxmspsdk.xcconfig */,
-				22CF11AD0EE9A8840054F513 /* scm4max.c */,
 				19C28FB4FE9D528D11CA2CBB /* Products */,
 			);
 			name = iterator;
@@ -126,7 +126,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				22CF11AE0EE9A8840054F513 /* scm4max.c in Sources */,
+				448BE51E2403383500BF21C9 /* scm4max.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -142,7 +142,6 @@
 		2FBBEAD108F335010078DB84 /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				"FRAMEWORK_SEARCH_PATHS[arch=*]" = "";
 			};
 			name = Deployment;
 		};
@@ -152,18 +151,17 @@
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				OTHER_CFLAGS = (
-					"-I.",
-					"-fvisibility=hidden",
-				);
 				OTHER_LDFLAGS = (
+					"-framework",
+					MaxAudioAPI,
+					"-framework",
+					JitterAPI,
 					"$(C74_SYM_LINKER_FLAGS)",
-					"-L.",
 					s7.o,
+					"-L.",
 					"-ldl",
 					"-lm",
 				);
-				PRODUCT_NAME = scm4max;
 			};
 			name = Development;
 		};
@@ -172,18 +170,17 @@
 			baseConfigurationReference = 22CF10220EE984600054F513 /* maxmspsdk.xcconfig */;
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
-				OTHER_CFLAGS = (
-					"-I.",
-					"-fvisibility=hidden",
-				);
 				OTHER_LDFLAGS = (
+					"-framework",
+					MaxAudioAPI,
+					"-framework",
+					JitterAPI,
 					"$(C74_SYM_LINKER_FLAGS)",
-					"-L.",
 					s7.o,
+					"-L.",
 					"-ldl",
 					"-lm",
 				);
-				PRODUCT_NAME = scm4max;
 			};
 			name = Deployment;
 		};
