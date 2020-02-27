@@ -21,7 +21,7 @@
 typedef struct _scm4max {
 	t_object obj;
     s7_scheme *s7;
-    t_symbol *source_file; // main source file (if one passed as object arg)
+    t_symbol *source_file;  // main source file (if one passed as object arg)
     
     long num_inlets;
     long proxy_num;
@@ -30,9 +30,6 @@ typedef struct _scm4max {
     long num_outlets;
     void *outlets[MAX_NUM_OUTLETS]; // should be a dynamic array, but I'm crashing too much
   
-    t_object *patcher;  // will be a pointer to the containing patcher 
-    t_atom_long dict_value; 
-
     t_hashtab *registry;     // will hold objects by scripting name
     
 } t_scm4max;
@@ -554,12 +551,14 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
  
         // TODO: implement reset to wipe the s7 slate
         // XXX: crashing!! RESET, wipe and rebootstrap s7
-        //else if( gensym("reset") == gensym(s->s_name) ){
-        //    post("s7 RESET");
-        //    x->s7 = s7_init();
-        //    //scm4max_doread(x, x->source_file);
-        //    //post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
-        //}
+        if( gensym("reset") == gensym(s->s_name) ){
+            post("s7 RESET");
+            free(x->s7);
+            x->s7 = s7_init();
+            scm4max_doread(x, x->source_file);
+            post("RESET DONE");
+            return;
+        }
 
         // for all other input to inlet 0, we treat as list of atoms, so
         // make an S7 list out of them, and send to S7 to eval (treat them as code list)
