@@ -119,7 +119,7 @@ char *trim_quotes(char *input){
 void ext_main(void *r){
     post("ext_main()");
 	t_class *c;
-	c = class_new("scm4max", (method)scm4max_new, (method)scm4max_free,
+	c = class_new("s4m.scheme", (method)scm4max_new, (method)scm4max_free,
          (long)sizeof(t_scm4max), 0L /* leave NULL!! */, A_GIMME, 0);
 
     class_addmethod(c, (method)scm4max_read, "read", A_DEFSYM, 0);
