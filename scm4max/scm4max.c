@@ -21,7 +21,10 @@
 typedef struct _scm4max {
 	t_object obj;
     s7_scheme *s7;
-    t_symbol *source_file;  // main source file (if one passed as object arg)
+
+    t_symbol *source_file;              // main source file name (if one passed as object arg)
+    t_filehandle source_file_handle;    // file handle for the source file
+    char **source_text_handle;          // string handle for the source file
     
     long num_inlets;
     long proxy_num;
@@ -29,9 +32,11 @@ typedef struct _scm4max {
 
     long num_outlets;
     void *outlets[MAX_NUM_OUTLETS]; // should be a dynamic array, but I'm crashing too much
-  
-    t_hashtab *registry;     // will hold objects by scripting name
-    
+        
+    t_hashtab *registry;            // will hold objects by scripting name
+   
+    t_object *m_editor;             // text editor
+
 } t_scm4max;
 
 // global class pointer variable
@@ -45,14 +50,20 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv);
 void scm4max_free(t_scm4max *x);
 void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s);
 
+void scm4max_dblclick(t_scm4max *x);
+void scm4max_edclose(t_scm4max *x, char **ht, long size);
 void scm4max_read(t_scm4max *x, t_symbol *s);
 void scm4max_int(t_scm4max *x, long arg);
 void scm4max_float(t_scm4max *x, double arg);
 void scm4max_bang(t_scm4max *x);
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv);
 
-void scm4max_doread(t_scm4max *x, t_symbol *s);
+void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file);
 void scm4max_openfile(t_scm4max *x, char *filename, short path);
+
+void scm4max_dblclick(t_scm4max *x);
+void scm4max_edclose(t_scm4max *x, char **ht, long size);
+long scm4max_edsave(t_scm4max *x, char **ht, long size);
 
 void scm4max_scan(t_scm4max *x);
 long scm4max_scan_iterator(t_scm4max *x, t_object *b);
@@ -119,7 +130,7 @@ char *trim_quotes(char *input){
 void ext_main(void *r){
     post("ext_main()");
 	t_class *c;
-	c = class_new("s4m.scheme", (method)scm4max_new, (method)scm4max_free,
+	c = class_new("scm4max", (method)scm4max_new, (method)scm4max_free,
          (long)sizeof(t_scm4max), 0L /* leave NULL!! */, A_GIMME, 0);
 
     class_addmethod(c, (method)scm4max_read, "read", A_DEFSYM, 0);
@@ -127,6 +138,9 @@ void ext_main(void *r){
     class_addmethod(c, (method)scm4max_bang, "bang", NULL, 0);
     class_addmethod(c, (method)scm4max_int, "int", A_LONG, 0);
     class_addmethod(c, (method)scm4max_float, "float", A_FLOAT, 0);
+    class_addmethod(c, (method)scm4max_dblclick, "dblclick", A_CANT, 0);
+    class_addmethod(c, (method)scm4max_edclose, "edclose", A_CANT, 0);
+    class_addmethod(c, (method)scm4max_edsave, "edsave", A_CANT, 0);
 
     // generic message handler for anything else
     class_addmethod(c, (method)scm4max_msg, "anything", A_GIMME, 0);
@@ -151,6 +165,11 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
 	t_scm4max *x = NULL;
 
 	x = (t_scm4max *)object_alloc(scm4max_class);
+
+    // other member initializations
+    x->m_editor = NULL;
+    x->source_text_handle = sysmem_newhandle(0);
+
     // setup internal member defaults 
     x->num_inlets = 1;
     x->num_outlets = 1;
@@ -209,15 +228,60 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
    
     // boostrap the scheme code
     // might make this optional later
-    scm4max_doread(x, gensym("scm4max.scm"));
-    // load code given from a user arg
+    scm4max_doread(x, gensym("scm4max.scm"), false);
+
+    // load a file given from a user arg, and save filename
+    // the convoluted stuff below is to prevent saving @ins or something
+    // as the sourcefile name if object used with param args but no sourcefile 
+    x->source_file = _sym_nothing;
     if(argc){
         atom_arg_getsym(&x->source_file, 0, argc, argv);
-        scm4max_doread(x, x->source_file);
+        if(x->source_file != _sym_nothing){
+            if(x->source_file->s_name[0] == '@'){
+                x->source_file = _sym_nothing;
+            }else{
+                scm4max_doread(x, x->source_file, true);
+            }
+        } 
+        // post("source file: %s", x->source_file->s_name);
     }
     // post("scm4max_new complete");
 
 	return (x);
+}
+
+void scm4max_dblclick(t_scm4max *x){
+    // open editor here
+    //post("scm4max_dblclick() Double click received, opening editor");
+    if (!x->m_editor){
+        x->m_editor = object_new(CLASS_NOBOX, gensym("jed"), (t_object *)x, 0);
+    }else{
+        object_attr_setchar(x->m_editor, gensym("visible"), 1);
+    }
+
+    if(x->source_file != _sym_nothing){
+        // TODO: should go to read method so it can be deferred
+        scm4max_doread(x, x->source_file, true);
+        // load the editors buffer with the file contents
+        object_method(x->m_editor, gensym("settext"), *x->source_text_handle, gensym("utf-8"));
+    }   
+}
+
+void scm4max_edclose(t_scm4max *x, char **ht, long size){
+    // do something with the text
+    //post("scm4max_edclose()");
+    // the work is done in edsave, we don't want to eval content if cancelled
+    x->m_editor = NULL;
+}
+
+long scm4max_edsave(t_scm4max *x, char **ht, long size){
+    // post("scm4max_edsave()");
+    // eval the text
+    s7_pointer res; 
+    res = s7_eval_c_string(x->s7, *ht); 
+    post("file saved and loaded, result: %s", s7_object_to_c_string(x->s7, res) ); 
+    // return 0 to tell editor to save the text
+    return 0;       
 }
 
 // traverse the patch, registering all objects that have a scripting name set
@@ -248,7 +312,6 @@ long scm4max_scan_iterator(t_scm4max *x, t_object *b){
     return 0;
 }
 
-
 // send an object a message, let's start with a single symbol message
 t_max_err scm4max_send_object_message(t_scm4max *x, t_symbol *key, t_symbol *msg, long argc, t_atom *argv){
     post("scm4max_send_object_message() %s %s", key->s_name, msg->s_name);  
@@ -270,15 +333,14 @@ t_max_err scm4max_outlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *a
     return 0;
 }
 
-
-
 // the read method defers to a low priority method
 void scm4max_read(t_scm4max *x, t_symbol *s){
     defer(x, (method)scm4max_doread, s, 0, NULL);
 }
 // read function to either pass on a filename or open the file selector box
-// lifted right out of the sdk docs
-void scm4max_doread(t_scm4max *x, t_symbol *s){
+// straight from the sdk docs really
+void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file){
+    //post("scm4max_doread()");
     t_fourcc filetype = 'TEXT', outtype;
     short numtypes = 1;
     char filename[MAX_PATH_CHARS];
@@ -293,12 +355,24 @@ void scm4max_doread(t_scm4max *x, t_symbol *s){
             return;
         }
     }
+    // block for copying file contents into the buffer for filling the editor
+    // only want this to happen if we're calling doread for the main source file
+    if( is_main_source_file ){
+        //post("scm4max: locally loading main source file %s", filename);
+        if(path_opensysfile(filename, path_id, &x->source_file_handle, READ_PERM)){
+            object_error(x, "error opening %s", filename);
+            return;
+        }    
+        sysfile_readtextfile(x->source_file_handle, x->source_text_handle, 0, TEXT_NULL_TERMINATE);     
+    }
+    // now read into S7 using s7_load(fullpath)
     // we have a file and a path short, need to convert it to abs path for scheme load
     char full_path[1024]; 
     path_toabsolutesystempath(path_id, filename, full_path);
     path_nameconform(full_path, full_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
- 
-    //post("scm4max: s7 loading %s", full_path);
+
+    // This is where we load the actual file 
+    post("scm4max: s7 loading %s", full_path);
     if( !s7_load(x->s7, full_path) ){
         post("scm4max: error loading %s", full_path);
     }
@@ -316,6 +390,10 @@ void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s){
 void scm4max_free(t_scm4max *x){ 
     post("scm4max_free()");
     hashtab_chuck(x->registry);
+
+    // free the handles that were created for reading in main source file contents
+    sysfile_close(x->source_file_handle);
+    sysmem_freehandle(x->source_text_handle);
 }
 
 int scm4max_table_read(t_scm4max *x, char *table_name, long index, long *value){
@@ -511,7 +589,7 @@ void scm4max_float(t_scm4max *x, double arg){
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
     t_atom *ap;
     t_max_err err;
-    post("scm4max_msg(): selector is %s",s->s_name);
+    //post("scm4max_msg(): selector is %s",s->s_name);
     //post("scm4max_msg(): there are %ld arguments",argc);
 
     int inlet_num = proxy_getinlet((t_object *)x);
@@ -549,13 +627,14 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
             return;
         }
  
-        // TODO: implement reset to wipe the s7 slate
-        // XXX: crashing!! RESET, wipe and rebootstrap s7
+        // reset message wipes the s7 env and reloads the source file if present
         if( gensym("reset") == gensym(s->s_name) ){
             post("s7 RESET");
             free(x->s7);
             x->s7 = s7_init();
-            scm4max_doread(x, x->source_file);
+            if( x->source_file != _sym_nothing ){
+                scm4max_doread(x, x->source_file, true);
+            }
             post("RESET DONE");
             return;
         }
