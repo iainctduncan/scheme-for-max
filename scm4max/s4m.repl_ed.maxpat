@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 56.0, 79.0, 971.0, 660.0 ],
+		"rect" : [ 56.0, 79.0, 551.0, 733.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -44,8 +44,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 453.0, 575.0, 132.0, 22.0 ],
-					"text" : "a"
+					"patching_rect" : [ 456.0, 604.0, 132.0, 22.0 ],
+					"text" : "(define 'b 2)"
 				}
 
 			}
@@ -79,25 +79,12 @@
 			}
 , 			{
 				"box" : 				{
-					"id" : "obj-84",
-					"maxclass" : "message",
-					"numinlets" : 2,
-					"numoutlets" : 1,
-					"outlettype" : [ "" ],
-					"patching_rect" : [ 478.0, 191.0, 88.0, 22.0 ],
-					"text" : "set \"test n line\""
-				}
-
-			}
-, 			{
-				"box" : 				{
 					"id" : "obj-82",
 					"linecount" : 5,
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 554.0, 54.0, 354.0, 87.0 ],
-					"presentation_linecount" : 5,
+					"patching_rect" : [ 769.5, 40.0, 354.0, 87.0 ],
 					"text" : "ARGG: it's no preserving the carriage returns\n- it that the fault of text, or coll??\n- also, need to stop the history from wrapping to beginning again\n- might require manual counter, only figure out if multi-line is going to work ok?\n"
 				}
 
@@ -121,7 +108,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 425.75, 454.0, 32.0, 22.0 ],
+					"patching_rect" : [ 435.75, 452.0, 32.0, 22.0 ],
 					"text" : "prev"
 				}
 
@@ -133,7 +120,7 @@
 					"numinlets" : 0,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 418.0, 396.0, 80.0, 22.0 ],
+					"patching_rect" : [ 418.0, 399.0, 80.0, 22.0 ],
 					"text" : "r repl-forward"
 				}
 
@@ -145,7 +132,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "bang" ],
-					"patching_rect" : [ 317.0, 424.0, 22.0, 22.0 ],
+					"patching_rect" : [ 334.75, 428.5, 22.0, 22.0 ],
 					"text" : "t b"
 				}
 
@@ -181,7 +168,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 240.5, 225.0, 72.0, 22.0 ],
+					"patching_rect" : [ 210.5, 200.5, 72.0, 22.0 ],
 					"text" : "prepend set"
 				}
 
@@ -193,7 +180,7 @@
 					"numinlets" : 0,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 240.5, 196.0, 77.0, 22.0 ],
+					"patching_rect" : [ 210.5, 171.5, 77.0, 22.0 ],
 					"text" : "r repl-update"
 				}
 
@@ -204,7 +191,7 @@
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 335.0, 604.0, 79.0, 22.0 ],
+					"patching_rect" : [ 335.0, 584.0, 79.0, 22.0 ],
 					"text" : "s repl-update"
 				}
 
@@ -217,7 +204,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "bang" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 666.5, 403.0, 24.0, 24.0 ]
+					"patching_rect" : [ 613.0, 403.0, 24.0, 24.0 ]
 				}
 
 			}
@@ -228,7 +215,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 666.5, 436.0, 42.0, 22.0 ],
+					"patching_rect" : [ 613.0, 436.0, 42.0, 22.0 ],
 					"text" : "goto 1"
 				}
 
@@ -240,7 +227,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 4,
 					"outlettype" : [ "", "", "", "" ],
-					"patching_rect" : [ 666.5, 463.0, 89.0, 22.0 ],
+					"patching_rect" : [ 613.0, 463.0, 89.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"embed" : 0
 					}
@@ -256,7 +243,7 @@
 					"numinlets" : 0,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 692.5, 403.0, 73.0, 22.0 ],
+					"patching_rect" : [ 639.0, 403.0, 73.0, 22.0 ],
 					"text" : "r repl-reset-i"
 				}
 
@@ -296,7 +283,7 @@
 					"numinlets" : 0,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 317.0, 396.0, 65.0, 22.0 ],
+					"patching_rect" : [ 334.75, 400.5, 65.0, 22.0 ],
 					"text" : "r repl-back"
 				}
 
@@ -527,7 +514,8 @@
 					"outlettype" : [ "", "int", "", "" ],
 					"outputmode" : 1,
 					"parameter_enable" : 0,
-					"patching_rect" : [ 29.5, 263.5, 693.0, 107.0 ]
+					"patching_rect" : [ 29.5, 263.5, 693.0, 107.0 ],
+					"varname" : "repl-box"
 				}
 
 			}
@@ -834,13 +822,6 @@
 				"patchline" : 				{
 					"destination" : [ "obj-79", 0 ],
 					"source" : [ "obj-80", 1 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-3", 0 ],
-					"source" : [ "obj-84", 0 ]
 				}
 
 			}

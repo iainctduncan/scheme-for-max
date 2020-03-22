@@ -1,5 +1,0 @@
-
-Case: (send-msg 'col-1 'a 'b 'c)
-- 'col-1 gets looked up in registry
-- max msg sent should be 'a
-- args should be ('b 'c)

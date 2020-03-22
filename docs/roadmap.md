@@ -12,18 +12,22 @@
 * dict io for basic values (no arrays or nested dicts)
 * file loading and reloading
 * console posting (with arbitrary values)
+* add loading of initial file from name in the scm4max object box
+* buff i/o for handling floats in tables
+* ensure multiple scm4max objects can coexist
+* i/o for colls (done by implementing general message sending)
 
 ### Todo - Release 1:
-* add loading of initial file from name in the scm4max object box
 * way of resetting environment
-* dict i/o for array values
-* buff i/o for handling floats in tables
 * compile as max package that can be used easily
-* ensure multiple scm4max objects can coexist
+* release as a package someone can install
+* documentation
+* souped up repl (multi-line)
+* jitter matrix support??
 
 ## Backlog (unordered)
 * nested dictionary handling for dict values
-* i/o for colls
+* dict i/o for array values
 * jitter matrix i/o
 * network repl from spacemacs for hot reloading partial buffers
 * attach listeners to ITM transport for deferred handling
