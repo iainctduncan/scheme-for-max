@@ -39,7 +39,7 @@
 ;; this called with input to inlet 0 of the scm4max object
 (define s4m-eval
   (lambda args
-    (post "s4m-eval :" args)
+    ;;(post "s4m-eval :" args)
     (eval args)))
 
 

@@ -80,8 +80,6 @@ int scm4max_mc_buffer_write(t_scm4max *x, char *buffer_name, int channel, long i
 t_max_err scm4max_inlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv);
 t_max_err scm4max_outlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv);
 
-t_max_err scm4max_send_object_message(t_scm4max *x, t_symbol *key, t_symbol *msg, long argc, t_atom *argv);
-
 // misc helpers
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap);
 t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *ap);
@@ -139,12 +137,13 @@ char *trim_symbol_quote(char *input){
         trimmed[j] = input[i]; j++;     
     }
     return trimmed;
-} 
+}
+ 
 /********************************************************************************
 * main C code 
 */
 void ext_main(void *r){
-    post("ext_main()");
+    //post("ext_main()");
 	t_class *c;
 	c = class_new("scm4max", (method)scm4max_new, (method)scm4max_free,
          (long)sizeof(t_scm4max), 0L /* leave NULL!! */, A_GIMME, 0);
@@ -173,11 +172,11 @@ void ext_main(void *r){
     CLASS_ATTR_SAVE(c, "outs", 0);   // save with patcher
 
     scm4max_class = c;
-    post("scm4max ext_main() done");
+    //post("scm4max ext_main() done");
 }
 
 void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
-    post("scm4max_new(), arg count: %i", argc);
+    //post("scm4max_new(), arg count: %i", argc);
 	t_scm4max *x = NULL;
 
 	x = (t_scm4max *)object_alloc(scm4max_class);
@@ -234,7 +233,7 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     s7_define_function(x->s7, "max-output", s7_max_output, 2, 0, false, "(max-output 1 99) sends value 99 out outlet 1");
     s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
     s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
-    s7_define_function(x->s7, "send-msg", s7_send_message, 2, 0, true, "(send-msg 'var-name message ..args.. ) sents 'message' with args to 'var-name");
+    s7_define_function(x->s7, "send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
     
        
     // make the address of this object available in scheme as "maxobj" so that 
@@ -303,7 +302,7 @@ long scm4max_edsave(t_scm4max *x, char **ht, long size){
 // traverse the patch, registering all objects that have a scripting name set
 // should be called again whenever scripting names change 
 void scm4max_scan(t_scm4max *x){
-    post("scm4max_scan - scanning patcher for varnames");
+    post("s4m: ... scanning patcher for varnames");
     long result = 0;
     t_max_err err = NULL;
     t_object *patcher, *box, *obj;
@@ -327,12 +326,6 @@ long scm4max_scan_iterator(t_scm4max *x, t_object *b){
     }
     return 0;
 }
-
-// send an object a message, let's start with a single symbol message
-t_max_err scm4max_send_object_message(t_scm4max *x, t_symbol *key, t_symbol *msg, long argc, t_atom *argv){
-    post("scm4max_send_object_message() %s %s", key->s_name, msg->s_name);  
-    return (t_max_err)(0);
-} 
 
 t_max_err scm4max_inlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv){
     long num_inlets = atom_getlong(argv);
@@ -367,7 +360,7 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file){
     } else {
         strcpy(filename, s->s_name);    // must copy symbol before calling locatefile_extended
         if (locatefile_extended(filename, &path_id, &outtype, &filetype, 1)) { // non-zero: not found
-            object_error(x, "scm4max: %s: not found", s->s_name);
+            object_error(x, "s4m: %s: not found", s->s_name);
             return;
         }
     }
@@ -376,7 +369,7 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file){
     if( is_main_source_file ){
         //post("scm4max: locally loading main source file %s", filename);
         if(path_opensysfile(filename, path_id, &x->source_file_handle, READ_PERM)){
-            object_error(x, "error opening %s", filename);
+            object_error(x, "s4m: error opening %s", filename);
             return;
         }    
         sysfile_readtextfile(x->source_file_handle, x->source_text_handle, 0, TEXT_NULL_TERMINATE);     
@@ -388,25 +381,26 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file){
     path_nameconform(full_path, full_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
 
     // This is where we load the actual file 
-    post("scm4max: s7 loading %s", full_path);
+    post("s4m: loading file %s", full_path);
     if( !s7_load(x->s7, full_path) ){
-        post("scm4max: error loading %s", full_path);
+        object_error(x, "s4m: error loading %s", full_path);
     }
 }
 
-// TODO: make this more helpful... lol
 void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s){
 	if (m == ASSIST_INLET) { // inlet
-		sprintf(s, "I am inlet %ld", a);
+		sprintf(s, "Inlet %ld", a);
 	}
 	else {	// outlet
-		sprintf(s, "I am outlet %ld", a);
+		sprintf(s, "Outlet %ld", a);
 	}
 }
+
 void scm4max_free(t_scm4max *x){ 
-    post("scm4max_free()");
+    post("s4m: calling free()");
     hashtab_chuck(x->registry);
 
+    // XXX: the below were causing crashed, but pretty sure we're leaking memory now
     // free the handles that were created for reading in main source file contents
     // this is wrong, it's crashing max if the file loaded is invalid
     //    sysfile_close(x->source_file_handle);
@@ -418,11 +412,11 @@ int scm4max_table_read(t_scm4max *x, char *table_name, long index, long *value){
     long **data = NULL;
     long i, size;
     if( table_get(gensym(table_name), &data, &size) ){
-        post("s4m: ERROR: could not load table %s", table_name);
+        object_error(x, "s4m: Could not load table %s", table_name);
         return 1;
     }
     if( index < 0 || index >= size){
-        post("s4m: ERROR: index %i out of range for table %s", index, table_name);
+        object_error(x, "s4m: Index %i out of range for table %s", index, table_name);
         return 1;
     }
     // copy the data into our value int and return success
@@ -453,7 +447,7 @@ int scm4max_table_write(t_scm4max *x, char *table_name, int index, int value){
 // hmm, I guess this needs to write the result into a pointer in order
 // to allow returning error codes. damn it
 int scm4max_buffer_read(t_scm4max *x, char *buffer_name, long index, double *value){
-    post("scm4max_buffer_read() %s i:%i", buffer_name, index);
+    //post("scm4max_buffer_read() %s i:%i", buffer_name, index);
     
     t_buffer_ref *buffer_ref = buffer_ref_new(x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
@@ -476,7 +470,7 @@ int scm4max_buffer_read(t_scm4max *x, char *buffer_name, long index, double *val
 
 // multi-channel buffer read, channels numbered 1 up
 int scm4max_mc_buffer_read(t_scm4max *x, char *buffer_name, int channel, long index, double *value){
-    post("scm4max_mc_buffer_read() %s c:%i i:%i", buffer_name, channel, index);
+    //post("scm4max_mc_buffer_read() %s c:%i i:%i", buffer_name, channel, index);
     
     t_buffer_ref *buffer_ref = buffer_ref_new(x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
@@ -508,7 +502,7 @@ int scm4max_mc_buffer_read(t_scm4max *x, char *buffer_name, int channel, long in
 
 // get a max named single buffer, write a single data point, and set buffer to dirty 
 int scm4max_buffer_write(t_scm4max *x, char *buffer_name, long index, double value){
-    post("scm4max_buffer_write() b: %s i:%i v:%f", buffer_name, index, value);
+    //post("scm4max_buffer_write() b: %s i:%i v:%f", buffer_name, index, value);
     t_buffer_ref *buffer_ref = buffer_ref_new(x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
     if(buffer == NULL){
@@ -534,7 +528,7 @@ int scm4max_buffer_write(t_scm4max *x, char *buffer_name, long index, double val
 
 // get a max named multi-chan buffer, write a single data point, and set buffer to dirty 
 int scm4max_mc_buffer_write(t_scm4max *x, char *buffer_name, int channel, long index, double value){
-    post("scm4max_buffer_write() b: %s c:%i i:%i v:%f", buffer_name, channel, index, value);
+    //post("scm4max_buffer_write() b: %s c:%i i:%i v:%f", buffer_name, channel, index, value);
     t_buffer_ref *buffer_ref = buffer_ref_new(x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
     if(buffer == NULL){
@@ -575,7 +569,7 @@ void scm4max_bang(t_scm4max *x){
     //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
     // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
     s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
-    post("s7-res: %s", s7_object_to_c_string(x->s7, res) );
+    post("s4m> %s", s7_object_to_c_string(x->s7, res) );
 }
 
 void scm4max_int(t_scm4max *x, long arg){
@@ -587,7 +581,7 @@ void scm4max_int(t_scm4max *x, long arg){
     //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
     // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
     s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
-    post("s7-res: %s", s7_object_to_c_string(x->s7, res) );
+    post("s4m> %s", s7_object_to_c_string(x->s7, res) );
 }
 
 void scm4max_float(t_scm4max *x, double arg){
@@ -599,7 +593,7 @@ void scm4max_float(t_scm4max *x, double arg){
     //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
     // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
     s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
-    post("s7-res: %s", s7_object_to_c_string(x->s7, res) );
+    post("s4m> %s", s7_object_to_c_string(x->s7, res) );
 }
 
 // the generic message hander, fires on any symbol messages, which includes lists of numbers or strings
@@ -627,9 +621,9 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
             char *load_input = atom_getsym(argv)->s_name; 
             char load_sexp[256];
             sprintf(load_sexp, "(load \"%s\")", load_input);
-            post("load sexp: %s", load_sexp);
+            //post("load sexp: %s", load_sexp);
             res = s7_eval_c_string(x->s7, load_sexp); 
-            post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
+            post("s4m> %s", s7_object_to_c_string(x->s7, res) ); 
             return;
         }
 
@@ -638,21 +632,20 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         // be passed to S7 as a c string to eval
         if( gensym(s->s_name) == gensym("eval-string") ){
             char *sexp_input = atom_getsym(argv)->s_name; 
-            post("s7-in> %s", sexp_input);
+            //post("s7-in> %s", sexp_input);
             res = s7_eval_c_string(x->s7, sexp_input); 
-            post("s7: %s", s7_object_to_c_string(x->s7, res) ); 
+            post("s4m> %s", s7_object_to_c_string(x->s7, res) ); 
             return;
         }
  
         // reset message wipes the s7 env and reloads the source file if present
         if( gensym("reset") == gensym(s->s_name) ){
-            post("s7 RESET");
             free(x->s7);
             x->s7 = s7_init();
             if( x->source_file != _sym_nothing ){
                 scm4max_doread(x, x->source_file, true);
             }
-            post("RESET DONE");
+            post("s4m: s7 RESET, scheme interpreter wiped");
             return;
         }
 
@@ -667,10 +660,10 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         }
         // add the first message to the arg list (it's always a symbol)
         s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, s->s_name), s7_args); 
-        post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
         // call the s7 dispatch function, sending in all args as an s7 list
         res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-eval"), s7_args); 
-        post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
+        post("s4m> %s", s7_object_to_c_string(x->s7, res) ); 
     }
 
     // messages to non-zero inlets
@@ -701,7 +694,7 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
         // call the s7 dispatch function, sending in all args as an s7 list
         res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
-        post("s7-res: %s", s7_object_to_c_string(x->s7, res) ); 
+        post("s4m> %s", s7_object_to_c_string(x->s7, res) ); 
     }
 
 }
@@ -811,8 +804,7 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     char *msg = s7_string( s7_car(args) );
     post("s4m-post: %s", msg);
-    // XXX: What to return??
-    return s7_make_integer(s7, 0);
+    return s7_nil(s7);
 }
 
 // function to send generic output out an outlet
@@ -1141,17 +1133,18 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
         obj_name = s7_symbol_name( s7_car(args) );
         //post("obj_name: %s", obj_name);
     }else{
-        object_error((t_object *)x, "(msg): arg 1 should be a symbol of scripting name in max");
+        object_error((t_object *)x, "s4m: (send): arg 1 must be a symbol of a Max scripting name");
         return s7_return_value;
     }   
     // now find the object, if we can't find it by scripting name, then no message can go
     err = hashtab_lookup(x->registry, gensym(obj_name), &obj);
     if(err){
-        object_error((t_object *)x, "(send-msg): no object found in registry for scripting-name '%s', did you run 'scan'?", obj_name);
+        object_error((t_object *)x, "s4m: (send): no object found in registry for scripting name '%s', did you run 'scan'?", obj_name);
         return s7_return_value;
     }
 
     // TODO bangs
+
     // message to be sent could be an int, real, message
     // NB: in max, a message "1 2 3" is actually sent internally as "list 1 2 3"
     // so we need to turn args 1 2 3 into args 'list 1 2 3
@@ -1174,7 +1167,7 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
         }
         starting_arg = 1;
     }else{
-        object_error((t_object *)x, "(msg): arg 2 should be a symbol of the message to send");
+        object_error((t_object *)x, "s4m: (send): arg 2 should be a symbol of the message to send");
     }
     //post("msg_symbol: %s, starting arg index: %i", msg_symbol, starting_arg);
 
@@ -1190,7 +1183,7 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
     for(int i=0; i < num_atoms; i++){
         err = s7_obj_to_max_atom(s7, s7_list_ref(s7, args, i + starting_arg), arg_atoms + i );     
         if(err){
-            object_error((t_object *)x, "(send-msg): error converting scheme arg to max atom, aborting");
+            object_error((t_object *)x, "s4m: (send): error converting scheme arg to max atom, aborting");
             return s7_return_value;
         }
     }
@@ -1198,12 +1191,11 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
     // send the message to the registered object 
     err = object_method_typed(obj, gensym(msg_symbol), num_atoms, arg_atoms, NULL);
     if(err){
-        object_error((t_object *)x, "(send-msg): error sending message");
+        object_error((t_object *)x, "s4m: (send) error sending message");
         return s7_return_value;
     }
     // N.B. ALTERNATE method of sending messages is to send args as a C string
     //object_method_parse(obj, gensym("list"), "1.2 3.4", NULL);
-    
 
     return s7_return_value;
 }
