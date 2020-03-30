@@ -114,7 +114,7 @@ int in_quotes(char *string){
     }else{
         return 0;
     }
-}  
+} 
 char *trim_quotes(char *input){
     int length = strlen(input);
     char *trimmed = malloc( sizeof(char*) * length );
@@ -123,7 +123,23 @@ char *trim_quotes(char *input){
     }
     return trimmed;
 }   
-
+// return true if a string starts with a single quote
+int is_quoted_symbol(char *string){
+    if(string[0] == '\'' && string[ strlen(string)-1 ] != '\''){
+        return 1;
+    }else{
+        return 0;
+    }
+}
+char *trim_symbol_quote(char *input){
+    int length = strlen(input);
+    char *trimmed = malloc( sizeof(char*) * length );
+    // drop the first character (the quote)
+    for(int i=1, j=0; i<length; i++){
+        trimmed[j] = input[i]; j++;     
+    }
+    return trimmed;
+} 
 /********************************************************************************
 * main C code 
 */
@@ -392,8 +408,9 @@ void scm4max_free(t_scm4max *x){
     hashtab_chuck(x->registry);
 
     // free the handles that were created for reading in main source file contents
-    sysfile_close(x->source_file_handle);
-    sysmem_freehandle(x->source_text_handle);
+    // this is wrong, it's crashing max if the file loaded is invalid
+    //    sysfile_close(x->source_file_handle);
+    //    sysmem_freehandle(x->source_text_handle);
 }
 
 int scm4max_table_read(t_scm4max *x, char *table_name, long index, long *value){
@@ -648,7 +665,7 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
             ap = argv + i;
             s7_args = s7_cons(x->s7, max_atom_to_s7_obj(x->s7, ap), s7_args); 
         }
-        // add the first message to the arg list (always a symbol)
+        // add the first message to the arg list (it's always a symbol)
         s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, s->s_name), s7_args); 
         post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
         // call the s7 dispatch function, sending in all args as an s7 list
@@ -703,14 +720,21 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
             s7_obj = s7_make_real(s7, atom_getfloat(ap));
             break;
         case A_SYM: 
-            // //post("A_SYM %ld: %s", atom_getsym(ap)->s_name);
+            //post("A_SYM %ld: %s", atom_getsym(ap)->s_name);
             // if sent \"foobar\" from max, we want an S7 string "foobar"
             if( in_quotes(atom_getsym(ap)->s_name) ){
                 char *trimmed_sym = trim_quotes(atom_getsym(ap)->s_name);
+                //post(" ... creating s7 string");
                 s7_obj = s7_make_string(s7, trimmed_sym);
+            }else if( is_quoted_symbol(atom_getsym(ap)->s_name) ){
+            // if sent 'foobar, we actually want in s7 the list: ('quote 'foobar)
+                s7_obj = s7_nil(s7); 
+                s7_obj = s7_cons(s7, s7_make_symbol(s7, trim_symbol_quote(atom_getsym(ap)->s_name)), s7_obj);
+                s7_obj = s7_cons(s7, s7_make_symbol(s7, "quote"), s7_obj); 
             }else{
             // otherwise, make it an s7 symbol
             // NB: foo -> foo, 'foo -> (symbol "foo")
+                //post(" ... creating s7 symbol from %s ", atom_getsym(ap)->s_name);
                 s7_obj = s7_make_symbol(s7, atom_getsym(ap)->s_name);
             }
             break;
