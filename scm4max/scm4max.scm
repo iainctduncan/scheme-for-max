@@ -40,7 +40,7 @@
 (define s4m-eval
   (lambda args
     ;;(post "s4m-eval :" args)
-    (eval args)))
+    (eval args (rootlet))))
 
 
 ;; convenience functions for output
