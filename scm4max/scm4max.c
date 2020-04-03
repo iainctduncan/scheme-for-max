@@ -16,6 +16,7 @@
 #define MAX_NUM_OUTLETS 32
 #define MAX_NUM_INLETS 32
 #define MAX_ATOMS_PER_MESSAGE 32
+#define BOOTSTRAP_FILE "scm4max.scm"
 
 // object struct
 typedef struct _scm4max {
@@ -47,6 +48,7 @@ void *scm4max_class;
 / function prototypes
 / standard set */
 void *scm4max_new(t_symbol *s, long argc, t_atom *argv);
+void scm4max_init_s7(t_scm4max *x);
 void scm4max_free(t_scm4max *x);
 void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s);
 
@@ -215,6 +217,24 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     x->registry = (t_hashtab *)hashtab_new(0);
     hashtab_flags(x->registry, OBJ_FLAG_REF);
 
+    // examine args, and set the sourcefile to first arg that does not start with @
+    x->source_file = _sym_nothing;
+    if(argc){
+        atom_arg_getsym(&x->source_file, 0, argc, argv);
+        if(x->source_file != _sym_nothing){
+            if(x->source_file->s_name[0] == '@'){
+                x->source_file = _sym_nothing;
+            }
+        } 
+        //post("scm4max_new() source file: %s", x->source_file->s_name);
+    }
+    scm4max_init_s7(x); 
+	return (x);
+}
+
+// init and set up the s7 interpreter, and load main source file if present
+void scm4max_init_s7(t_scm4max *x){
+    post("s4m: initializing s7 interpreter");
     // S7 initialization, it's possible this should actually happen in main and be attached
     // to the class as opposed to the instance. Not sure about that.
     // initialize interpreter
@@ -243,26 +263,15 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
    
     // boostrap the scheme code
     // might make this optional later
-    scm4max_doread(x, gensym("scm4max.scm"), false);
+    scm4max_doread(x, gensym( BOOTSTRAP_FILE ), false);
 
     // load a file given from a user arg, and save filename
     // the convoluted stuff below is to prevent saving @ins or something
     // as the sourcefile name if object used with param args but no sourcefile 
-    x->source_file = _sym_nothing;
-    if(argc){
-        atom_arg_getsym(&x->source_file, 0, argc, argv);
-        if(x->source_file != _sym_nothing){
-            if(x->source_file->s_name[0] == '@'){
-                x->source_file = _sym_nothing;
-            }else{
-                scm4max_doread(x, x->source_file, true);
-            }
-        } 
-        // post("source file: %s", x->source_file->s_name);
+    if( x->source_file != _sym_nothing){
+        scm4max_doread(x, x->source_file, true);
     }
-    // post("scm4max_new complete");
-
-	return (x);
+    //post("scm4max_init_s7 complete");
 }
 
 void scm4max_dblclick(t_scm4max *x){
@@ -294,7 +303,7 @@ long scm4max_edsave(t_scm4max *x, char **ht, long size){
     // eval the text
     s7_pointer res; 
     res = s7_eval_c_string(x->s7, *ht); 
-    post("file saved and loaded, result: %s", s7_object_to_c_string(x->s7, res) ); 
+    post("s4m: file saved and loaded, result: %s", s7_object_to_c_string(x->s7, res) ); 
     // return 0 to tell editor to save the text
     return 0;       
 }
@@ -302,7 +311,7 @@ long scm4max_edsave(t_scm4max *x, char **ht, long size){
 // traverse the patch, registering all objects that have a scripting name set
 // should be called again whenever scripting names change 
 void scm4max_scan(t_scm4max *x){
-    post("s4m: ... scanning patcher for varnames");
+    post("s4m: scanning patcher for varnames");
     long result = 0;
     t_max_err err = NULL;
     t_object *patcher, *box, *obj;
@@ -381,7 +390,7 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file){
     path_nameconform(full_path, full_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
 
     // This is where we load the actual file 
-    post("s4m: loading file %s", full_path);
+    post("s4m: loading file %s", filename);
     if( !s7_load(x->s7, full_path) ){
         object_error(x, "s4m: error loading %s", full_path);
     }
@@ -397,7 +406,7 @@ void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s){
 }
 
 void scm4max_free(t_scm4max *x){ 
-    post("s4m: calling free()");
+    //post("s4m: calling free()");
     hashtab_chuck(x->registry);
 
     // XXX: the below were causing crashed, but pretty sure we're leaking memory now
@@ -641,11 +650,8 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         // reset message wipes the s7 env and reloads the source file if present
         if( gensym("reset") == gensym(s->s_name) ){
             free(x->s7);
-            x->s7 = s7_init();
-            if( x->source_file != _sym_nothing ){
-                scm4max_doread(x, x->source_file, true);
-            }
-            post("s4m: s7 RESET, scheme interpreter wiped");
+            scm4max_init_s7(x);
+            //post("s4m: RESET, scheme interpreter wiped and reloaded");
             return;
         }
 
@@ -803,7 +809,7 @@ t_scm4max *get_max_obj(s7_scheme *s7){
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     char *msg = s7_string( s7_car(args) );
-    post("s4m-post: %s", msg);
+    post("s4m: %s", msg);
     return s7_nil(s7);
 }
 

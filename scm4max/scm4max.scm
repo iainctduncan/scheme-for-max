@@ -1,5 +1,5 @@
 ;; the scm4max scheme code to build the API
-
+;;(max-post "Bootstrapping scm4max.scm")
 
 (define (stringify item)
   (cond
@@ -8,6 +8,7 @@
     ((string? item) item)
     (else "<unhandled type>"))) 
 
+;; post arbitrary args to the max console
 (define (post . args)
   (letrec (
     (log-string (lambda (lat)
@@ -23,7 +24,7 @@
 
 (define listen
   (lambda (inlet fun) 
-    (post "adding listener on inlet " inlet) 
+    ;;(post "adding listener on inlet " inlet) 
     (set! (s4m-listeners inlet) fun)))
 
 ;; dispatch is called from C, and expects a list where the first item
@@ -54,5 +55,4 @@
 (define (out-6 args) (max-output 6 args))
 (define (out-7 args) (max-output 7 args))
 
-(post "scm4max.scm BOOTSTRAP COMPLETE")
-
+(post "scm4max.scm Bootstrap complete")
