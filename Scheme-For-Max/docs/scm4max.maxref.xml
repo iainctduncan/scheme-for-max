@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./c74ref.xsl" type="text/xsl"?>
+
+<c74object name="s4m.scheme">
+
+<digest>
+  S7 Scheme Interpreter
+</digest>
+
+<description>
+  Embedded S7 Scheme interpreter for scripting and live-coding Max with Scheme / Lisp 
+</description>
+
+<!--METADATA-->
+<metadatalist>
+    <metadata name="author">Iain Duncan (Scheme-For-Max), Bill Schottstaedt (S7 Scheme)</metadata>
+    <metadata name="tag">Scheme</metadata>
+    <metadata name="tag">Lisp</metadata>
+    <metadata name="tag">Scripting</metadata>
+</metadatalist>
+
+<!--INLETS-->
+<inletlist>
+    <inlet id="0" type="anything">
+        <digest>all kinds of stuff</digest>
+    </inlet>
+</inletlist>
+
+<!--ARGUMENTS-->
+<objarglist>
+    <objarg name="file" optional="1" type="symbol">
+        <digest>Scheme source file to load (optional)</digest>
+    </objarg>
+</objarglist>
+
+<!--MESSAGES-->
+<methodlist>
+    <method name="reset">
+        <digest>
+            Reset the interpreter
+        </digest>
+        <description>
+            Reset the interpreter
+        </description>
+    </method>
+</methodlist>
+
+<!--ATTRIBUTES-->
+<attributelist>
+    <attribute name='inlets' get='1' set='1' type='int' size='1' >
+        <digest>Number of inlets</digest>
+        <description>Number of inlets</description>
+    </attribute>
+    <attribute name='outlets' get='1' set='1' type='float64' size='1' >
+        <digest>Number of outlets</digest>
+        <description>Number of outlets</description>
+    </attribute>
+</attributelist>
+
+</c74object>
