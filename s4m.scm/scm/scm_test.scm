@@ -10,4 +10,4 @@
 (listen 1 (lambda (args)
     (post "inlet 1 listener, args: " args)))
 
-(post "scm_test.scm done reload...")
+(post "scm_test.scm done loading")

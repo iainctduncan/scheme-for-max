@@ -147,7 +147,7 @@ char *trim_symbol_quote(char *input){
 void ext_main(void *r){
     //post("ext_main()");
 	t_class *c;
-	c = class_new("scm4max", (method)scm4max_new, (method)scm4max_free,
+	c = class_new("s4m.scm", (method)scm4max_new, (method)scm4max_free,
          (long)sizeof(t_scm4max), 0L /* leave NULL!! */, A_GIMME, 0);
 
     class_addmethod(c, (method)scm4max_read, "read", A_DEFSYM, 0);
@@ -338,7 +338,8 @@ long scm4max_scan_iterator(t_scm4max *x, t_object *b){
 
 t_max_err scm4max_inlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv){
     long num_inlets = atom_getlong(argv);
-    x->num_inlets = num_inlets - 1;
+    if( num_inlets < 1) num_inlets = 1;
+    x->num_inlets = num_inlets;
     //post("scm4max->num_inlets now %i", x->num_inlets); 
     return 0;
 }
@@ -346,6 +347,7 @@ t_max_err scm4max_inlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *ar
 t_max_err scm4max_outlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *argv){
     //post("scm4max_outlets_set()");
     long num_outlets = atom_getlong(argv);
+    if( num_outlets < 1) num_outlets = 1;
     x->num_outlets = num_outlets;
     //post("scm4max->num_outlets now %i", x->num_outlets); 
     return 0;

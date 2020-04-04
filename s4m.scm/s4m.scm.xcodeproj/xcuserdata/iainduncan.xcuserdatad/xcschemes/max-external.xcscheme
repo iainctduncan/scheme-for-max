@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2FBBEAD608F335360078DB84"
-               BuildableName = "scm4max.mxo"
+               BuildableName = "s4m.scm.mxo"
                BlueprintName = "max-external"
-               ReferencedContainer = "container:scm4max.xcodeproj">
+               ReferencedContainer = "container:s4m.scm.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -50,9 +50,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "2FBBEAD608F335360078DB84"
-            BuildableName = "scm4max.mxo"
+            BuildableName = "s4m.scm.mxo"
             BlueprintName = "max-external"
-            ReferencedContainer = "container:scm4max.xcodeproj">
+            ReferencedContainer = "container:s4m.scm.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -68,9 +68,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "2FBBEAD608F335360078DB84"
-            BuildableName = "scm4max.mxo"
+            BuildableName = "s4m.scm.mxo"
             BlueprintName = "max-external"
-            ReferencedContainer = "container:scm4max.xcodeproj">
+            ReferencedContainer = "container:s4m.scm.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </ProfileAction>
