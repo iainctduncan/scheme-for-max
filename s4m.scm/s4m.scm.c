@@ -56,6 +56,8 @@ void scm4max_dblclick(t_scm4max *x);
 void scm4max_edclose(t_scm4max *x, char **ht, long size);
 void scm4max_read(t_scm4max *x, t_symbol *s);
 void scm4max_int(t_scm4max *x, long arg);
+void scm4max_list(t_scm4max *x, t_symbol *s, long argc, t_atom *argv);
+
 void scm4max_float(t_scm4max *x, double arg);
 void scm4max_bang(t_scm4max *x);
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv);
@@ -153,13 +155,16 @@ void ext_main(void *r){
     class_addmethod(c, (method)scm4max_read, "read", A_DEFSYM, 0);
     class_addmethod(c, (method)scm4max_scan, "scan", NULL, 0);
     class_addmethod(c, (method)scm4max_bang, "bang", NULL, 0);
+    class_addmethod(c, (method)scm4max_list, "list", A_GIMME, 0);
     class_addmethod(c, (method)scm4max_int, "int", A_LONG, 0);
+
     class_addmethod(c, (method)scm4max_float, "float", A_FLOAT, 0);
     class_addmethod(c, (method)scm4max_dblclick, "dblclick", A_CANT, 0);
     class_addmethod(c, (method)scm4max_edclose, "edclose", A_CANT, 0);
     class_addmethod(c, (method)scm4max_edsave, "edsave", A_CANT, 0);
 
     // generic message handler for anything else
+    // NOTE: this will not receive "int 1" messages, even if not int listener above!
     class_addmethod(c, (method)scm4max_msg, "anything", A_GIMME, 0);
 
 	/* you CAN'T call this from the patcher */
@@ -573,38 +578,104 @@ int scm4max_mc_buffer_write(t_scm4max *x, char *buffer_name, int channel, long i
 // for a bang message, the list of args to the s7 listener will be (:bang)
 void scm4max_bang(t_scm4max *x){
     int inlet_num = proxy_getinlet((t_object *)x);
-    //post("scm4max_bang() message from inlet %i", inlet_num);
+    // post("scm4max_bang() message from inlet %i", inlet_num);
+    s7_pointer res;
     s7_pointer s7_args = s7_nil(x->s7); 
-    s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, ":bang"), s7_args); 
-    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args);
-    //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
-    // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
-    s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
+    // if on inlet 0, call to s7 should be (bang)
+    if( inlet_num == 0 ){
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "f-bang"), s7_args); 
+    }else{        
+    // inlet > 0 means it goes through inlet dispatch and is sent to s7 as a list 
+    // of (s4m-dispatch {inlet} :bang)
+        s7_args = s7_cons(x->s7, s7_make_keyword(x->s7, "bang"), s7_args);
+        s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args);
+        // post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
+    }
     post("s4m> %s", s7_object_to_c_string(x->s7, res) );
 }
 
+// handler for any messages to scm4max as either single {number} or 'int {number}'
 void scm4max_int(t_scm4max *x, long arg){
     int inlet_num = proxy_getinlet((t_object *)x);
     //post("scm4max_int() message from inlet %i, arg: %i", inlet_num, arg);
+    s7_pointer res;
     s7_pointer s7_args = s7_nil(x->s7); 
     s7_args = s7_cons(x->s7, s7_make_integer(x->s7, arg), s7_args); 
-    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args);
-    //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
-    // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
-    s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
+    // if on inlet 0, call to s7 should be (int number)
+    if( inlet_num == 0 ){
+        //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "f-int"), s7_args); 
+    }else{        
+    // inlet > 0 means it goes through inlet dispatch and is sent to s7 as a list 
+    // of (s4m-dispatch {inlet} :int {arg})
+        s7_args = s7_cons(x->s7, s7_make_keyword(x->s7, "int"), s7_args);
+        s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args);
+        //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
+    }
     post("s4m> %s", s7_object_to_c_string(x->s7, res) );
 }
 
+// handler for any messages to scm4max as either single {number} or 'int {number}'
 void scm4max_float(t_scm4max *x, double arg){
     int inlet_num = proxy_getinlet((t_object *)x);
     //post("scm4max_float() message from inlet %i, arg: %i", inlet_num, arg);
+    s7_pointer res;
     s7_pointer s7_args = s7_nil(x->s7); 
     s7_args = s7_cons(x->s7, s7_make_real(x->s7, arg), s7_args); 
-    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args);
-    //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
-    // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
-    s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
+    // if on inlet 0, call to s7 should be (float number)
+    if( inlet_num == 0 ){
+        //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "f-float"), s7_args); 
+    }else{        
+    // inlet > 0 means it goes through inlet dispatch and is sent to s7 as a list 
+    // of (s4m-dispatch {inlet} :int {arg})
+        s7_args = s7_cons(x->s7, s7_make_keyword(x->s7, "float"), s7_args);
+        s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args);
+        //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
+    }
     post("s4m> %s", s7_object_to_c_string(x->s7, res) );
+}
+
+// the list message handler, will handle any messages that are internally
+// the max message "list a b c", which includes "1 2 3" and "1 a b", but not "a b c"
+// Note: that's just how Max works, "1 2 3" becomes "list 1 2 3", but "a b c" does not
+void scm4max_list(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
+    t_atom *ap;
+    t_max_err err;
+    int inlet_num = proxy_getinlet((t_object *)x);
+    //post("scm4max_list(): selector is %s",s->s_name);
+    //post("scm4max_list(): there are %ld arguments",argc);
+    //post("message came from inlet %i", inlet_num);
+
+    s7_pointer res;
+    // turn all args into an s7 list
+    s7_pointer s7_args = s7_nil(x->s7); 
+    // loop through the args backwards to build the cons list 
+    for(int i = argc-1; i >= 0; i--) {
+        ap = argv + i;
+        s7_args = s7_cons(x->s7, max_atom_to_s7_obj(x->s7, ap), s7_args); 
+    }
+    // add the first message to the arg list (it's always a symbol)
+    // for inlet 0, it will be "flist" (so as not to collide with scheme reserved word "list")
+    // for inlet 1+, it will be :list (for registered listeners)
+    if(inlet_num == 0){
+        s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, "f-list"), s7_args); 
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-eval"), s7_args); 
+        //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+    }else{
+        s7_args = s7_cons(x->s7, s7_make_keyword(x->s7, "list"), s7_args); 
+        s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args); 
+        //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
+    }
+    // call the s7 dispatch function, sending in all args as an s7 list
+    post("s4m> %s", s7_object_to_c_string(x->s7, res) ); 
 }
 
 // the generic message hander, fires on any symbol messages, which includes lists of numbers or strings
@@ -613,7 +684,6 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
     t_max_err err;
     //post("scm4max_msg(): selector is %s",s->s_name);
     //post("scm4max_msg(): there are %ld arguments",argc);
-
     int inlet_num = proxy_getinlet((t_object *)x);
     //post("message came from inlet %i", inlet_num);
 
@@ -674,21 +744,26 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         post("s4m> %s", s7_object_to_c_string(x->s7, res) ); 
     }
 
-    // messages to non-zero inlets
+    // messages to non-zero inlets (handled by dispatch)
     else{ 
         // make an s7 list so it can be passed to a listener
         // the message string will become the first item in our list to dispatch
         // unless it is the symbol "list", which we drop (max prepends "list" to a 1 2 3 message)
-    
+        //post("message to non-zero inlet");
+        //post("message is: %s", s->s_name);   
+ 
         // need to loop through the args backwards to build the cons list 
         s7_pointer s7_args = s7_nil(x->s7); 
         for(int i = argc-1; i >= 0; i--) {
             ap = argv + i;
             s7_args = s7_cons(x->s7, max_atom_to_s7_obj(x->s7, ap), s7_args); 
         }
+        // post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
         // if first max item was symbol, we add that to the args, as it wont
         // have been in the atom array and is instead at s->s_name
-        if( gensym(s->s_name) != gensym("list") ){
+        if( gensym(s->s_name) == gensym("list") ){
+            s7_args = s7_cons(x->s7, s7_make_keyword(x->s7, "list"), s7_args); 
+        }else if( gensym(s->s_name) ){
             if( in_quotes(s->s_name) ){
                 char *trimmed_sym = trim_quotes(s->s_name);
                 s7_args = s7_cons(x->s7, s7_make_string(x->s7, trimmed_sym), s7_args); 
@@ -699,7 +774,7 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         // now we need to add the inlet number to the beginning of the args so that 
         // the actual list sent to s7 is ({inlet} ....) for dispatching
         s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args); 
-        //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        // post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
         // call the s7 dispatch function, sending in all args as an s7 list
         res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
         post("s4m> %s", s7_object_to_c_string(x->s7, res) ); 
