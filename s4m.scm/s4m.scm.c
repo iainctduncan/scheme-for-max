@@ -24,6 +24,7 @@ typedef struct _scm4max {
     s7_scheme *s7;
 
     t_symbol *source_file;              // main source file name (if one passed as object arg)
+    short *source_file_path_id;         // path to source file
     t_filehandle source_file_handle;    // file handle for the source file
     char **source_text_handle;          // string handle for the source file
     
@@ -283,22 +284,23 @@ void scm4max_dblclick(t_scm4max *x){
     // open editor here
     //post("scm4max_dblclick() Double click received, opening editor");
     if (!x->m_editor){
+        //post("creating new editor");
         x->m_editor = object_new(CLASS_NOBOX, gensym("jed"), (t_object *)x, 0);
+        object_method(x->m_editor, gensym("filename"), x->source_file->s_name, x->source_file_path_id);
     }else{
+        // post("setting editor to visible");
         object_attr_setchar(x->m_editor, gensym("visible"), 1);
     }
-
-    if(x->source_file != _sym_nothing){
-        // TODO: should go to read method so it can be deferred
-        scm4max_doread(x, x->source_file, true);
-        // load the editors buffer with the file contents
-        object_method(x->m_editor, gensym("settext"), *x->source_text_handle, gensym("utf-8"));
-    }   
+    // we always re-read the file so that it picks up any changes made from an editor
+    // TODO: should go to read method so it can be deferred
+    scm4max_doread(x, x->source_file, true);
+    // load the editors buffer with the file contents
+    object_method(x->m_editor, gensym("settext"), *x->source_text_handle, gensym("utf-8"));
 }
 
 void scm4max_edclose(t_scm4max *x, char **ht, long size){
     // do something with the text
-    //post("scm4max_edclose()");
+    // post("scm4max_edclose()");
     // the work is done in edsave, we don't want to eval content if cancelled
     x->m_editor = NULL;
 }
@@ -395,6 +397,8 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file){
     char full_path[1024]; 
     path_toabsolutesystempath(path_id, filename, full_path);
     path_nameconform(full_path, full_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
+    // save the full path for using with text editor opening
+    x->source_file_path_id = path_id;
 
     // This is where we load the actual file 
     post("s4m: loading file %s", filename);
