@@ -401,7 +401,7 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file){
     x->source_file_path_id = path_id;
 
     // This is where we load the actual file 
-    post("s4m: loading file %s", filename);
+    //post("s4m: loading file %s", filename);
     if( !s7_load(x->s7, full_path) ){
         object_error(x, "s4m: error loading %s", full_path);
     }
@@ -425,6 +425,16 @@ void scm4max_free(t_scm4max *x){
     // this is wrong, it's crashing max if the file loaded is invalid
     //    sysfile_close(x->source_file_handle);
     //    sysmem_freehandle(x->source_text_handle);
+}
+
+// log results to the max console, without printing null list for side effect results
+void post_res(s7_scheme *s7, s7_pointer res) {
+    if( s7_is_null(s7, res) ){
+        // might make printing here optional later
+        return;
+    }else{
+        post("s4m> %s", s7_object_to_c_string(s7, res) );
+    }
 }
 
 int scm4max_table_read(t_scm4max *x, char *table_name, long index, long *value){
@@ -597,7 +607,7 @@ void scm4max_bang(t_scm4max *x){
         // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
         res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
     }
-    post("s4m> %s", s7_object_to_c_string(x->s7, res) );
+    post_res(x->s7, res);
 }
 
 // handler for any messages to scm4max as either single {number} or 'int {number}'
@@ -620,7 +630,7 @@ void scm4max_int(t_scm4max *x, long arg){
         // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
         res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
     }
-    post("s4m> %s", s7_object_to_c_string(x->s7, res) );
+    post_res(x->s7, res);
 }
 
 // handler for any messages to scm4max as either single {number} or 'int {number}'
@@ -643,7 +653,7 @@ void scm4max_float(t_scm4max *x, double arg){
         // call the s7 dispatch function, sending an s7 list of (inlet_num, arg)
         res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
     }
-    post("s4m> %s", s7_object_to_c_string(x->s7, res) );
+    post_res(x->s7, res);
 }
 
 // the list message handler, will handle any messages that are internally
@@ -679,7 +689,7 @@ void scm4max_list(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args); 
     }
     // call the s7 dispatch function, sending in all args as an s7 list
-    post("s4m> %s", s7_object_to_c_string(x->s7, res) ); 
+    post_res(x->s7, res);
 }
 
 // the generic message hander, fires on any symbol messages, which includes lists of numbers or strings
@@ -745,7 +755,8 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
         // call the s7 dispatch function, sending in all args as an s7 list
         res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-eval"), s7_args); 
-        post("s4m> %s", s7_object_to_c_string(x->s7, res) ); 
+        // post results to max console if not null string (to avoid chatty console)
+        post_res(x->s7, res);
     }
 
     // messages to non-zero inlets (handled by dispatch)
@@ -886,13 +897,14 @@ t_scm4max *get_max_obj(s7_scheme *s7){
 }
 
 
-// log to the max console, added 
+// log to the max console 
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     char *msg = s7_string( s7_car(args) );
     post("s4m: %s", msg);
     return s7_nil(s7);
 }
+
 
 // function to send generic output out an outlet
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
@@ -949,8 +961,8 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
         outlet_anything( x->outlets[outlet_num], gensym(""), length, out_list);     
  
     }
-    // returns the value output, less the outlet number, so these can be chained
-    return s7_out_val;
+    // returns nil so that the console is not chatting on every output message
+    return s7_nil(s7);
 }
 
 // read an integer from a named table and index (max tables only store ints)
