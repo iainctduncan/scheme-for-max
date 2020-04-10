@@ -63,7 +63,7 @@ void scm4max_float(t_scm4max *x, double arg);
 void scm4max_bang(t_scm4max *x);
 void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv);
 
-void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file);
+void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file, bool skip_s7_load);
 void scm4max_openfile(t_scm4max *x, char *filename, short path);
 
 void scm4max_dblclick(t_scm4max *x);
@@ -240,7 +240,7 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
 
 // init and set up the s7 interpreter, and load main source file if present
 void scm4max_init_s7(t_scm4max *x){
-    post("s4m: initializing s7 interpreter");
+    //post("s4m: initializing s7 interpreter");
     // S7 initialization, it's possible this should actually happen in main and be attached
     // to the class as opposed to the instance. Not sure about that.
     // initialize interpreter
@@ -269,13 +269,13 @@ void scm4max_init_s7(t_scm4max *x){
    
     // boostrap the scheme code
     // might make this optional later
-    scm4max_doread(x, gensym( BOOTSTRAP_FILE ), false);
+    scm4max_doread(x, gensym( BOOTSTRAP_FILE ), false, false);
 
     // load a file given from a user arg, and save filename
     // the convoluted stuff below is to prevent saving @ins or something
     // as the sourcefile name if object used with param args but no sourcefile 
     if( x->source_file != _sym_nothing){
-        scm4max_doread(x, x->source_file, true);
+        scm4max_doread(x, x->source_file, true, false);
     }
     //post("scm4max_init_s7 complete");
 }
@@ -293,7 +293,9 @@ void scm4max_dblclick(t_scm4max *x){
     }
     // we always re-read the file so that it picks up any changes made from an editor
     // TODO: should go to read method so it can be deferred
-    scm4max_doread(x, x->source_file, true);
+    // passing is_source_file=true and skip_s7_load=true because we just want to load the buffer
+    // actual loading of the file into s7 should only happen on editor save
+    scm4max_doread(x, x->source_file, true, true);
     // load the editors buffer with the file contents
     object_method(x->m_editor, gensym("settext"), *x->source_text_handle, gensym("utf-8"));
 }
@@ -365,8 +367,8 @@ void scm4max_read(t_scm4max *x, t_symbol *s){
     defer(x, (method)scm4max_doread, s, 0, NULL);
 }
 // read function to either pass on a filename or open the file selector box
-// straight from the sdk docs really
-void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file){
+// skip_s7_load indicates to load the file from disk but not into s7. (prob should be refactored)
+void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file, bool skip_s7_load){
     //post("scm4max_doread()");
     t_fourcc filetype = 'TEXT', outtype;
     short numtypes = 1;
@@ -400,10 +402,12 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file){
     // save the full path for using with text editor opening
     x->source_file_path_id = path_id;
 
-    // This is where we load the actual file 
+    // This is where we load the actual file into S7, which we don't always want to do 
     //post("s4m: loading file %s", filename);
-    if( !s7_load(x->s7, full_path) ){
-        object_error(x, "s4m: error loading %s", full_path);
+    if( ! skip_s7_load ){
+        if( !s7_load(x->s7, full_path) ){
+            object_error(x, "s4m: error loading %s", full_path);
+        }
     }
 }
 
