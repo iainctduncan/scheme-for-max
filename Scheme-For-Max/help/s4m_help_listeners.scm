@@ -1,4 +1,4 @@
-(post "s4m_help_listeners.scm loading....")
+;;(post "s4m_help_listeners.scm loading....")
 
 ;; Demo scheme-for-max code for the Listeners help tab
 
@@ -22,21 +22,21 @@
 ;; a list to inlet 0 that starts with a number will be internally (in max) processed
 ;; as the message "list ...args..."
 ;; but as 'list' is a scheme function, we will intercept those with functions called 'f-list'
-;; note that we are using the lambda args form to bundle variable number of args as a list
-(define f-list (lambda args 
+(define (f-list args) 
     (post "f-list executing, args: " args)
     ;; sent the length of the list out outlet 0
     (out 0 (length args))
     ;; send out the values in a sequence of messages out outlet 1
     ;; out-1 is a single symbol convenience function, they exists up to out-8
     (map out-1 args) 
-))
+)
 
 (define (my-sum arg-1 arg-2) 
     (out 0 (+ arg-1 arg-2))) 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Inlet 1+ handling, messages dispatched to registered listeners
+;; listeners for int, float, bang, and list use keywords :int, :float, :bang, :list
 ;; messages won't do anything unless picked up by a registered listener function
 ;; listeners must be functions with one argument, which will be handed a list (possibly empty)
 ;; max symbols will become scheme symbols
@@ -44,7 +44,7 @@
 ;; a sample listener, signature is always one param that will be a list of args
 (define (num-listener args) (post "num-listener: " (args 0)))
 
-;; register the listener to be called on int messages to inlet 1 
+;; register the listener to be called on int messages to inlet 1 (note keyword :int) 
 (listen 1 :int num-listener)
 ;; register the same function to be called on float messages to inlet 1 
 (listen 1 :float num-listener)
@@ -89,7 +89,8 @@
     (out 0 arg-1)
     (out 1 arg-0))
     
-
+;; if you edit this file, you might want to uncomment the below as it
+;; tells you that you got through loading ok.
 (post "s4m_help_listeners.scm DONE")
 
 

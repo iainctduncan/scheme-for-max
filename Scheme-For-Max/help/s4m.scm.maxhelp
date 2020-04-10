@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 34.0, 79.0, 883.0, 746.0 ],
+		"rect" : [ 34.0, 79.0, 930.0, 746.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -196,8 +196,8 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 503.0, 11.0, 364.0, 214.0 ],
-									"text" : "Inlet 0 and 1+ behave differently for listeners. On inlet 0, all messages are treated as scheme code to evaluate, with bangs, numbers and number lists implicitly adding the symbol f-int, f-bang, f-list. Thus the message 1 gets converted to (f-int 1) and evaluated by scheme. This means variables can be used in the messages and will be expanded to their values by the scheme code, and symbols will be errors if not defined, or quoted.\n\nOn inlets 1+, messages are not treated as code to be evaluated, just standard max messages of tokens, with symbols become quoted symbols in scheme. Inlets 1+ only do anything if we have registered listeners on them. \nSee the example code in s4m_help_listeners.scm"
+									"patching_rect" : [ 503.0, 5.0, 382.0, 214.0 ],
+									"text" : "Inlet 0 and 1+ behave differently for listeners. On inlet 0, all messages are treated as scheme code that gets evaluated. Messages of just bangs, numbers and number lists implicitly prepend the symbol f-int, f-bang, f-list. Thus the message 1 gets evaluated as (f-int 1), and will run the function f-int if defined. Symbols that are variables in messages will be expanded to their values by scheme. Symbols will produce unbound-variable errors if they haven't been defined.\n\nOn inlets 1+, messages are not treated as code to be evaluated, just standard max messages of tokens.  Symbols are handled as quoted symbols in scheme. \nInlets 1+ only do anything if we have registered listeners on them. See the example code in s4m_help_listeners.scm"
 								}
 
 							}
@@ -208,7 +208,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 360.5, 461.0, 57.0, 22.0 ],
+									"patching_rect" : [ 360.5, 453.0, 57.0, 22.0 ],
 									"text" : "swap 1 2"
 								}
 
@@ -222,8 +222,8 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 435.5, 394.0, 432.0, 98.0 ],
-									"text" : "These will be a errors on inlet 0 as a function can't be named a keyword, and we have no function defined named 'swap'. \n\nBut on inlet 1 we have registered listeners for both the symbol and keyword, dispatching both these messages to the swap-outlet function."
+									"patching_rect" : [ 435.5, 395.0, 432.0, 98.0 ],
+									"text" : "These will be a errors on inlet 0 as a function can't be named a keyword, and we have no function defined named 'swap'. \n\nOn inlet 1 we have registered listeners for both the symbol and keyword, dispatching both these messages to the same swap-outlet function."
 								}
 
 							}
@@ -245,11 +245,12 @@
 									"bubbleside" : 2,
 									"fontsize" : 13.0,
 									"id" : "obj-67",
+									"linecount" : 3,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 24.0, 306.0, 275.0, 40.0 ],
-									"text" : "double-click to view source with examples"
+									"patching_rect" : [ 24.0, 281.0, 276.0, 69.0 ],
+									"text" : "Double-click to view source with examples, or open s4m_help_listeners.scm from the Scheme-for-Max package help directory."
 								}
 
 							}
@@ -316,6 +317,7 @@
 , 							{
 								"box" : 								{
 									"id" : "obj-57",
+									"int" : 1,
 									"maxclass" : "gswitch2",
 									"numinlets" : 2,
 									"numoutlets" : 2,
@@ -358,8 +360,8 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 435.5, 314.5, 431.5, 69.0 ],
-									"text" : "Listening for symbolic messages on inlet 0 happens automatically, this will call: (my-sum 1 2)\nOn inlet 1, it's an error as we haven't registered any listener on the symbol my-sum"
+									"patching_rect" : [ 435.5, 320.0, 433.0, 69.0 ],
+									"text" : "Listening for symbolic messages on inlet 0 happens automatically, this will call: (my-sum a 2).  It will produce an error if you don't click define!\nOn inlet 1, it's an error as we haven't registered any listener on the symbol my-sum."
 								}
 
 							}
@@ -368,12 +370,12 @@
 									"bubble" : 1,
 									"fontsize" : 13.0,
 									"id" : "obj-41",
-									"linecount" : 3,
+									"linecount" : 5,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 427.0, 232.5, 440.0, 54.0 ],
-									"text" : "Listen on for ints, floats, bangs, and lists  by defining functions named accordingly for inlet 0, or by registering listeners for inlets 1+.\nDouble click s4m.scm to see the examples in s4m_help_listeners.scm"
+									"patching_rect" : [ 432.0, 225.0, 440.0, 83.0 ],
+									"text" : "Listen on for ints, floats, bangs, and lists by defining functions named accordingly for inlet 0, or by registering listeners for inlets 1+ using keywords :int, :float, :bang, :list and an inlet number: \n(listen 1 :int my-int-handler)\nSee the examples in s4m_help_listeners.scm."
 								}
 
 							}
@@ -721,7 +723,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 34.0, 105.0, 883.0, 720.0 ],
+						"rect" : [ 0.0, 26.0, 930.0, 720.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -894,7 +896,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 274.0, 616.0, 103.0, 22.0 ],
-									"text" : "out 0 'foo"
+									"text" : "out 0 'bar"
 								}
 
 							}
@@ -966,12 +968,12 @@
 									"bubble" : 1,
 									"fontsize" : 13.0,
 									"id" : "obj-23",
-									"linecount" : 3,
+									"linecount" : 4,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 205.0, 215.0, 275.0, 54.0 ],
-									"text" : "A keyword starts with a colon and is a symbol that always evaluates to itself, so it doesn't need to be defined to be output"
+									"patching_rect" : [ 205.0, 207.5, 275.0, 69.0 ],
+									"text" : "In s7 scheme, a keyword starts with a colon and is a symbol that always evaluates to itself, so it doesn't need to be defined to be output"
 								}
 
 							}
@@ -1295,7 +1297,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 883.0, 720.0 ],
+						"rect" : [ 0.0, 26.0, 930.0, 720.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1324,6 +1326,57 @@
 						"subpatcher_template" : "",
 						"showontab" : 1,
 						"boxes" : [ 							{
+								"box" : 								{
+									"bubble" : 1,
+									"bubblepoint" : 0.2,
+									"fontsize" : 13.0,
+									"id" : "obj-18",
+									"linecount" : 5,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 508.0, 306.0, 266.0, 83.0 ],
+									"text" : "Another way to dynamically create scheme code in messages boxes.\ntosymbol is required to make max treat it as a single string symbol, leaving the parentheses in there."
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-14",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 404.0, 372.0, 111.0, 22.0 ],
+									"text" : "prepend eval-string"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-12",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 404.0, 339.0, 57.0, 22.0 ],
+									"text" : "tosymbol"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-5",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 404.0, 306.0, 102.0, 22.0 ],
+									"text" : "(out 0 (+ 99 100))"
+								}
+
+							}
+, 							{
 								"box" : 								{
 									"bubble" : 1,
 									"fontsize" : 13.0,
@@ -1363,11 +1416,11 @@
 , 							{
 								"box" : 								{
 									"id" : "obj-8",
-									"linecount" : 2,
+									"linecount" : 4,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 11.0, 450.0, 449.0, 33.0 ],
+									"patching_rect" : [ 11.0, 450.0, 351.0, 60.0 ],
 									"text" : "The REPL does not have history yet. This will be done in an upcoming external.\nYou can edit the size of the textwindow by copying and editing the s4m.repl object"
 								}
 
@@ -1424,12 +1477,12 @@
 									"bubblepoint" : 0.2,
 									"fontsize" : 13.0,
 									"id" : "obj-37",
-									"linecount" : 15,
+									"linecount" : 14,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 508.0, 77.0, 268.0, 243.0 ],
-									"text" : "This is the s4m.repl object in a bpatcher\n\nIf \"output on enter\" is selected, hitting Enter empties the text window and sends out contents.\n\nIf \"Control-Keys\" is selected instead we can type Enter to write multi-line code. \n\nThe return value from the REPL will be printed to the max console as s4m> {stuff}\n\nFunctions with only side effects normally return the null list:\ns4m> ()\n"
+									"patching_rect" : [ 508.0, 77.0, 268.0, 214.0 ],
+									"text" : "This is the s4m.repl object in a bpatcher\n\nIf \"output on enter\" is selected, hitting Enter empties the text window and sends out contents.\n\nIf \"Control-Keys\" is selected instead we can type Enter to write multi-line code. \n\nThe return value from the REPL will be printed to the max console as s4m> {stuff}\n\nFunctions with only side effects normally return the null list, and this is not printed."
 								}
 
 							}
@@ -1519,6 +1572,21 @@
 							}
 , 							{
 								"patchline" : 								{
+									"destination" : [ "obj-14", 0 ],
+									"source" : [ "obj-12", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-1", 0 ],
+									"midpoints" : [ 413.5, 402.0, 80.0, 402.0, 74.0, 402.0, 74.0, 362.0, 20.5, 362.0 ],
+									"source" : [ "obj-14", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
 									"destination" : [ "obj-31", 0 ],
 									"source" : [ "obj-30", 0 ]
 								}
@@ -1535,6 +1603,13 @@
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
 									"source" : [ "obj-31", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-12", 0 ],
+									"source" : [ "obj-5", 0 ]
 								}
 
 							}
@@ -1570,7 +1645,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 883.0, 720.0 ],
+						"rect" : [ 0.0, 26.0, 930.0, 720.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,

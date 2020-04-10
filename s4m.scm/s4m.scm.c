@@ -683,9 +683,17 @@ void scm4max_list(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
     // for inlet 0, it will be "flist" (so as not to collide with scheme reserved word "list")
     // for inlet 1+, it will be :list (for registered listeners)
     if(inlet_num == 0){
-        s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, "f-list"), s7_args); 
-        res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-eval"), s7_args); 
+        // bundle up the args into an s7 list, so that the actual call to eval is
+        // (s4m-eval '(f-list arg-list) )
+        s7_pointer s7_top_args = s7_nil(x->s7);
+        s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, "list"), s7_args);
+        s7_top_args = s7_cons(x->s7, s7_args, s7_top_args);
+        s7_top_args = s7_cons(x->s7,s7_make_symbol(x->s7, "f-list"), s7_top_args);
         //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        //post("s7-top-args: %s", s7_object_to_c_string(x->s7, s7_top_args) ); 
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-eval"), s7_top_args); 
+        // s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, "f-list"), s7_args); 
+        //res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-eval"), s7_args); 
     }else{
         s7_args = s7_cons(x->s7, s7_make_keyword(x->s7, "list"), s7_args); 
         s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args); 

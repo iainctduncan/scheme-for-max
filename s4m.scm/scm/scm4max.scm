@@ -76,4 +76,4 @@
 (define (out-6 args) (max-output 6 args))
 (define (out-7 args) (max-output 7 args))
 
-(post "scm4max.scm BOOTSTRAP COMPLETE")
+;;(post "scm4max.scm BOOTSTRAP COMPLETE")
