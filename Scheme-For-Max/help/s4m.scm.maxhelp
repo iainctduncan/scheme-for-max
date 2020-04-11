@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 34.0, 79.0, 930.0, 746.0 ],
+		"rect" : [ 34.0, 79.0, 944.0, 746.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -55,7 +55,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 37.0, 79.0, 911.0, 756.0 ],
+						"rect" : [ 0.0, 26.0, 944.0, 720.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -83,7 +83,6 @@
 						"style" : "",
 						"subpatcher_template" : "",
 						"showontab" : 1,
-						"visible" : 1,
 						"boxes" : [ 							{
 								"box" : 								{
 									"id" : "obj-93",
@@ -465,7 +464,7 @@
 								"box" : 								{
 									"id" : "obj-1",
 									"maxclass" : "newobj",
-									"numinlets" : 3,
+									"numinlets" : 2,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
 									"patching_rect" : [ 11.0, 367.0, 278.0, 22.0 ],
@@ -723,7 +722,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 930.0, 720.0 ],
+						"rect" : [ 0.0, 26.0, 944.0, 720.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1052,7 +1051,7 @@
 								"box" : 								{
 									"id" : "obj-1",
 									"maxclass" : "newobj",
-									"numinlets" : 2,
+									"numinlets" : 1,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
 									"patching_rect" : [ 11.0, 623.0, 105.0, 22.0 ],
@@ -1297,7 +1296,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 930.0, 720.0 ],
+						"rect" : [ 0.0, 26.0, 944.0, 720.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1458,7 +1457,7 @@
 								"box" : 								{
 									"id" : "obj-1",
 									"maxclass" : "newobj",
-									"numinlets" : 2,
+									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 11.0, 367.0, 56.0, 22.0 ],
@@ -1645,7 +1644,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 930.0, 720.0 ],
+						"rect" : [ 34.0, 105.0, 944.0, 720.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1675,8 +1674,31 @@
 						"showontab" : 1,
 						"boxes" : [ 							{
 								"box" : 								{
+									"id" : "obj-10",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 434.0, 171.0, 71.0, 22.0 ],
+									"text" : "out 0 my-int"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-6",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 362.0, 171.0, 61.0, 22.0 ],
+									"text" : "inc-my-int"
+								}
+
+							}
+, 							{
+								"box" : 								{
 									"bubble" : 1,
-									"bubblepoint" : 0.2,
 									"bubbleside" : 3,
 									"fontsize" : 13.0,
 									"id" : "obj-9",
@@ -1684,7 +1706,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 6.0, 186.0, 333.0, 54.0 ],
+									"patching_rect" : [ 14.5, 219.0, 333.0, 54.0 ],
 									"text" : "\"reset\" will wipe and reload the intepreter, and reload the source file specified in the s4m.scm object box, if one is present."
 								}
 
@@ -1734,12 +1756,12 @@
 									"bubbleside" : 3,
 									"fontsize" : 13.0,
 									"id" : "obj-24",
-									"linecount" : 4,
+									"linecount" : 7,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 6.0, 92.0, 342.0, 69.0 ],
-									"text" : "\"read\" to inlet 0 will load a file from your max-file-path, without reseting the interpreter. This allows multiple files in the session. These files are in the Scheme-for-Max packages help directory."
+									"patching_rect" : [ 6.0, 80.5, 342.0, 112.0 ],
+									"text" : "\"read\" to inlet 0 will load a file from your max-file-path, without reseting the interpreter. This allows multiple files in the session. These files are in the Scheme-for-Max packages help directory.\nThe second redifines the inc-my-int function without redefining the state variable it works on, allowing hot reloading of functions while preserving state."
 								}
 
 							}
@@ -1754,7 +1776,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 6.0, 259.0, 350.0, 127.0 ],
+									"patching_rect" : [ 6.0, 283.0, 350.0, 127.0 ],
 									"text" : "A filename in the box will be loaded on startup.\nDouble click to open an editor. Saving will reload the file without wiping the interpreter, but redefinitions will clobber existing definitions.\n\nChanging the filename in the object box will re-create the object, thus resetting the interpreter, and wiping all active definitions"
 								}
 
@@ -1765,7 +1787,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 513.0, 311.5, 121.0, 22.0 ],
+									"patching_rect" : [ 513.0, 335.5, 121.0, 22.0 ],
 									"text" : "print out-1 @popup 1"
 								}
 
@@ -1837,7 +1859,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 371.0, 186.0, 49.0, 22.0 ],
+									"patching_rect" : [ 371.0, 235.0, 49.0, 22.0 ],
 									"text" : "reset"
 								}
 
@@ -1848,7 +1870,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 367.0, 311.5, 121.0, 22.0 ],
+									"patching_rect" : [ 367.0, 335.5, 121.0, 22.0 ],
 									"text" : "print out-0 @popup 1"
 								}
 
@@ -1860,7 +1882,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 367.0, 130.0, 167.0, 22.0 ],
+									"patching_rect" : [ 362.0, 130.0, 167.0, 22.0 ],
 									"text" : "read s4m_help_basics_2.scm"
 								}
 
@@ -1869,10 +1891,10 @@
 								"box" : 								{
 									"id" : "obj-1",
 									"maxclass" : "newobj",
-									"numinlets" : 2,
+									"numinlets" : 1,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 371.0, 274.0, 226.0, 22.0 ],
+									"patching_rect" : [ 371.0, 298.0, 226.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"ins" : 1,
 										"outs" : 2
@@ -1913,7 +1935,15 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 380.5, 248.0, 380.5, 248.0 ],
+									"midpoints" : [ 443.5, 202.0, 358.0, 202.0, 358.0, 275.0, 380.5, 275.0 ],
+									"source" : [ "obj-10", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-1", 0 ],
+									"midpoints" : [ 380.5, 272.0, 380.5, 272.0 ],
 									"source" : [ "obj-13", 0 ]
 								}
 
@@ -1921,7 +1951,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 575.0, 152.0, 551.0, 152.0, 551.0, 251.0, 380.5, 251.0 ],
+									"midpoints" : [ 575.0, 152.0, 551.0, 152.0, 551.0, 281.0, 380.5, 281.0 ],
 									"source" : [ "obj-15", 0 ]
 								}
 
@@ -1929,7 +1959,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 575.0, 251.0, 550.0, 251.0, 550.0, 251.0, 380.5, 251.0 ],
+									"midpoints" : [ 575.0, 251.0, 550.0, 251.0, 550.0, 279.0, 380.5, 279.0 ],
 									"source" : [ "obj-17", 0 ]
 								}
 
@@ -1937,7 +1967,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 376.5, 119.0, 355.0, 119.0, 355.0, 250.0, 380.5, 250.0 ],
+									"midpoints" : [ 376.5, 119.0, 355.0, 119.0, 355.0, 275.0, 380.5, 275.0 ],
 									"source" : [ "obj-19", 0 ]
 								}
 
@@ -1945,7 +1975,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 575.0, 184.0, 552.0, 184.0, 552.0, 252.0, 380.5, 252.0 ],
+									"midpoints" : [ 575.0, 184.0, 552.0, 184.0, 552.0, 281.0, 380.5, 281.0 ],
 									"source" : [ "obj-21", 0 ]
 								}
 
@@ -1953,7 +1983,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 575.0, 216.0, 550.0, 216.0, 550.0, 252.0, 380.5, 252.0 ],
+									"midpoints" : [ 575.0, 216.0, 550.0, 216.0, 550.0, 280.0, 380.5, 280.0 ],
 									"source" : [ "obj-29", 0 ]
 								}
 
@@ -1961,7 +1991,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 575.0, 119.0, 552.0, 119.0, 552.0, 248.0, 380.5, 248.0 ],
+									"midpoints" : [ 575.0, 119.0, 552.0, 119.0, 552.0, 279.0, 380.5, 279.0 ],
 									"source" : [ "obj-4", 0 ]
 								}
 
@@ -1969,8 +1999,16 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 376.5, 160.0, 357.0, 160.0, 357.0, 244.0, 357.0, 248.0, 380.5, 248.0 ],
+									"midpoints" : [ 371.5, 160.0, 357.0, 160.0, 357.0, 244.0, 357.0, 275.0, 380.5, 275.0 ],
 									"source" : [ "obj-5", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-1", 0 ],
+									"midpoints" : [ 371.5, 203.0, 357.0, 203.0, 357.0, 270.0, 380.5, 270.0 ],
+									"source" : [ "obj-6", 0 ]
 								}
 
 							}

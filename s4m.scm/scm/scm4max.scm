@@ -53,7 +53,9 @@
                (keyword (cadr args))
                (func-args (cddr args)) 
                (listener ((s4m-listeners inlet) keyword)))
-      (listener func-args))))
+      (if (procedure? listener) 
+            (listener func-args)
+            (post "Error: no listener on " inlet keyword)))))
 
 
 ;; wrapper for eval to help debugging or to hook into
@@ -77,3 +79,4 @@
 (define (out-7 args) (max-output 7 args))
 
 ;;(post "scm4max.scm BOOTSTRAP COMPLETE")
+(define s4m-done-bootstrap #t)

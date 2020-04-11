@@ -13,16 +13,21 @@
 (define my-list (list 1 2 3))
 
 ;; post can take all kinds of things (note: no commas)
-(post "Some variabless: " my-int my-float my-list)
+(post "Some variables: " my-int my-float my-list)
 
 ;; Define a function that adds 1 to a number, 
 ;; posts the number to the console, and sends it out outlet 0
 (define (my-adder num) 
-    (post "my-fun-1 executing, num is " num)
+    (post "my-adder executing, num is " num)
     (out 0 (+ 1 num)))
 
-;; If you edit this file, it's a good idea to have a message at the bottom to let you 
-;; know your source file loaded ok without crashing, at least until error messages get improved! 
-;; (post "s4m_help_basics.scm done loading....")
+;; A function that does something with one of our variables
+(define (inc-my-int) 
+    (post "incrementing my-int by 1")
+    (set! my-int (+ 1 my-int)))
+
+;; sometimes it's helpful to post at the bottom of files to let you know 
+;; loading is complete
+(post "s4m_help_basics.scm done loading....")
 
 
