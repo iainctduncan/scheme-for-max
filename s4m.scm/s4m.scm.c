@@ -97,6 +97,7 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *ap);
 //t_max_err s7_obj_to_string(s7_scheme *s7, s7_pointer *s7_obj, char *obj_string);
 
 t_scm4max *get_max_obj(s7_scheme *s7);
+static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
@@ -257,6 +258,7 @@ void scm4max_init_s7(t_scm4max *x){
     //s7_define_function(x->s7, "bang", s7_output_bang, 0, 0, false, "(bang) outs a bang");
     //s7_define_function(x->s7, "s4m-output-int", s7_output_int, 1, 0, false, "(s4m-output-int 99) outputs 99 out outlet 1");
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
+    s7_define_function(x->s7, "load-from-max", s7_load_from_max, 1, 0, false, "load files from the max path");
     s7_define_function(x->s7, "tab-get", s7_table_read, 2, 0, false, "(tab-get :foo 4) returns value at index 4 from table :foo");
     s7_define_function(x->s7, "tab-set", s7_table_write, 3, 0, false, "(tab-set :foo 4 127) writes value 4 to index 127 of table :foo");
     s7_define_function(x->s7, "buf-get", s7_buffer_read, 2, 0, false, "(buf-get :foo 4) returns value at channel 0, index 4 from buffer :foo");
@@ -931,29 +933,8 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
 }
 
 
-// arg this is crashing, I need to relearn C properly. :-(
-// convert an s7 object to a string for debugging purposes
-// TODO: does not handle arrays or hashes yet 
-//t_max_err *s7_obj_to_string(s7_scheme *s7, s7_pointer *s7_obj, char *obj_string){
-//    post("s7_obj_to_string()");
-//    if( s7_is_integer(s7_obj)){
-//        obj_string = s7_string( s7_number_to_string(s7, s7_obj, 10));  
-//    }else if( s7_is_real(s7_obj)){
-//        obj_string = s7_string( s7_number_to_string(s7, s7_obj, 10));  
-//    }else if( s7_is_symbol(s7_obj) ){
-//        obj_string = s7_string( s7_symbol_name(s7_obj));  
-//    }else if( s7_is_string(s7_obj) ){
-//        obj_string = s7_string(s7_obj);
-//    }else{
-//        post("ERROR: unhandled s7 to string conversion");
-//        return 1;
-//    }
-//    post(" ... returning");
-//    return 0; 
-//}
-
 /*********************************************************************************
-* S7 FFI functions
+* S7 FFI functions, these are the implementations of functions added to scheme
 */
 
 // helper to get a max struct pointer from the s7 environment pointer
@@ -962,6 +943,15 @@ t_scm4max *get_max_obj(s7_scheme *s7){
     uintptr_t scm4max_ptr_from_s7 = (uintptr_t)s7_integer( s7_name_to_value(s7, "maxobj") );
     t_scm4max *scm4max_ptr = (t_scm4max *)scm4max_ptr_from_s7;
     return scm4max_ptr;
+}
+
+// load a scheme file, searching the max paths to find it
+static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args) {
+    // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
+    char *file_name = s7_string( s7_car(args) );
+    t_scm4max *x = get_max_obj(s7);
+    scm4max_doread(x, gensym(file_name), false, false);    
+    return s7_nil(s7);
 }
 
 
