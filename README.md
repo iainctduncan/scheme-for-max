@@ -32,9 +32,11 @@ sample source code in the package. Clicking "launch" on the package menu will op
 
 Narative documentation will be forthcoming here: https://github.com/iainctduncan/scheme-for-max-docs
 
+Video demos will be coming soon on youtube.
+
 The S7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html
 
-For release announcements, questions, suggestions, installation issues, and bug reports, 
+For release and tutorial announcements, questions, suggestions, installation issues, and bug reports, 
 please join the scheme-for-max google group.
 
 https://groups.google.com/forum/#!forum/scheme-for-max
