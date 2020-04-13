@@ -900,8 +900,15 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
             }else{
             // otherwise, make it an s7 symbol
             // NB: foo -> foo, 'foo -> (symbol "foo")
-                //post(" ... creating s7 symbol from %s ", atom_getsym(ap)->s_name);
-                s7_obj = s7_make_symbol(s7, atom_getsym(ap)->s_name);
+                t_symbol *sym = atom_getsym(ap); 
+                //post(" ... creating s7 symbol from %s ", sym->s_name);
+                if( sym == gensym("#t") || sym == gensym("#true") ){
+                    s7_obj = s7_t(s7);
+                }else if( sym == gensym("#f") || sym == gensym("#false") ){
+                    s7_obj = s7_f(s7);
+                }else{
+                    s7_obj = s7_make_symbol(s7, sym->s_name);
+                }
             }
             break;
         default:

@@ -1331,12 +1331,12 @@
 									"bubbleside" : 0,
 									"fontsize" : 13.0,
 									"id" : "obj-23",
-									"linecount" : 5,
+									"linecount" : 7,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 11.0, 425.0, 374.0, 98.0 ],
-									"text" : "The intepreter starts off by bootstrapping with the scm4max.scm file automatically. This file is in the Scheme for Max package, and you can edit it if you want to change startup up definitions. For example, the sm-filter-result function lets you alter what gets printed to the console after each execution."
+									"patching_rect" : [ 11.0, 425.0, 374.0, 127.0 ],
+									"text" : "The intepreter starts off by bootstrapping with the scm4max.scm file automatically. This file is in the Scheme for Max package, and you can edit it if you want to change startup up definitions. For example, the s4m-filter-result function lets you alter what gets printed to the console after each execution,\nand the post and stringify function control what posting looks like."
 								}
 
 							}
@@ -1358,13 +1358,12 @@
 									"bubble" : 1,
 									"fontsize" : 13.0,
 									"id" : "obj-20",
-									"linecount" : 7,
+									"linecount" : 9,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 508.0, 231.0, 316.0, 112.0 ],
-									"presentation_linecount" : 6,
-									"text" : "The return value from the REPL will be printed to the max console as s4m> {stuff}\n\nFunctions with only side effects normally return the null list, (). By default, the logger doesn't print a null return, but we can by setting s4m-log-nulls to true (#t)"
+									"patching_rect" : [ 508.0, 231.0, 322.0, 141.0 ],
+									"text" : "The return value from the REPL will be printed to the max console as s4m> {stuff}\nTo inspect a variable, enter it in the text window without parentheses and the console will display it.\n\nFunctions with only side effects normally return the null list: (). By default, the logger doesn't print a null return value to the console, but we can set it to do so by setting s4m-log-nulls to true (#t)"
 								}
 
 							}
@@ -1402,7 +1401,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 508.0, 357.0, 322.0, 69.0 ],
+									"patching_rect" : [ 508.0, 382.0, 322.0, 69.0 ],
 									"text" : "Another way to dynamically create scheme code in messages boxes.\ntosymbol is required to make max treat it as a single string symbol, leaving the parentheses in."
 								}
 
@@ -1414,7 +1413,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 404.0, 408.0, 111.0, 22.0 ],
+									"patching_rect" : [ 404.0, 440.0, 111.0, 22.0 ],
 									"text" : "prepend eval-string"
 								}
 
@@ -1426,7 +1425,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 404.0, 382.0, 57.0, 22.0 ],
+									"patching_rect" : [ 404.0, 414.0, 57.0, 22.0 ],
 									"text" : "tosymbol"
 								}
 
@@ -1438,7 +1437,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 404.0, 357.0, 102.0, 22.0 ],
+									"patching_rect" : [ 404.0, 389.0, 102.0, 22.0 ],
 									"text" : "(out 0 (+ 99 100))"
 								}
 
@@ -1504,7 +1503,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 211.0, 357.0, 174.0, 54.0 ],
+									"patching_rect" : [ 154.5, 364.0, 201.0, 54.0 ],
 									"text" : "Each instance of s4m.scm has its own isolated interpreter."
 								}
 
@@ -1537,7 +1536,6 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 508.0, 77.0, 322.0, 98.0 ],
-									"presentation_linecount" : 6,
 									"text" : "This is the s4m.repl object in a bpatcher\n\nIf \"output on enter\" is selected, hitting Enter empties the text window and sends out contents.\nIf \"Control-Keys\" is selected instead we can type Enter to write multi-line code. "
 								}
 
@@ -1645,7 +1643,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 413.5, 440.0, 391.0, 440.0, 391.0, 346.0, 20.5, 346.0 ],
+									"midpoints" : [ 413.5, 485.0, 391.0, 485.0, 391.0, 346.0, 20.5, 346.0 ],
 									"source" : [ "obj-14", 0 ]
 								}
 

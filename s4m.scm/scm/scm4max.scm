@@ -35,8 +35,12 @@
 ;; helper to set whether we see nulls logged to the console
 (define s4m-log-nulls #t)
 (define (s4m-filter-result res)
+  ;; if we replace what would be returned by :no-log, s4m will not print to console
   (cond 
+    ;; turn off loging of the null list if set to do so
     ((and (null? res) (not s4m-log-nulls)) :no-log)
+    ;; use the same setting to mute logging lists of nulls: (() () ())
+    ((and (list? res) (every? null? res) (not s4m-log-nulls)) :no-log)
     (else res))) 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
