@@ -85,6 +85,17 @@
 						"showontab" : 1,
 						"boxes" : [ 							{
 								"box" : 								{
+									"id" : "obj-4",
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 32.0, 70.0, 727.0, 20.0 ],
+									"text" : "Scheme-for-Max"
+								}
+
+							}
+, 							{
+								"box" : 								{
 									"fontface" : 1,
 									"fontsize" : 16.0,
 									"id" : "obj-2",
@@ -277,7 +288,6 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 375.0, 476.0, 50.0, 22.0 ],
-									"text" : "1 2 3",
 									"varname" : "target-msg-3"
 								}
 
@@ -327,7 +337,6 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 371.5, 363.0, 83.0, 22.0 ],
-									"text" : "1 2 3",
 									"varname" : "target-msg-2"
 								}
 
@@ -477,8 +486,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 412.0, 316.0, 28.0, 22.0 ],
-									"text" : "1",
+									"patching_rect" : [ 412.0, 316.0, 29.5, 22.0 ],
 									"varname" : "target-msg-1"
 								}
 

@@ -32,8 +32,8 @@
                     (else (string-append (stringify (car lat)) " " (log-string (cdr lat))))))))
     (max-post (log-string args))))
 
-;; helper to set whether we see nulls logged to the console
-(define s4m-log-nulls #t)
+;; helper to set whether we see nulls logged to the console, defaults to false
+(define s4m-log-nulls #f)
 (define (s4m-filter-result res)
   ;; if we replace what would be returned by :no-log, s4m will not print to console
   (cond 
