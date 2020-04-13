@@ -4,7 +4,7 @@ Max/MSP with Scheme / Lisp. It is available as a package for OSX and as source c
 for OSX or Windows. We are in need of a Windows developer to build the Windows package!
 
 ## Download
-Scheme-For-Max 0.1.0-beta-1 is available for download on Github:
+Scheme-For-Max 0.1.0-beta-1 for Max 8 on OSX is available for download on Github:
 
 https://github.com/iainctduncan/scheme-for-max/releases
 
