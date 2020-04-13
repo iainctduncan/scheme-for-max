@@ -6,7 +6,7 @@ import os
 # its job is to copy the package, including the binary assets and scm files, into the 
 # dist directory, ready for zipping up for release
 
-version = "0.1"     # goes in the tarball
+version = "0.1-rc-1"     # appended to tarball name
 dry_run = False
 
 externals_src = "../../externals"
@@ -16,10 +16,12 @@ scm_dest = "dist/Scheme-For-Max/patchers"
 patcher_src = "s4m.scm/patchers"
 patcher_dest = "dist/Scheme-For-Max/patchers"
 
+# list of scheme files required, will be copied into patcher dir in package
 scm_files = [
     "scm4max.scm",
     "stuff.scm"
 ]
+# list of patchers aside from the external
 patcher_files = [
     "s4m.repl.maxpat",
 ]
@@ -59,8 +61,16 @@ if __name__=="__main__":
     print ("\nmake-release.py: package up a scheme-for-max release")
 
     dry_run = False
+    do_install = True
+
     if dry_run:
         print("... Dry run, commands only printed")
     package_release()
    
     print("DONE. ready for release") 
+    
+    if do_install:
+        print("\n...Installing to Max")
+        do("mv ~/Documents/Max\ 8/Packages/max-sdk-8.0.3 ~/Documents/Max\ 8/max-sdk-8.0.3")
+        do("cp -rp dist/Scheme-For-Max ~/Documents/Max\ 8/Packages/")
+        print("\n\nINSTALL DONE, ready to test ")
