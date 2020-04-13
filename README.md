@@ -1,13 +1,28 @@
 # scheme-for-max
-Scheme-for-max is a Max/MSP external to allow scripting max with S7 Scheme / Lisp.
+Scheme-for-Max (s4m) is an open source Max/MSP external to enable scripting and live coding 
+Max/MSP with Scheme / Lisp. It is available as a package for OSX and as source code
+for OSX or Windows. We are in need of a Windows developer to build the Windows package.
 
-This is my project directory for figuring out scheme scripting for max. At present it should be considered experimental only. Go ahead and use it if it's useful, but it is subject to change without notice and could be broken at any time. Roadmap in the docs folder here https://github.com/iainctduncan/scheme-for-max/blob/master/docs/roadmap.md
+Documentation is here: https://github.com/iainctduncan/scheme-for-max-docs
+An extensive help file demonstrating all official features of the release is included, with
+sample source code in the package.  
 
-There will be documentation, tutorials, and video examples coming over the next several months (2020-01-29). In the meantime, if this piques your interest and you want to hear about progress, you can join the scheme-for-max google group. https://groups.google.com/forum/#!forum/scheme-for-max
+Scheme-for-Max 0.1-beta features include hot reloading code, live code evaluation from a REPL,
+evaluating max messages as scheme, sending remote messages
+to other objects, and dynamic creation of listeners for input and output. 
+Scheme's semantics map very well to Max, enabling one
+to interact with the interpreter in a wide variety of ways, including dynamically building up scheme
+messages from standard Max building block in a way that is far more cumbersom in JavaScript. 
 
-I would love some help testing and compiling on windows if anyone is interested there!
+Scheme-for-Max uses S7 Scheme, a "lisp-y" embeddable Scheme implementation by Bill Schottstaedt at
+CCRMA, based originally on Tiny Scheme.  S7 is a minimal Scheme, with many nice features for algorithmic 
+composition and embeddding, and is the Scheme engine used in the Common Music algorithmic composition
+toolkit and the Snd editors from CCRMA. S7 shares many features with Clojure, and includes support for
+Common Lips macros. It has keywords, Common Lisp style macros, first-class environments, 
+thread safety, applicative syntax, and a very straight forward FFI (foreign function interface). 
 
-We are using S7 Scheme, a "lisp-y" Scheme by Bill Schottstaedt at CCRMA, based originally on Tiny Scheme. S7 is a an easy to embed scheme intrepreter, with many nice features for algorithmic composition and embeddding, such as first-class environments, thread safety, applicative syntax, keywords, a very straight forward FFI (foreign function interface), and Common-Lisp-style macros. 
+For questions, suggestions, and bug reports, please join the scheme-for-max google group.
+https://groups.google.com/forum/#!forum/scheme-for-max
 
 License: As S7 Scheme, and TinyScheme on which it is based, are BSD licensed, this is too.
 
