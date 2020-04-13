@@ -416,7 +416,7 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file, bool sk
     // This is where we load the actual file into S7, which we don't always do 
     // because we could be reading it into the text editor buffer
     if( ! skip_s7_load ){
-        post("s4m: loading file %s", filename);
+        //post("s4m: loading file %s", filename);
         scm4max_s7_load(x, full_path);
     }
 }
@@ -442,12 +442,17 @@ void scm4max_free(t_scm4max *x){
 }
 
 // log results to the max console, without printing null list for side effect results
-// TODO: this should not print out lists of empty lists either: (() () ()) etc
 void scm4max_post_s7_res(t_scm4max *x, s7_pointer res) {
-    if( s7_is_null(x->s7, res) ){
-        // might make printing here optional later
-        return;
-    }else{
+    // check if an s4m-filter-result function is defined, and if so, use it
+    if( s7_is_defined(x->s7, "s4m-filter-result")){
+        s7_pointer s7_args = s7_nil(x->s7); 
+        s7_args = s7_cons(x->s7, res, s7_args); 
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-filter-result"), s7_args);
+    }
+    // skip posting to console if filter-result returns the keyword :no-log
+    // else we want the default logging
+    char *log_out = s7_object_to_c_string(x->s7, res);
+    if(strcmp(log_out, ":no-log")){
         post("s4m> %s", s7_object_to_c_string(x->s7, res) );
     }
 }
@@ -652,7 +657,7 @@ void scm4max_s7_load(t_scm4max *x, char *full_path){
         object_error(x, "s4m Error loading %s: %s", full_path, msg);
         free(msg);
     }else{
-        scm4max_post_s7_res(x, res);
+        //scm4max_post_s7_res(x, res);
     }
 }
 

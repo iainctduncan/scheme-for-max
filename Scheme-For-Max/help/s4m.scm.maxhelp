@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 34.0, 79.0, 944.0, 746.0 ],
+		"rect" : [ 34.0, 79.0, 885.0, 746.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -55,7 +55,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 944.0, 720.0 ],
+						"rect" : [ 0.0, 26.0, 885.0, 720.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -722,7 +722,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 944.0, 720.0 ],
+						"rect" : [ 0.0, 26.0, 885.0, 720.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1296,7 +1296,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 944.0, 720.0 ],
+						"rect" : [ 34.0, 105.0, 885.0, 720.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1328,14 +1328,82 @@
 								"box" : 								{
 									"bubble" : 1,
 									"bubblepoint" : 0.2,
+									"bubbleside" : 0,
 									"fontsize" : 13.0,
-									"id" : "obj-18",
+									"id" : "obj-23",
 									"linecount" : 5,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 508.0, 306.0, 266.0, 83.0 ],
-									"text" : "Another way to dynamically create scheme code in messages boxes.\ntosymbol is required to make max treat it as a single string symbol, leaving the parentheses in there."
+									"patching_rect" : [ 11.0, 425.0, 374.0, 98.0 ],
+									"text" : "The intepreter starts off by bootstrapping with the scm4max.scm file automatically. This file is in the Scheme for Max package, and you can edit it if you want to change startup up definitions. For example, the sm-filter-result function lets you alter what gets printed to the console after each execution."
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
+									"fontsize" : 13.0,
+									"id" : "obj-21",
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 508.0, 198.5, 255.0, 25.0 ],
+									"text" : "The repl patcher bangs on each output"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
+									"fontsize" : 13.0,
+									"id" : "obj-20",
+									"linecount" : 7,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 508.0, 231.0, 316.0, 112.0 ],
+									"presentation_linecount" : 6,
+									"text" : "The return value from the REPL will be printed to the max console as s4m> {stuff}\n\nFunctions with only side effects normally return the null list, (). By default, the logger doesn't print a null return, but we can by setting s4m-log-nulls to true (#t)"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-10",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 390.0, 292.0, 116.0, 22.0 ],
+									"text" : "set! s4m-log-nulls #f"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-7",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 390.0, 264.0, 116.0, 22.0 ],
+									"text" : "set! s4m-log-nulls #t"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
+									"bubblepoint" : 0.2,
+									"fontsize" : 13.0,
+									"id" : "obj-18",
+									"linecount" : 4,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 508.0, 357.0, 322.0, 69.0 ],
+									"text" : "Another way to dynamically create scheme code in messages boxes.\ntosymbol is required to make max treat it as a single string symbol, leaving the parentheses in."
 								}
 
 							}
@@ -1346,7 +1414,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 404.0, 372.0, 111.0, 22.0 ],
+									"patching_rect" : [ 404.0, 408.0, 111.0, 22.0 ],
 									"text" : "prepend eval-string"
 								}
 
@@ -1358,7 +1426,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 404.0, 339.0, 57.0, 22.0 ],
+									"patching_rect" : [ 404.0, 382.0, 57.0, 22.0 ],
 									"text" : "tosymbol"
 								}
 
@@ -1370,7 +1438,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 404.0, 306.0, 102.0, 22.0 ],
+									"patching_rect" : [ 404.0, 357.0, 102.0, 22.0 ],
 									"text" : "(out 0 (+ 99 100))"
 								}
 
@@ -1384,7 +1452,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 126.0, 292.0, 263.0, 40.0 ],
+									"patching_rect" : [ 92.0, 292.0, 263.0, 40.0 ],
 									"text" : "reset will wipe any definitions you've done in the REPL"
 								}
 
@@ -1396,7 +1464,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 82.0, 301.0, 35.0, 22.0 ],
+									"patching_rect" : [ 49.0, 301.0, 35.0, 22.0 ],
 									"text" : "reset"
 								}
 
@@ -1407,20 +1475,8 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 11.0, 408.0, 121.0, 22.0 ],
+									"patching_rect" : [ 11.0, 394.0, 121.0, 22.0 ],
 									"text" : "print out-0 @popup 1"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-8",
-									"linecount" : 4,
-									"maxclass" : "comment",
-									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 11.0, 450.0, 351.0, 60.0 ],
-									"text" : "The REPL does not have history yet. This will be done in an upcoming external.\nYou can edit the size of the textwindow by copying and editing the s4m.repl object"
 								}
 
 							}
@@ -1444,11 +1500,11 @@
 									"bubble" : 1,
 									"fontsize" : 13.0,
 									"id" : "obj-4",
-									"linecount" : 2,
+									"linecount" : 3,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 117.0, 358.0, 268.0, 40.0 ],
+									"patching_rect" : [ 211.0, 357.0, 174.0, 54.0 ],
 									"text" : "Each instance of s4m.scm has its own isolated interpreter."
 								}
 
@@ -1460,13 +1516,13 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 11.0, 367.0, 56.0, 22.0 ],
+									"patching_rect" : [ 11.0, 367.0, 137.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"ins" : 1,
 										"outs" : 1
 									}
 ,
-									"text" : "s4m.scm"
+									"text" : "s4m.scm scm4max.scm"
 								}
 
 							}
@@ -1476,12 +1532,13 @@
 									"bubblepoint" : 0.2,
 									"fontsize" : 13.0,
 									"id" : "obj-37",
-									"linecount" : 14,
+									"linecount" : 6,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 508.0, 77.0, 268.0, 214.0 ],
-									"text" : "This is the s4m.repl object in a bpatcher\n\nIf \"output on enter\" is selected, hitting Enter empties the text window and sends out contents.\n\nIf \"Control-Keys\" is selected instead we can type Enter to write multi-line code. \n\nThe return value from the REPL will be printed to the max console as s4m> {stuff}\n\nFunctions with only side effects normally return the null list, and this is not printed."
+									"patching_rect" : [ 508.0, 77.0, 322.0, 98.0 ],
+									"presentation_linecount" : 6,
+									"text" : "This is the s4m.repl object in a bpatcher\n\nIf \"output on enter\" is selected, hitting Enter empties the text window and sends out contents.\nIf \"Control-Keys\" is selected instead we can type Enter to write multi-line code. "
 								}
 
 							}
@@ -1505,7 +1562,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "bang" ],
 									"parameter_enable" : 0,
-									"patching_rect" : [ 469.0, 212.5, 24.0, 24.0 ]
+									"patching_rect" : [ 482.0, 205.0, 24.0, 24.0 ]
 								}
 
 							}
@@ -1565,6 +1622,15 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
+									"midpoints" : [ 399.5, 347.0, 20.5, 347.0 ],
+									"source" : [ "obj-10", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-1", 0 ],
+									"midpoints" : [ 58.5, 345.0, 20.5, 345.0 ],
 									"source" : [ "obj-11", 0 ]
 								}
 
@@ -1579,7 +1645,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 413.5, 402.0, 80.0, 402.0, 74.0, 402.0, 74.0, 362.0, 20.5, 362.0 ],
+									"midpoints" : [ 413.5, 440.0, 391.0, 440.0, 391.0, 346.0, 20.5, 346.0 ],
 									"source" : [ "obj-14", 0 ]
 								}
 
@@ -1609,6 +1675,14 @@
 								"patchline" : 								{
 									"destination" : [ "obj-12", 0 ],
 									"source" : [ "obj-5", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-1", 0 ],
+									"midpoints" : [ 381.0, 287.0, 381.0, 348.0, 20.5, 348.0 ],
+									"source" : [ "obj-7", 0 ]
 								}
 
 							}
@@ -1644,7 +1718,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 34.0, 105.0, 944.0, 720.0 ],
+						"rect" : [ 0.0, 26.0, 885.0, 720.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,

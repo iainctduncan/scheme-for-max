@@ -31,7 +31,13 @@
                     ((list? (car lat)) (string-append "<list: " (log-string (car lat)) (log-string (cdr lat)) ">")) 
                     (else (string-append (stringify (car lat)) " " (log-string (cdr lat))))))))
     (max-post (log-string args))))
-  
+
+;; helper to set whether we see nulls logged to the console
+(define s4m-log-nulls #t)
+(define (s4m-filter-result res)
+  (cond 
+    ((and (null? res) (not s4m-log-nulls)) :no-log)
+    (else res))) 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Default callbacks that do nothing but remind you there's no callback registered yet
@@ -42,7 +48,7 @@
 (define f-list (lambda args (post "Error: no f-list function defined for list messages")))
 
 
-;; the listeners registrry is a nested hash-table of inlet number and then listen keyword
+;; the listeners registry is a nested hash-table of inlet number and listen keyword/symbol 
 (define s4m-listeners (make-hash-table))
 
 ;; the listen function, used to register listeners for inlet > 0
