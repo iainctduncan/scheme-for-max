@@ -37,96 +37,11 @@
 		"tags" : "",
 		"style" : "",
 		"subpatcher_template" : "",
-		"showontab" : 1,
+		"showrootpatcherontab" : 0,
+		"showontab" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
 					"id" : "obj-7",
-					"maxclass" : "newobj",
-					"numinlets" : 0,
-					"numoutlets" : 0,
-					"patcher" : 					{
-						"fileversion" : 1,
-						"appversion" : 						{
-							"major" : 8,
-							"minor" : 0,
-							"revision" : 3,
-							"architecture" : "x64",
-							"modernui" : 1
-						}
-,
-						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 935.0, 715.0 ],
-						"bglocked" : 0,
-						"openinpresentation" : 0,
-						"default_fontsize" : 12.0,
-						"default_fontface" : 0,
-						"default_fontname" : "Arial",
-						"gridonopen" : 1,
-						"gridsize" : [ 15.0, 15.0 ],
-						"gridsnaponopen" : 1,
-						"objectsnaponopen" : 1,
-						"statusbarvisible" : 2,
-						"toolbarvisible" : 1,
-						"lefttoolbarpinned" : 0,
-						"toptoolbarpinned" : 0,
-						"righttoolbarpinned" : 0,
-						"bottomtoolbarpinned" : 0,
-						"toolbars_unpinned_last_save" : 0,
-						"tallnewobj" : 0,
-						"boxanimatetime" : 200,
-						"enablehscroll" : 1,
-						"enablevscroll" : 1,
-						"devicewidth" : 0.0,
-						"description" : "",
-						"digest" : "",
-						"tags" : "",
-						"style" : "",
-						"subpatcher_template" : "",
-						"showontab" : 1,
-						"boxes" : [ 							{
-								"box" : 								{
-									"id" : "obj-4",
-									"maxclass" : "comment",
-									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 32.0, 70.0, 727.0, 20.0 ],
-									"text" : "Scheme-for-Max"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"fontface" : 1,
-									"fontsize" : 16.0,
-									"id" : "obj-2",
-									"maxclass" : "comment",
-									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 189.5, 9.0, 466.0, 24.0 ],
-									"text" : "Scheme For Max Help: Overview"
-								}
-
-							}
- ],
-						"lines" : [  ]
-					}
-,
-					"patching_rect" : [ 62.0, 57.0, 69.0, 22.0 ],
-					"presentation_linecount" : 3,
-					"saved_object_attributes" : 					{
-						"description" : "",
-						"digest" : "",
-						"globalpatchername" : "",
-						"tags" : ""
-					}
-,
-					"text" : "p Overview"
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-5",
 					"maxclass" : "newobj",
 					"numinlets" : 0,
 					"numoutlets" : 0,
@@ -171,6 +86,95 @@
 						"showontab" : 1,
 						"boxes" : [ 							{
 								"box" : 								{
+									"fontface" : 0,
+									"fontsize" : 16.0,
+									"id" : "obj-4",
+									"linecount" : 24,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 32.0, 51.0, 772.0, 453.0 ],
+									"text" : "Scheme-for-Max (s4m) is an open source Max/MSP external to enable scripting and live coding \nMax/MSP with Scheme / Lisp. It is available as a package for OSX and as source code\nfor OSX or Windows. We are in need of a Windows developer to build the Windows package.\n\nDocumentation is here: https://github.com/iainctduncan/scheme-for-max-docs\n\nFor questions, suggestions, and bug reports, please join the Scheme-for-Max google group.\nhttps://groups.google.com/forum/#!forum/scheme-for-max\n\nScheme-for-Max 0.1-beta features include hot reloading code, live code evaluation from a REPL,\nevaluating max messages as scheme, sending remote messages to other objects, and dynamic creation of listeners for input and output. Scheme's semantics map very well to Max, enabling one to interact with the interpreter in a wide variety of ways, including dynamically building up scheme messages from standard Max building block in a way that is far more cumbersom in JavaScript. \n\nScheme-for-Max uses S7 Scheme, a \"lisp-y\" embeddable Scheme implementation by Bill Schottstaedt at CCRMA, based originally on Tiny Scheme.  S7 is a minimal Scheme, with many nice features for algorithmic composition and embeddding, and is the Scheme engine used in the Common Music algorithmic composition toolkit and the Snd editors from CCRMA. It has keywords, Common Lisp style macros, first-class environments, thread safety, applicative syntax, and a very straight forward FFI (foreign function interface). Linguistically, it is mostly R4RS with some later extensions, is quite similar to Guile, and shares many features with Clojure. \n\nThe S7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html\n"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"fontface" : 1,
+									"fontsize" : 18.0,
+									"id" : "obj-2",
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 31.5, 9.0, 769.0, 27.0 ],
+									"text" : "Scheme-for-Max 0.1 - Overview",
+									"textjustification" : 1
+								}
+
+							}
+ ],
+						"lines" : [  ]
+					}
+,
+					"patching_rect" : [ 62.0, 57.0, 69.0, 22.0 ],
+					"saved_object_attributes" : 					{
+						"description" : "",
+						"digest" : "",
+						"globalpatchername" : "",
+						"tags" : ""
+					}
+,
+					"text" : "p Overview"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-5",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 0,
+					"patcher" : 					{
+						"fileversion" : 1,
+						"appversion" : 						{
+							"major" : 8,
+							"minor" : 0,
+							"revision" : 3,
+							"architecture" : "x64",
+							"modernui" : 1
+						}
+,
+						"classnamespace" : "box",
+						"rect" : [ 0.0, 26.0, 935.0, 715.0 ],
+						"bglocked" : 0,
+						"openinpresentation" : 0,
+						"default_fontsize" : 12.0,
+						"default_fontface" : 0,
+						"default_fontname" : "Arial",
+						"gridonopen" : 1,
+						"gridsize" : [ 15.0, 15.0 ],
+						"gridsnaponopen" : 1,
+						"objectsnaponopen" : 1,
+						"statusbarvisible" : 2,
+						"toolbarvisible" : 1,
+						"lefttoolbarpinned" : 0,
+						"toptoolbarpinned" : 0,
+						"righttoolbarpinned" : 0,
+						"bottomtoolbarpinned" : 0,
+						"toolbars_unpinned_last_save" : 0,
+						"tallnewobj" : 0,
+						"boxanimatetime" : 200,
+						"enablehscroll" : 1,
+						"enablevscroll" : 1,
+						"devicewidth" : 0.0,
+						"description" : "",
+						"digest" : "",
+						"tags" : "",
+						"style" : "",
+						"subpatcher_template" : "",
+						"showontab" : 1,
+						"boxes" : [ 							{
+								"box" : 								{
 									"bubble" : 1,
 									"bubblepoint" : 0.25,
 									"fontsize" : 13.0,
@@ -179,7 +183,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 367.5, 396.0, 189.0, 40.0 ],
+									"patching_rect" : [ 367.5, 396.0, 191.0, 40.0 ],
 									"text" : "using variables for message and target"
 								}
 
@@ -386,7 +390,6 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 375.0, 276.0, 185.5, 25.0 ],
-									"presentation_linecount" : 2,
 									"text" : "scripting name: target-num"
 								}
 
@@ -691,7 +694,6 @@
 					}
 ,
 					"patching_rect" : [ 423.0, 56.0, 73.0, 22.0 ],
-					"presentation_linecount" : 2,
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
