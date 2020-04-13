@@ -15,7 +15,7 @@ Scheme-for-Max 0.1-beta features include:
 
 Scheme-for-Max uses S7 Scheme, a "lisp-y" embeddable Scheme implementation by Bill Schottstaedt at
 CCRMA, based originally on Tiny Scheme.  S7 is a minimal Scheme, with many nice features for algorithmic 
-composition and embeddding, and is the Scheme engine used in the Common Music algorithmic composition
+composition and embedding, and is the Scheme engine used in the Common Music algorithmic composition
 toolkit and the Snd editors from CCRMA. It has keywords, Common Lisp style macros, first-class environments, 
 thread safety, applicative syntax, and a very straight forward FFI (foreign function interface). 
 Linguistically, it is mostly R4RS with some later extensions, and is quite similar to Guile. It shares
