@@ -13,6 +13,7 @@
 ;; convert to a string for our post function
 (define (stringify item)
   (cond
+    ((keyword? item) (symbol->string item))
     ((symbol? item) (string-append "'" (symbol->string item)))
     ((number? item) (number->string item))
     ((string? item) item)
@@ -97,5 +98,5 @@
 (define (out-6 args) (max-output 6 args))
 (define (out-7 args) (max-output 7 args))
 
-;;(post "scm4max.scm BOOTSTRAP COMPLETE")
 (define s4m-done-bootstrap #t)
+;;(post "scm4max.scm BOOTSTRAP COMPLETE")
