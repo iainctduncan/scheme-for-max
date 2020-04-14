@@ -67,14 +67,15 @@
 ;; ({inlet} {keyword} .. args...)
 (define s4m-dispatch
   (lambda args
-    ;;(post "s4m-dispatch args:" args)
     (letrec* ( (inlet (car args))
                (keyword (cadr args))
                (func-args (cddr args)) 
-               (listener ((s4m-listeners inlet) keyword)))
+               (listener (cond 
+                  ((s4m-listeners inlet) ((s4m-listeners inlet) keyword))
+                  (else #f))))   
       (if (procedure? listener) 
             (listener func-args)
-            (post "Error: no listener on " inlet keyword)))))
+            (post "Error: no listener on inlet" inlet "for" keyword)))))
 
 
 ;; The function used when we send code to inlet 0 that we want evaluated
@@ -99,4 +100,4 @@
 (define (out-7 args) (max-output 7 args))
 
 (define s4m-done-bootstrap #t)
-;;(post "scm4max.scm BOOTSTRAP COMPLETE")
+(post "scm4max.scm BOOTSTRAP COMPLETE")
