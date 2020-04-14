@@ -7,7 +7,7 @@
     "os" : {
         "macintosh" : {
             "platform" : [ "x64" ],
-            "min_version" : "none"
+            "min_version" : "8"
         }
     },
     "package_extra" : {

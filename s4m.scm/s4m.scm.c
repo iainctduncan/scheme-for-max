@@ -680,7 +680,7 @@ void scm4max_s7_eval_string(t_scm4max *x, char *string_to_eval){
     s7_set_current_error_port(x->s7, old_port);
     s7_gc_unprotect_at(x->s7, gc_loc);
     if (msg){
-        object_error(x, "s4m Error loading: %s", msg);
+        object_error(x, "s4m Error: %s", msg);
         free(msg);
     }else{
         scm4max_post_s7_res(x, res);

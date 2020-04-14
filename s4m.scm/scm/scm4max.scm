@@ -17,9 +17,9 @@
     ((number? item) (number->string item))
     ((string? item) item)
     ((procedure? item) "<procedure>")
-    ;;((eq? #t) "#t")
-    ;;((eq? #f) "#f") 
-    (else "<unhandled type>"))) 
+    ((and (boolean? item) (eq? item #t)) "#true")
+    ((and (boolean? item) (eq? item #f)) "#false")
+    (else (object->string item)))) 
 
 ;; post arbitrary args to the max console
 ;; allows calling like (post "my thing" thing "other thing" other-thing)
@@ -28,7 +28,6 @@
     (log-string (lambda (lat)
                   (cond 
                     ((null? lat) "")
-                    ((list? (car lat)) (string-append "<list: " (log-string (car lat)) (log-string (cdr lat)) ">")) 
                     (else (string-append (stringify (car lat)) " " (log-string (cdr lat))))))))
     (max-post (log-string args))))
 
