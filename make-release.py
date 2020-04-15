@@ -6,7 +6,7 @@ import os
 # its job is to copy the package, including the binary assets and scm files, into the 
 # dist directory, ready for zipping up for release
 
-version = "0.1-rc-1"     # appended to tarball name
+version = "0.1.1-beta"     # appended to tarball name
 dry_run = False
 
 externals_src = "../../externals"
@@ -54,8 +54,8 @@ def package_release():
     print("\n... Removing any swap files")
     do("find dist -type f -name \"*.sw[klmnop]\" -delete")
 
-    #print("\n... Creating zip file")
-    #do("tar cvzf Scheme-For-Max-%s.zip Scheme-For-Max" % version)
+    print("\n... Creating zip file")
+    do("tar cvjf Scheme-For-Max-%s.bz2 Scheme-For-Max" % version)
 
 if __name__=="__main__":
     print ("\nmake-release.py: package up a scheme-for-max release")
@@ -68,9 +68,14 @@ if __name__=="__main__":
     package_release()
    
     print("DONE. ready for release") 
-    
+   
+    # helper for setting up testing packages
+    # moves the SDK so Max can't see it and puts the dist package into Max view
+    # so that we are running the released package 
     if do_install:
         print("\n...Installing to Max")
         do("mv ~/Documents/Max\ 8/Packages/max-sdk-8.0.3 ~/Documents/Max\ 8/max-sdk-8.0.3")
+        # remove the symlink
+        do("rm ~/Documents/Max\ 8/Packages/Scheme-For-Max")
         do("cp -rp dist/Scheme-For-Max ~/Documents/Max\ 8/Packages/")
         print("\n\nINSTALL DONE, ready to test ")
