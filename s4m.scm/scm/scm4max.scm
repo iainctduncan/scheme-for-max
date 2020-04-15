@@ -100,4 +100,4 @@
 (define (out-7 args) (max-output 7 args))
 
 (define s4m-done-bootstrap #t)
-(post "scm4max.scm BOOTSTRAP COMPLETE")
+;;(post "scm4max.scm BOOTSTRAP COMPLETE")
