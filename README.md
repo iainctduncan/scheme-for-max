@@ -25,10 +25,8 @@ thread safety, applicative syntax, and a very straight forward FFI (foreign func
 Linguistically, it is mostly R4RS with some later extensions, and is quite similar to Guile. It shares
 many features with Clojure as well, and is easy to learn for anyone with Lisp experience. 
 
-## Download
-Scheme-For-Max 0.1.0-beta-1 for Max 8 on OSX is available for download on Github:
-
-https://github.com/iainctduncan/scheme-for-max/releases
+## Releases
+Scheme-For-Max 0.1.2-beta https://github.com/iainctduncan/scheme-for-max/releases
 
 ## Documentation and Community
 An extensive help file demonstrating all official features of the release is included, with
