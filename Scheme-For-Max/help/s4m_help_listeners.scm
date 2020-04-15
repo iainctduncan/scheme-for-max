@@ -26,9 +26,9 @@
     (post "f-list executing, args: " args)
     ;; sent the length of the list out outlet 0
     (out 0 (length args))
-    ;; send out the values in a sequence of messages out outlet 1
+    ;; send out the values in a sequence of messages out outlet 1, in reverse
     ;; out-1 is a single symbol convenience function, they exists up to out-8
-    (map out-1 args) 
+    (map out-1 (reverse args)) 
 )
 
 (define (my-sum arg-1 arg-2) 
