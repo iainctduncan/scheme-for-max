@@ -56,6 +56,9 @@ We will get this thing signed and all that when we get to a non-beta release.
 Please report problems installing to the google group, as well as any fixes
 or workarounds that could be added here.
 
+## Building from Source
+You will need the Max SDK and some understanding of how to build Max externals. The S7 sources are included here. A more detailed page on building from source will be up soon. In the meantime, ask on the Google Group for help if you want to get it building. If you are a windows developer, we need your help! :-)
+
 ## License: 
 As S7 Scheme, and TinyScheme on which it is based, are BSD licensed, this is too.
 
