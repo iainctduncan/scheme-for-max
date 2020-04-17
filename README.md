@@ -35,8 +35,8 @@ An extensive help file demonstrating all official features of the release is inc
 sample source code in the package. Clicking "launch" on the package menu will open this file.
 
 Narative documentation is here: https://iainctduncan.github.io/scheme-for-max-docs/ 
-To file tickets about errors or improvement suggestsion for the docs, use the docs repo: 
-https://github.com/iainctduncan/scheme-for-max-docs
+
+To file tickets about errors or improvement suggestsion for the docs, use the docs repo: https://github.com/iainctduncan/scheme-for-max-docs
 
 Video Overview here: https://youtu.be/ErirIFCTdjg
 
@@ -61,7 +61,7 @@ Please report problems installing to the google group, as well as any fixes
 or workarounds that could be added here.
 
 ## Building from Source
-You will need the Max SDK and some understanding of how to build Max externals. The S7 sources are included here. Details on building from source are in the narrative docs.
+You will need the Max SDK and some understanding of how to build Max externals. The S7 sources are included here. Details on building from source are in the narrative docs here https://iainctduncan.github.io/scheme-for-max-docs/building.html
 
 ## License: 
 As S7 Scheme, and TinyScheme on which it is based, are BSD licensed, this is too.
