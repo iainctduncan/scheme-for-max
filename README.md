@@ -34,7 +34,9 @@ Scheme-For-Max 0.1.2-beta https://github.com/iainctduncan/scheme-for-max/release
 An extensive help file demonstrating all official features of the release is included, with
 sample source code in the package. Clicking "launch" on the package menu will open this file.
 
-Narative documentation will be forthcoming here: https://github.com/iainctduncan/scheme-for-max-docs
+Narative documentation is here: https://iainctduncan.github.io/scheme-for-max-docs/ 
+To file tickets about errors or improvement suggestsion for the docs, use the docs repo: 
+https://github.com/iainctduncan/scheme-for-max-docs
 
 Video Overview here: https://youtu.be/ErirIFCTdjg
 
@@ -59,7 +61,7 @@ Please report problems installing to the google group, as well as any fixes
 or workarounds that could be added here.
 
 ## Building from Source
-You will need the Max SDK and some understanding of how to build Max externals. The S7 sources are included here. A more detailed page on building from source will be up soon. In the meantime, ask on the Google Group for help if you want to get it building. If you are a windows developer, we need your help! :-)
+You will need the Max SDK and some understanding of how to build Max externals. The S7 sources are included here. Details on building from source are in the narrative docs.
 
 ## License: 
 As S7 Scheme, and TinyScheme on which it is based, are BSD licensed, this is too.
