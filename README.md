@@ -3,6 +3,8 @@ Scheme-for-Max (s4m) is an open source Max/MSP external to enable scripting and 
 Max/MSP with Scheme / Lisp. It is available as a 64-bit Max package for Max 8 on OSX and as source code
 which should compile on OSX or Windows. We are in need of a Windows developer to build the Windows package!
 
+**Documentation** lives here: https://github.com/iainctduncan/scheme-for-max-docs
+
 ## About
 Scheme-For-Max provides two objects: s4m.scm (the interpreter) and s4m.repl (a REPL GUI patcher)
 
