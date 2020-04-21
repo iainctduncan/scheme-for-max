@@ -818,8 +818,8 @@ void scm4max_msg(t_scm4max *x, t_symbol *s, long argc, t_atom *argv){
         // reset message wipes the s7 env and reloads the source file if present
         if( gensym("reset") == gensym(s->s_name) ){
             free(x->s7);
+            post("s4m: RESET: scheme interpreter reload");
             scm4max_init_s7(x);
-            post("s4m: RESET, scheme interpreter reloaded");
             return;
         }
         // for all other input to inlet 0, we treat as list of atoms, so
@@ -1028,7 +1028,7 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
                 atom_setsym( out_list + i, gensym( s7_string( list_item ) ) );
             }
         }   
-        outlet_anything( x->outlets[outlet_num], gensym(""), length, out_list);     
+        outlet_anything( x->outlets[outlet_num], gensym("list"), length, out_list);     
  
     }
     // returns nil so that the console is not chatting on every output message
