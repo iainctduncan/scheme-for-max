@@ -34,7 +34,8 @@ typedef struct _scm4max {
 
     long num_outlets;
     void *outlets[MAX_NUM_OUTLETS]; // should be a dynamic array, but I'm crashing too much
-        
+       
+    t_object *patcher;   
     t_hashtab *registry;            // will hold objects by scripting name
    
     t_object *m_editor;             // text editor
@@ -52,6 +53,7 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv);
 void scm4max_init_s7(t_scm4max *x);
 void scm4max_free(t_scm4max *x);
 void scm4max_assist(t_scm4max *x, void *b, long m, long a, char *s);
+
 
 // helpers to do s7 calls with error loggging
 void scm4max_post_s7_res(t_scm4max *x, s7_pointer res);
@@ -75,6 +77,9 @@ void scm4max_openfile(t_scm4max *x, char *filename, short path);
 void scm4max_dblclick(t_scm4max *x);
 void scm4max_edclose(t_scm4max *x, char **ht, long size);
 long scm4max_edsave(t_scm4max *x, char **ht, long size);
+
+// IN PROG
+void scm4max_make(t_scm4max *x);
 
 void scm4max_scan(t_scm4max *x);
 long scm4max_scan_iterator(t_scm4max *x, t_object *b);
@@ -171,6 +176,10 @@ void ext_main(void *r){
     class_addmethod(c, (method)scm4max_edclose, "edclose", A_CANT, 0);
     class_addmethod(c, (method)scm4max_edsave, "edsave", A_CANT, 0);
 
+    // IN PROGRESS
+    // test of making things with this patcher 
+    class_addmethod(c, (method)scm4max_make, "make", NULL, 0);
+
     // generic message handler for anything else
     // NOTE: this will not receive "int 1" messages, even if not int listener above!
     class_addmethod(c, (method)scm4max_msg, "anything", A_GIMME, 0);
@@ -231,6 +240,10 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
     x->registry = (t_hashtab *)hashtab_new(0);
     hashtab_flags(x->registry, OBJ_FLAG_REF);
 
+    // save the patcher object (equiv of thispatcher)
+    object_obex_lookup(x, gensym("#P"), &x->patcher);
+     
+
     // examine args, and set the sourcefile to first arg that does not start with @
     x->source_file = _sym_nothing;
     if(argc){
@@ -246,6 +259,32 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
 	return (x);
 }
 
+// test of making a thing via the patcher object triggered by "make" message
+void scm4max_make(t_scm4max *x){
+    post("scm4max_make()");
+    t_max_err err;
+
+    // send a message to the patcher object to create a thing
+    // the below works, now what about sending a generic message, this patcher style?
+    //t_object *toggle = newobject_sprintf(x->patcher, "@maxclass toggle @varname foo @patching_position %.2f %.2f", 10, 10);
+
+    // send the message to the registered object 
+
+    // the below did *not* work 
+    // thispatcher message: "script newobject coll"
+    //t_atom arg_atoms[ MAX_ATOMS_PER_MESSAGE ];
+    //atom_setsym(arg_atoms, "newobject");
+    //atom_setsym(arg_atoms+1, "coll");
+    //int num_atoms = 2;
+    //err = object_method_typed(x->patcher, gensym("script"), num_atoms, arg_atoms, NULL);
+    //if(err){
+    //    object_error((t_object *)x, "s4m: (send) error sending message");
+    //}
+    //post("did we get a coll, yo?");
+
+}
+
+
 // init and set up the s7 interpreter, and load main source file if present
 void scm4max_init_s7(t_scm4max *x){
     //post("s4m: initializing s7 interpreter");
@@ -259,8 +298,10 @@ void scm4max_init_s7(t_scm4max *x){
     //s7_define_function(x->s7, "s4m-output-int", s7_output_int, 1, 0, false, "(s4m-output-int 99) outputs 99 out outlet 1");
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
     s7_define_function(x->s7, "load-from-max", s7_load_from_max, 1, 0, false, "load files from the max path");
-    s7_define_function(x->s7, "tab-get", s7_table_read, 2, 0, false, "(tab-get :foo 4) returns value at index 4 from table :foo");
-    s7_define_function(x->s7, "tab-set", s7_table_write, 3, 0, false, "(tab-set :foo 4 127) writes value 4 to index 127 of table :foo");
+    s7_define_function(x->s7, "table-ref", s7_table_read, 2, 0, false, "(table-ref :foo 4) returns value at index 4 from table :foo");
+    s7_define_function(x->s7, "table-set!", s7_table_write, 3, 0, false, "(table-set! :foo 4 127) writes value 4 to index 127 of table :foo");
+    s7_define_function(x->s7, "tabr", s7_table_read, 2, 0, false, "short-hand alias for table-ref");
+    s7_define_function(x->s7, "tabw", s7_table_write, 3, 0, false, "short-hand alias for table-set!");
     s7_define_function(x->s7, "buf-get", s7_buffer_read, 2, 0, false, "(buf-get :foo 4) returns value at channel 0, index 4 from buffer :foo");
     s7_define_function(x->s7, "buf-set", s7_buffer_write, 3, 0, false, "(buf-set :foo 4 127) writes value 4 to index 127 of buffer :foo");
     s7_define_function(x->s7, "mc-buf-get", s7_mc_buffer_read, 3, 0, false, "(mcbuf-get :foo 4 1) returns value at channel 1, index 4 from buffer :foo");
@@ -980,7 +1021,7 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     int outlet_num = s7_integer( s7_car(args) );
-    //post("s7_max_output, outlet: %i", outlet_num);
+    post("s7_max_output, outlet: %i", outlet_num);
     t_scm4max *x = get_max_obj(s7);
 
     // check if outlet number exists
@@ -1021,7 +1062,7 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
             if( s7_is_integer( list_item ) ){
                 atom_setlong( out_list + i, s7_integer(list_item) );             
             }else if( s7_is_real( list_item ) ){
-                atom_setfloat( out_list + i, s7_integer(list_item) );             
+                atom_setfloat( out_list + i, s7_real(list_item) );             
             }else if( s7_is_symbol( list_item ) ){
                 atom_setsym( out_list + i, gensym( s7_symbol_name( list_item ) ) );
             }else if( s7_is_string( list_item ) ){ 
@@ -1036,7 +1077,8 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
 }
 
 // read an integer from a named table and index (max tables only store ints)
-// becomes scheme function 'tabr'
+// becomes scheme function 'table-ref'
+// returns #f on error 
 static s7_pointer s7_table_read(s7_scheme *s7, s7_pointer args) {
     // table names could come in from s7 as either strings or symbols, if using keyword table names
     char *table_name;
@@ -1055,12 +1097,13 @@ static s7_pointer s7_table_read(s7_scheme *s7, s7_pointer args) {
     if(!res){
         return s7_make_integer(s7, value);
     }else{
-        post("s4m: ERROR reading table %s index %i", table_name, index);
+        post("s4m: ERROR reading table %s index %i, returning #f", table_name, index);
+        return s7_make_boolean(s7, 0);
     }
 }
 
 // write an integer to a named table index (max tables only store ints)
-// becomes scheme function 'tabw'
+// becomes scheme function 'table-set!'
 static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args) {
     // table names could come in from s7 as either strings or symbols, if using keyword table names
     char *table_name;
@@ -1075,9 +1118,13 @@ static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args) {
     int index = s7_integer( s7_cadr(args) );
     long value = s7_integer(s7_caddr(args));
     t_scm4max *x = get_max_obj(s7);
-    scm4max_table_write(x, table_name, index, value);
-    // return the value written to s7
-    return s7_make_integer(s7, value);
+    int err_res = scm4max_table_write(x, table_name, index, value);
+    if(err_res){
+        return s7_make_boolean(s7, 0);
+    }else{
+        // return the value written to s7
+        return s7_make_integer(s7, value);
+    }
 }
 
 // read an float from a named buffer and index 

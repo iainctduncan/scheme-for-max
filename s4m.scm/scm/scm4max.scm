@@ -6,9 +6,18 @@
 ;; if you know you don't want them
 (load-from-max "stuff.scm")
 
+;; load the common music files
+(load-from-max "loop.scm")
+(load-from-max "utilities.scm")
+; can't load toolbox, will need some alterations
+;(load-from-max "toolbox.scm")
+
 ;; can't load r7rs.scm without loading libc.scm, and that's throwing an error
 ;;(load-from-max "libc.scm")
 ;;(load-from-max "r7rs.scm")
+
+
+;; misc convenience functions
 
 ;; convert to a string for our post function
 (define (stringify item)
@@ -100,4 +109,34 @@
 (define (out-7 args) (max-output 7 args))
 
 (define s4m-done-bootstrap #t)
-;;(post "scm4max.scm BOOTSTRAP COMPLETE")
+
+
+;********************************************************************************
+;* table i/o stuff
+
+;; a table object function
+(define (table name)
+  (let ((table-name name))
+    ;; returns a function that takes variable number of args
+    (lambda args
+      (cond    
+        ;; (my-table idx) -> returns value at idx
+        ( (and (= 1 (length args)) (integer? (args 0))) 
+          (table-ref table-name (args 0)))
+        ;; (my-table idx val) -> sets idx to val (experimental)
+        ( (and (= 2 (length args)) (integer? (args 0)) (integer? (args 1))) 
+          (table-set! table-name (args 0) (args 1)))
+        ;; (my-table idx seq) -> writes all values in seq to table
+        ( (and (= 2 (length args)) (integer? (args 0)) (sequence? (args 1)))
+          ;; to be faster, this should really happen in C
+          (let loop ((i 0))
+            (table-set! table-name i ((args 1) i)) ;; set table[i] to seq[i] 
+            (if (< i (- (length (args 1)) 1)) 
+              (loop (+ i 1))))) 
+      ))))
+
+
+;(define t (table 'foobar))
+;(post "table t: " table)
+
+(post "scm4max.scm BOOTSTRAP COMPLETE")
