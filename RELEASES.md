@@ -1,6 +1,10 @@
 # Scheme-For-Max Release Log
 
-## 0.1.1 2020-04-14
+## 0.1.3 2020-04-30
+- bug fixes in list output
+- adding loop.scm and utilities.scm from Common Music by default
+
+## 0.1.2 2020-04-14
 - bug fixes in s4m.repl
 
 ## 0.1.1 2020-04-14

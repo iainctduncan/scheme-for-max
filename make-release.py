@@ -19,7 +19,9 @@ patcher_dest = "dist/Scheme-For-Max/patchers"
 # list of scheme files required, will be copied into patcher dir in package
 scm_files = [
     "scm4max.scm",
-    "stuff.scm"
+    "stuff.scm",
+    "loop.scm",
+    "utilities.scm"
 ]
 # list of patchers aside from the external
 patcher_files = [

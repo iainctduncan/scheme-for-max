@@ -28,7 +28,7 @@ Watch a 10 minute video demo of the features in 0.1 here:
 https://youtu.be/ErirIFCTdjg
 
 ## Releases
-Scheme-For-Max 0.1.2-beta https://github.com/iainctduncan/scheme-for-max/releases
+Scheme-For-Max 0.1.3-beta https://github.com/iainctduncan/scheme-for-max/releases
 
 ## Documentation and Community
 An extensive help file demonstrating all official features of the release is included, with

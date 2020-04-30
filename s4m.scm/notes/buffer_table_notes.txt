@@ -1,0 +1,56 @@
+Notes on buffer and table io
+
+(define my-table (table 'foo'))
+- returns a table object named foo or false if not found
+
+(table-set! 'table 1 99)
+- sets table index 1 to 99
+
+(table-set! table-obj 1 99)
+- as above
+
+(my-table 1 99) 
+- writes to table
+
+(my-table 4)
+- returns value at 4, or #f if not in table
+
+what would a table object look like?
+
+(define table (lambda args
+    (( 
+    (cond 
+
+the table object needs to be a function that accepts either
+(my-table index) -> returns value or #f
+(my-table index int-val) -> writes int-value to index
+(my-table index seq) -> copies values from seq to the table 
+maybe? (my-table index int-points dest-seq) -> copies int-points values from index to dest-seq
+
+- probably at a low level the various conditions need to go to functions
+  defined in C
+  (cond 
+     ( ( (= 0 (length args)) && (int? (args 0)) )  (s4m-table-read table-name index value)
+
+- table objects in C, are they held with a registry somehow??
+  - no, in C we need to use the name on each call, so the table object can just store the name
+
+
+(table 'table-name) -> returns a function object for the table, that has stored the table name in a closure
+
+
+(define (table name)
+  (let (table-name name)
+    ;; returns a function that takes variable number of args
+    (lambda args
+      (cond    
+        ( (and (= 1 (length args)) (int? (args 0))) 
+          (table-ref table-name (args 0)))
+        ( (and (= 2 (length args)) (int? (args 0)) (int? (args 1))) 
+          (table-set! table-name (args 0) (args 1)))
+        ( (and 
+
+- other things that would be useful: later
+(table->vector 'table-name) -> returns an s7 vector
+(vector->table vector 'table-name) -> create or load an s7 table from a vector
+
