@@ -30,6 +30,8 @@ https://youtu.be/ErirIFCTdjg
 ## Releases
 Scheme-For-Max 0.1.3-beta https://github.com/iainctduncan/scheme-for-max/releases
 
+Note: bug fix releases will be announced here and on the google group only.
+
 ## Documentation and Community
 An extensive help file demonstrating all official features of the release is included, with
 sample source code in the package. Clicking "launch" on the package menu will open this file.
