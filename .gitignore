@@ -2,3 +2,4 @@ dist
 *.swo
 *.swp
 *.zip
+*.o
