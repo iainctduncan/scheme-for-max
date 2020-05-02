@@ -15,7 +15,8 @@
 
 #define MAX_NUM_OUTLETS 32
 #define MAX_NUM_INLETS 32
-#define MAX_ATOMS_PER_MESSAGE 32
+#define MAX_ATOMS_PER_MESSAGE 1024
+#define MAX_ATOMS_PER_OUTPUT_LIST 1024
 #define BOOTSTRAP_FILE "scm4max.scm"
 
 // object struct
@@ -432,7 +433,7 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file, bool sk
     } else {
         strcpy(filename, s->s_name);    // must copy symbol before calling locatefile_extended
         if (locatefile_extended(filename, &path_id, &outtype, &filetype, 1)) { // non-zero: not found
-            object_error(x, "s4m: %s: not found", s->s_name);
+            object_error((t_object *)x, "s4m: %s: not found", s->s_name);
             return;
         }
     }
@@ -441,7 +442,7 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file, bool sk
     if( is_main_source_file ){
         //post("scm4max: locally loading main source file %s", filename);
         if(path_opensysfile(filename, path_id, &x->source_file_handle, READ_PERM)){
-            object_error(x, "s4m: error opening %s", filename);
+            object_error((t_object *)x, "s4m: error opening %s", filename);
             return;
         }    
         sysfile_readtextfile(x->source_file_handle, x->source_text_handle, 0, TEXT_NULL_TERMINATE);     
@@ -503,11 +504,11 @@ int scm4max_table_read(t_scm4max *x, char *table_name, long index, long *value){
     long **data = NULL;
     long i, size;
     if( table_get(gensym(table_name), &data, &size) ){
-        object_error(x, "s4m: Could not load table %s", table_name);
+        object_error((t_object *)x, "s4m: Could not load table %s", table_name);
         return 1;
     }
     if( index < 0 || index >= size){
-        object_error(x, "s4m: Index %i out of range for table %s", index, table_name);
+        object_error((t_object *)x, "s4m: Index %i out of range for table %s", index, table_name);
         return 1;
     }
     // copy the data into our value int and return success
@@ -669,7 +670,7 @@ void scm4max_s7_call(t_scm4max *x, s7_pointer funct, s7_pointer args){
     s7_set_current_error_port(x->s7, old_port);
     s7_gc_unprotect_at(x->s7, gc_loc);
     if (msg){
-        object_error(x, "s4m Error: %s", msg);
+        object_error((t_object *)x, "s4m Error: %s", msg);
         free(msg);
     }else{
         scm4max_post_s7_res(x, res);
@@ -695,7 +696,7 @@ void scm4max_s7_load(t_scm4max *x, char *full_path){
     s7_set_current_error_port(x->s7, old_port);
     s7_gc_unprotect_at(x->s7, gc_loc);
     if (msg){
-        object_error(x, "s4m Error loading %s: %s", full_path, msg);
+        object_error((t_object *)x, "s4m Error loading %s: %s", full_path, msg);
         free(msg);
     }else{
         //scm4max_post_s7_res(x, res);
@@ -721,7 +722,7 @@ void scm4max_s7_eval_string(t_scm4max *x, char *string_to_eval){
     s7_set_current_error_port(x->s7, old_port);
     s7_gc_unprotect_at(x->s7, gc_loc);
     if (msg){
-        object_error(x, "s4m Error: %s", msg);
+        object_error((t_object *)x, "s4m Error: %s", msg);
         free(msg);
     }else{
         scm4max_post_s7_res(x, res);
@@ -1021,7 +1022,7 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     int outlet_num = s7_integer( s7_car(args) );
-    post("s7_max_output, outlet: %i", outlet_num);
+    //post("s7_max_output, outlet: %i", outlet_num);
     t_scm4max *x = get_max_obj(s7);
 
     // check if outlet number exists
@@ -1056,7 +1057,7 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
     }else if( s7_is_list(s7, s7_out_val)){
         // we can output a list of simple types, as a max list style message
         int length = s7_list_length(s7, s7_out_val);
-        t_atom out_list[length];
+        t_atom out_list[MAX_ATOMS_PER_OUTPUT_LIST];
         for(int i=0; i<length; i++){
             s7_pointer list_item = s7_list_ref(s7, s7_out_val, i);
             if( s7_is_integer( list_item ) ){
