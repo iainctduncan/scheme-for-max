@@ -484,6 +484,7 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file, bool sk
     // because we could be reading it into the text editor buffer
     if( ! skip_s7_load ){
 
+        // XXX: 2020-05-03
         // the below hangs max when trying to load the bootstrap file on startup
         // full_path Z:/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m.scm/scm/scm4max.scm
         scm4max_s7_load(x, full_path);
