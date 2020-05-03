@@ -196,11 +196,11 @@ void ext_main(void *r){
     CLASS_ATTR_SAVE(c, "outs", 0);   // save with patcher
 
     scm4max_class = c;
-    //post("scm4max ext_main() done");
+    post("scm4max ext_main() done");
 }
 
 void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
-    //post("scm4max_new(), arg count: %i", argc);
+    post("scm4max_new(), arg count: %i", argc);
 	t_scm4max *x = NULL;
 
 	x = (t_scm4max *)object_alloc(scm4max_class);
@@ -224,7 +224,7 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
             x->outlets[i] = outlet_new(x, NULL);     
         }
     }
-
+    
     // create the proxy inlets
     if( x->num_inlets > MAX_NUM_INLETS ){
         post("ERROR: only up to %i inlets supported", MAX_NUM_INLETS);
@@ -235,26 +235,42 @@ void *scm4max_new(t_symbol *s, long argc, t_atom *argv){
             x->inlet_proxies[proxy_num - 1] = proxy_new((t_object *)x, proxy_num, &x->proxy_num);
         }
     }
-
+    
     // create the registry for patch objects by scripting name
     x->registry = (t_hashtab *)hashtab_new(0);
     hashtab_flags(x->registry, OBJ_FLAG_REF);
 
     // save the patcher object (equiv of thispatcher)
     object_obex_lookup(x, gensym("#P"), &x->patcher);
-     
 
+    // this block of code is crashing on windows
     // examine args, and set the sourcefile to first arg that does not start with @
-    x->source_file = _sym_nothing;
+    //x->source_file = gensym("");
+    //x->source_file = _sym_nothing;
+    //if(argc){
+    //    atom_arg_getsym(&x->source_file, 0, argc, argv);
+    //    if(x->source_file != _sym_nothing){
+    //        if(x->source_file->s_name[0] == '@'){
+    //            x->source_file = _sym_nothing;
+    //        }
+    //    } 
+    //    //post("scm4max_new() source file: %s", x->source_file->s_name);
+    //}
+
+    // this does not seem to crash on windows
+    x->source_file = NULL;
     if(argc){
         atom_arg_getsym(&x->source_file, 0, argc, argv);
-        if(x->source_file != _sym_nothing){
+        if(x->source_file != NULL){
             if(x->source_file->s_name[0] == '@'){
-                x->source_file = _sym_nothing;
+                x->source_file = NULL;
             }
         } 
         //post("scm4max_new() source file: %s", x->source_file->s_name);
     }
+
+    post("init s7");
+    // this is crashing on windows
     scm4max_init_s7(x); 
 	return (x);
 }
@@ -287,7 +303,7 @@ void scm4max_make(t_scm4max *x){
 
 // init and set up the s7 interpreter, and load main source file if present
 void scm4max_init_s7(t_scm4max *x){
-    //post("s4m: initializing s7 interpreter");
+    post("s4m: initializing s7 interpreter");
     // S7 initialization, it's possible this should actually happen in main and be attached
     // to the class as opposed to the instance. Not sure about that.
     // initialize interpreter
@@ -318,16 +334,19 @@ void scm4max_init_s7(t_scm4max *x){
     s7_define_variable(x->s7, "maxobj", s7_make_integer(x->s7, max_obj_ptr));  
    
     // boostrap the scheme code
-    // might make this optional later
+    // XXX: 2020-05-03 this is hanging the windows version
     scm4max_doread(x, gensym( BOOTSTRAP_FILE ), false, false);
 
     // load a file given from a user arg, and save filename
     // the convoluted stuff below is to prevent saving @ins or something
     // as the sourcefile name if object used with param args but no sourcefile 
-    if( x->source_file != _sym_nothing){
+    //if( x->source_file != _sym_nothing){
+    //    scm4max_doread(x, x->source_file, true, false);
+    //}
+    if( x->source_file != NULL){
         scm4max_doread(x, x->source_file, true, false);
     }
-    //post("scm4max_init_s7 complete");
+    post("scm4max_init_s7 complete");
 }
 
 void scm4max_dblclick(t_scm4max *x){
@@ -418,10 +437,11 @@ t_max_err scm4max_outlets_set(t_scm4max *x, t_object *attr, long argc, t_atom *a
 void scm4max_read(t_scm4max *x, t_symbol *s){
     defer(x, (method)scm4max_doread, s, 0, NULL);
 }
+
 // read function to either pass on a filename or open the file selector box
 // skip_s7_load indicates to load the file from disk but not into s7. (prob should be refactored)
 void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file, bool skip_s7_load){
-    //post("scm4max_doread()");
+    post("scm4max_doread()");
     t_fourcc filetype = 'TEXT', outtype;
     short numtypes = 1;
     char filename[MAX_PATH_CHARS];
@@ -436,10 +456,11 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file, bool sk
             return;
         }
     }
+    post("filename: %s", filename);
     // block for copying file contents into the buffer for filling the editor
     // only want this to happen if we're calling doread for the main source file
     if( is_main_source_file ){
-        //post("scm4max: locally loading main source file %s", filename);
+        post("scm4max: locally loading main source file %s", filename);
         if(path_opensysfile(filename, path_id, &x->source_file_handle, READ_PERM)){
             object_error((t_object *)x, "s4m: error opening %s", filename);
             return;
@@ -447,18 +468,39 @@ void scm4max_doread(t_scm4max *x, t_symbol *s, bool is_main_source_file, bool sk
         sysfile_readtextfile(x->source_file_handle, x->source_text_handle, 0, TEXT_NULL_TERMINATE);     
     }
     // now read into S7 using s7_load(fullpath)
+    
     // we have a file and a path short, need to convert it to abs path for scheme load
     char full_path[1024]; 
+    char conformed_path[1024]; 
     path_toabsolutesystempath(path_id, filename, full_path);
-    path_nameconform(full_path, full_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
+    post("prior to name conform %s", full_path);
+    // on windows, nameconform changes / to \, but that doesnt seem to help the load
+    path_nameconform(full_path, conformed_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
+    post("path after name conform %s", conformed_path);
     // save the full path for using with text editor opening
     x->source_file_path_id = path_id;
 
     // This is where we load the actual file into S7, which we don't always do 
     // because we could be reading it into the text editor buffer
     if( ! skip_s7_load ){
-        //post("s4m: loading file %s", filename);
+
+        // the below hangs max when trying to load the bootstrap file on startup
+        // full_path Z:/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m.scm/scm/scm4max.scm
         scm4max_s7_load(x, full_path);
+       
+        // the below (with / to \) just hangs max (unresponsive) 
+        // conformed_path: "Z:\Documents\Max 8\Packages\max-sdk-8.0.3\source\scheme4max\s4m.scm\scm\scm4max.scm"
+        // scm4max_s7_load(x, conformed_path);
+       
+        // what is really weird is that the file DOES load if use my repl editor and send the s-exp below
+        // copying the command directly from the max console
+        // (load "Z:/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m.scm/scm/scm4max.scm")
+        
+        // but the below (trying to do that programmatically) also hangs. argh!
+        //char load_command[1024];
+        //sprintf(load_command, "(load \"%s\")", full_path);
+        //post("load command: %s", load_command);
+        //scm4max_s7_eval_string(x, load_command);
     }
 }
 
@@ -678,7 +720,13 @@ void scm4max_s7_call(t_scm4max *x, s7_pointer funct, s7_pointer args){
 
 // call s7_load, with error logging
 void scm4max_s7_load(t_scm4max *x, char *full_path){
-    //post("scm4max_s7_load() %s", full_path);
+    // post("scm4max_s7_load() %s", full_path);
+
+    // 2020-05-03 hmm, maybe it's the call to calloc in here....    
+    // tried running it with only the below (no error msg handling), still hangs on windows
+    // s7_pointer res = s7_load(x->s7, full_path);
+    // scm4max_post_s7_res(x, res);
+
     int gc_loc;
     s7_pointer old_port, result;
     const char *errmsg = NULL;
@@ -698,7 +746,9 @@ void scm4max_s7_load(t_scm4max *x, char *full_path){
         object_error((t_object *)x, "s4m Error loading %s: %s", full_path, msg);
         free(msg);
     }else{
-        //scm4max_post_s7_res(x, res);
+        // we don't run this in production as the res printed is the last line of
+        // the file loaded, which looks weird to the user
+        // scm4max_post_s7_res(x, res);
     }
 }
 
