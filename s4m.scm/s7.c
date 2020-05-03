@@ -11120,11 +11120,13 @@ static bool is_NaN(s7_double x) {return(x != x);}
 
   /* does this need to be in (_MSC_VER < 1700) ? */
   /* in MS C, we need to provide inverse hyperbolic trig funcs and cbrt */
-  static double asinh(double x) {return(log(x + sqrt(1.0 + x * x)));}
-  static double acosh(double x) {return(log(x + sqrt(x * x - 1.0)));}
+  // ICTD: 2020-05-02 commenting these out because they are choking on VS 2019
+  //static double asinh(double x) {return(log(x + sqrt(1.0 + x * x)));}
+  //static double acosh(double x) {return(log(x + sqrt(x * x - 1.0)));}
   /* perhaps less prone to numerical troubles (untested): 2.0 * log(sqrt(0.5 * (x + 1.0)) + sqrt(0.5 * (x - 1.0))) */
-  static double atanh(double x) {return(log((1.0 + x) / (1.0 - x)) / 2.0);}
-  static double cbrt(double x) {if (x >= 0.0) return(pow(x, 1.0 / 3.0)); return(-pow(-x, 1.0 / 3.0));}
+  //static double atanh(double x) {return(log((1.0 + x) / (1.0 - x)) / 2.0);}
+  //static double cbrt(double x) {if (x >= 0.0) return(pow(x, 1.0 / 3.0)); return(-pow(-x, 1.0 / 3.0));}
+   
 #endif /* windows */
 #endif /* sun */
 
