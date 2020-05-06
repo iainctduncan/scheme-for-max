@@ -1,0 +1,38 @@
+Notes on thispatcher functionality in s4m
+
+- I'm pretty sure that the object we get from the call below gives us the same thing as we get from a thispatcher object
+ 
+  object_obex_lookup(x, gensym("#P"), &mypatcher); 
+
+  - let's try sending it some messages?
+ 
+  - maybe a function that is the equiv of send to this patcher?
+    (send-this )
+
+- what is a test message we can use??
+
+this works for making objects from the SDK, so we should just hook it up to scheme
+and allow a property list in scheme
+(new-max-obj (list :maxclass 'toggle :varname 'foobar) )
+
+.. which will then go to:
+.. could be a problem that patching position takes two values, maybe switch that to x y?
+
+t_object *toggle = newobject_sprintf(x->patcher, "@maxclass toggle @varname foo @patching_position %.2f %.2f", 10, 10);
+
+
+DONE:
+- added new instance var, x->patcher with the thing we think is thispatcher
+- figured out that sending object_method_typed with the script messages does not work
+  (would probably have to make a this patcher object)
+
+
+
+(new-max-obj :maxclass foo :patching-position '(10 10)
+
+(connect-max-obj obj-1 outlet obj-2 inlet)
+
+- question, who calls who here?
+
+(define (new-max-obj properties)
+    -  
