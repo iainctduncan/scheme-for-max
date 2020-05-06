@@ -6,19 +6,19 @@ import os
 # its job is to copy the package, including the binary assets and scm files, into the 
 # dist directory, ready for zipping up for release
 
-version = "0.1.1-beta"     # appended to tarball name
+version = "0.1.5-beta"     # appended to tarball name
 dry_run = False
 
 externals_src = "../../externals"
 externals_dest = "dist/Scheme-For-Max/externals"
-scm_src = "s4m.scm/scm"
+scm_src = "s4m/scm"
 scm_dest = "dist/Scheme-For-Max/patchers"
-patcher_src = "s4m.scm/patchers"
+patcher_src = "s4m/patchers"
 patcher_dest = "dist/Scheme-For-Max/patchers"
 
 # list of scheme files required, will be copied into patcher dir in package
 scm_files = [
-    "scm4max.scm",
+    "s4m.scm",
     "stuff.scm",
     "loop.scm",
     "utilities.scm"
@@ -43,9 +43,9 @@ def package_release():
     do("cp -rp Scheme-For-Max dist/")
 
     print("\n... Copying the built external")
-    do("cp -rp %s/s4m.scm.mxo %s" % (externals_src, externals_dest))
-    do("cp -rp %s/s4m.scm.mxe %s" % (externals_src, externals_dest))
-    do("cp -rp %s/s4m.scm.mxe64 %s" % (externals_src, externals_dest))
+    do("cp -rp %s/s4m.mxo %s" % (externals_src, externals_dest))
+    do("cp -rp %s/s4m.mxe %s" % (externals_src, externals_dest))
+    do("cp -rp %s/s4m.mxe64 %s" % (externals_src, externals_dest))
 
     print("\n... Copying the scm files")
     for f in scm_files:
