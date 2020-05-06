@@ -33,7 +33,7 @@ https://youtu.be/ErirIFCTdjg
 **Note: This video uses the old s4m.scm object, the new object is now just s4m**
 
 ## Releases
-Scheme-For-Max 0.1.3-beta https://github.com/iainctduncan/scheme-for-max/releases
+Scheme-For-Max 0.1.5-beta https://github.com/iainctduncan/scheme-for-max/releases
 
 Note: bug fix releases will be announced here and on the google group only.
 
