@@ -3,3 +3,11 @@ dist
 *.swp
 *.zip
 *.o
+*.xcuserdata
+*.xcworkspace
+xcuserdata
+.DS_Store
+*.sdf
+*.suo
+*.sln
+*.opensdf
