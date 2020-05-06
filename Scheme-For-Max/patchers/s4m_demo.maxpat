@@ -3,7 +3,7 @@
 		"fileversion" : 1,
 		"appversion" : 		{
 			"major" : 8,
-			"minor" : 0,
+			"minor" : 1,
 			"revision" : 3,
 			"architecture" : "x64",
 			"modernui" : 1
@@ -47,14 +47,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 0,
+							"minor" : 1,
 							"revision" : 3,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 6.0, 45.0, 956.0, 724.0 ],
+						"rect" : [ 34.0, 79.0, 956.0, 724.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -81,7 +81,6 @@
 						"tags" : "",
 						"style" : "",
 						"subpatcher_template" : "",
-						"visible" : 1,
 						"boxes" : [ 							{
 								"box" : 								{
 									"id" : "obj-12",
@@ -187,7 +186,8 @@
 									"outlettype" : [ "", "", "", "" ],
 									"patching_rect" : [ 347.4000244140625, 301.5999755859375, 68.0, 22.0 ],
 									"saved_object_attributes" : 									{
-										"embed" : 0
+										"embed" : 0,
+										"precision" : 6
 									}
 ,
 									"text" : "coll my-coll",
@@ -271,13 +271,13 @@
 									"numinlets" : 1,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 14.0, 380.79998779296875, 185.0, 22.0 ],
+									"patching_rect" : [ 14.0, 380.79998779296875, 159.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"ins" : 1,
 										"outs" : 2
 									}
 ,
-									"text" : "s4m.scm scm4max.scm @outs 2"
+									"text" : "s4m scm4max.scm @outs 2"
 								}
 
 							}
@@ -417,14 +417,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 0,
+							"minor" : 1,
 							"revision" : 3,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 31.0, 45.0, 909.0, 731.0 ],
+						"rect" : [ 34.0, 79.0, 909.0, 731.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -451,7 +451,6 @@
 						"tags" : "",
 						"style" : "",
 						"subpatcher_template" : "",
-						"visible" : 1,
 						"boxes" : [ 							{
 								"box" : 								{
 									"id" : "obj-39",
@@ -719,13 +718,13 @@
 									"numinlets" : 2,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 5.199999809265137, 370.399993896484375, 146.0, 22.0 ],
+									"patching_rect" : [ 5.199999809265137, 370.399993896484375, 120.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"ins" : 2,
 										"outs" : 2
 									}
 ,
-									"text" : "s4m.scm @ins 2 @outs 2"
+									"text" : "s4m @ins 2 @outs 2"
 								}
 
 							}
@@ -948,14 +947,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 0,
+							"minor" : 1,
 							"revision" : 3,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 11.0, 45.0, 932.0, 713.0 ],
+						"rect" : [ 34.0, 79.0, 932.0, 713.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -982,7 +981,6 @@
 						"tags" : "",
 						"style" : "",
 						"subpatcher_template" : "",
-						"visible" : 1,
 						"boxes" : [ 							{
 								"box" : 								{
 									"id" : "obj-44",
@@ -1065,7 +1063,6 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 515.4000244140625, 326.800018310546875, 79.0, 22.0 ],
-									"presentation_linecount" : 2,
 									"text" : "my-out $2 $1"
 								}
 
@@ -1301,13 +1298,13 @@
 									"numinlets" : 1,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 8.399999618530273, 375.20001220703125, 105.0, 22.0 ],
+									"patching_rect" : [ 8.399999618530273, 375.20001220703125, 79.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"ins" : 1,
 										"outs" : 2
 									}
 ,
-									"text" : "s4m.scm @outs 2"
+									"text" : "s4m @outs 2"
 								}
 
 							}
@@ -1558,7 +1555,7 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 0,
+							"minor" : 1,
 							"revision" : 3,
 							"architecture" : "x64",
 							"modernui" : 1
@@ -1647,13 +1644,13 @@
 									"numinlets" : 2,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 160.0, 222.199996948242188, 267.0, 22.0 ],
+									"patching_rect" : [ 160.0, 222.199996948242188, 242.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"ins" : 2,
 										"outs" : 2
 									}
 ,
-									"text" : "s4m.scm s4m_help_basics.scm @ins 2 @outs 2"
+									"text" : "s4m s4m_help_basics.scm @ins 2 @outs 2"
 								}
 
 							}
@@ -1712,7 +1709,7 @@
 				"implicit" : 1
 			}
 , 			{
-				"name" : "s4m.scm.mxo",
+				"name" : "s4m.mxo",
 				"type" : "iLaX"
 			}
  ],
