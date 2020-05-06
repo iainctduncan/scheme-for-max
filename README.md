@@ -8,7 +8,7 @@ Note that saving from the popup editor is not yet working on Windows. Everything
 **Documentation** lives here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
 ## About
-Scheme-For-Max provides two objects: s4m.scm (the interpreter) and s4m.repl (a REPL GUI patcher)
+Scheme-For-Max provides two objects: s4m (the interpreter, formely named s4m.scm) and s4m.repl (a REPL GUI patcher)
 
 Scheme-for-Max 0.1-beta features include:
 * Hot reloading code from files
@@ -52,15 +52,11 @@ please join the scheme-for-max google group.
 https://groups.google.com/forum/#!forum/scheme-for-max
 
 ## Installation
-Binary packages are available for OSX only at this time. 
+Binary packages are available for OSX and Windows (windows is brand new and may have issues)
 Download the Scheme-For-Max zip file from the Releases tab on Github,
 and unzip it in your Max Packages directory. 
 
-If you can help build for Windows, please get in touch!
-
-Currently tested on Max 8 and OSX High Sierra. On newer versions of OSX you may
-need to disable OSX security preventions on unsigned downloads or other malarkey.
-We will get this thing signed and all that when we get to a non-beta release.
+Currently tested on Max 8, with OSX High Sierra and Windows 10. 
 Please report problems installing to the google group, as well as any fixes
 or workarounds that could be added here.
 
