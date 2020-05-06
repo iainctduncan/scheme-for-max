@@ -29,6 +29,7 @@ many features with Clojure as well, and is easy to learn for anyone with Lisp ex
 ## Demo
 Watch a 10 minute video demo of the features in 0.1 here:
 https://youtu.be/ErirIFCTdjg
+**This video uses the old s4m.scm object, the new object is now just s4m**
 
 ## Releases
 Scheme-For-Max 0.1.3-beta https://github.com/iainctduncan/scheme-for-max/releases
