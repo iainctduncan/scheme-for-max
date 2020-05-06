@@ -4,10 +4,10 @@
 ;; By default, we load the following s7 extras below
 ;; the are not necessary for core Scheme-for-Max to run though, so you can disable
 ;; if you know you don't want them
-(load-from-max "stuff.scm")
+;;(load-from-max "stuff.scm")
 
 ;; load the common music files
-;(load-from-max "loop.scm")
+(load-from-max "loop.scm")
 ;(load-from-max "utilities.scm")
 ; can't load toolbox, will need some alterations
 ;(load-from-max "toolbox.scm")
