@@ -1,4 +1,6 @@
 dist
+*.swn
+*.swm
 *.swo
 *.swp
 *.zip
@@ -12,3 +14,4 @@ xcuserdata
 *.sln
 *.opensdf
 .vs
+*.bz2
