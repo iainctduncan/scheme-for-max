@@ -44,6 +44,8 @@ def package_release():
 
     print("\n... Copying the built external")
     do("cp -rp %s/s4m.scm.mxo %s" % (externals_src, externals_dest))
+    do("cp -rp %s/s4m.scm.mxe %s" % (externals_src, externals_dest))
+    do("cp -rp %s/s4m.scm.mxe64 %s" % (externals_src, externals_dest))
 
     print("\n... Copying the scm files")
     for f in scm_files:

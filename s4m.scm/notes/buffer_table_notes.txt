@@ -50,7 +50,17 @@ maybe? (my-table index int-points dest-seq) -> copies int-points values from ind
           (table-set! table-name (args 0) (args 1)))
         ( (and 
 
+
+
 - other things that would be useful: later
 (table->vector 'table-name) -> returns an s7 vector
 (vector->table vector 'table-name) -> create or load an s7 table from a vector
+
+- looking at the s7 docs, it maybe that what I should actually have is
+ (set! (my-table 0) 4)
+- put in the docs for table that the api is subject to change on that
+  - it's probably OK for tables because they can only have integers, so there is no chance
+    of the first returning a nest
+
+- (set! (foo 1) 1)
 
