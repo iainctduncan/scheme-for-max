@@ -1,5 +1,5 @@
 ;; the scm4max scheme code to build the API
-(max-post "Bootstrapping scm4max.scm")
+(max-post "Bootstrapping s4m.scm")
 
 ;; By default, we load the following s7 extras below
 ;; the are not necessary for core Scheme-for-Max to run though, so you can disable
@@ -139,4 +139,4 @@
 ;(define t (table 'foobar))
 ;(post "table t: " table)
 
-(post "scm4max.scm BOOTSTRAP COMPLETE")
+(post "s4m.scm BOOTSTRAP COMPLETE")

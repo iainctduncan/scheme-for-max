@@ -12,6 +12,7 @@
 #include "stdbool.h"
 #include "stdlib.h"
 #include "s7.h"
+#include "common/commonsyms.c"
 
 #define MAX_NUM_OUTLETS 32
 #define MAX_NUM_INLETS 32
@@ -146,12 +147,13 @@ int is_quoted_symbol(char *string){
     }
 }
 char *trim_symbol_quote(char *input){
-    int length = strlen(input);
-    char *trimmed = malloc( sizeof(char*) * length );
     // drop the first character (the quote)
-    for(int i=1, j=0; i<length; i++){
-        trimmed[j] = input[i]; j++;     
+    char *trimmed = malloc( sizeof(char*) * (strlen(input) - 1) );
+    int i;
+    for(i=1; input[i] != '\0'; i++){
+        trimmed[i-1] = input[i]; 
     }
+    trimmed[i-1] = '\0';
     return trimmed;
 }
 
@@ -159,8 +161,10 @@ char *trim_symbol_quote(char *input){
 * main C code 
 */
 void ext_main(void *r){
-    post("s4m.c ext_main()");
+    //post("s4m.c ext_main()");
     t_class *c;
+	common_symbols_init();
+
     c = class_new("s4m", (method)s4m_new, (method)s4m_free,
          (long)sizeof(t_s4m), 0L /* leave NULL!! */, A_GIMME, 0);
 
@@ -193,15 +197,14 @@ void ext_main(void *r){
     class_addmethod(c, (method)s4m_assist, "assist", A_CANT, 0);
     class_register(CLASS_BOX, c); 
     s4m_class = c;
-    post("s4m.c ext_main() done");
+    //post("s4m.c ext_main() done");
 }
 
 void *s4m_new(t_symbol *s, long argc, t_atom *argv){
-    post("s4m_new(), arg count: %i", argc);
+    //post("s4m_new(), arg count: %i", argc);
     t_s4m *x = NULL;
 
     x = (t_s4m *)object_alloc(s4m_class);
-	object_post((t_object *)x, "a new %s object was instantiated: %p", s->s_name, x);
 
 	x->s7 = NULL;
 	x->source_file = NULL;
@@ -245,39 +248,25 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     object_obex_lookup(x, gensym("#P"), &x->patcher);
 
     // this block of code is crashing on windows
-    // examine args, and set the sourcefile to first arg that does not start with @
-    //x->source_file = gensym("");
-    //x->source_file = _sym_nothing;
-    //if(argc){
-    //    atom_arg_getsym(&x->source_file, 0, argc, argv);
-    //    if(x->source_file != _sym_nothing){
-    //        if(x->source_file->s_name[0] == '@'){
-    //            x->source_file = _sym_nothing;
-    //        }
-    //    } 
-    //    //post("s4m_new() source file: %s", x->source_file->s_name);
-    //}
-
-    // this does not seem to crash on windows
-    x->source_file = NULL;
+    x->source_file = gensym("");
+    x->source_file = _sym_nothing;
     if(argc){
         atom_arg_getsym(&x->source_file, 0, argc, argv);
-        if(x->source_file != NULL){
+        if(x->source_file != _sym_nothing){
             if(x->source_file->s_name[0] == '@'){
-                x->source_file = NULL;
+                x->source_file = _sym_nothing;
             }
         } 
-        post("s4m_new() source file: %s", x->source_file->s_name);
+        //post("s4m_new() source file: %s", x->source_file->s_name);
     }
-
-    post("init s7");
+    //post("init s7");
     s4m_init_s7(x); 
     return (x);
 }
 //
 // init and set up the s7 interpreter, and load main source file if present
 void s4m_init_s7(t_s4m *x){
-    post("s4m: initializing s7 interpreter");
+    //post("s4m: initializing s7 interpreter");
     // S7 initialization, it's possible this should actually happen in main and be attached
     // to the class as opposed to the instance. Not sure about that.
     // initialize interpreter
@@ -305,20 +294,16 @@ void s4m_init_s7(t_s4m *x){
     uintptr_t max_obj_ptr = (uintptr_t)x;
     s7_define_variable(x->s7, "maxobj", s7_make_integer(x->s7, max_obj_ptr));  
    
-    // boostrap the scheme code
-    // XXX: 2020-05-03 this is hanging the windows version
+    // bootstrap the scheme code
     s4m_doread(x, gensym( BOOTSTRAP_FILE ), false, false);
 
     // load a file given from a user arg, and save filename
     // the convoluted stuff below is to prevent saving @ins or something
     // as the sourcefile name if object used with param args but no sourcefile 
-    //if( x->source_file != _sym_nothing){
-    //    s4m_doread(x, x->source_file, true, false);
-    //}
-    if( x->source_file != NULL){
+    if( x->source_file != _sym_nothing){
         s4m_doread(x, x->source_file, true, false);
     }
-    post("s4m_init_s7 complete");
+    //post("s4m_init_s7 complete");
 }
 
 
@@ -350,14 +335,15 @@ void s4m_make(t_s4m *x){
 */
 
 void s4m_dblclick(t_s4m *x){
+    //post("s4m_dblclick()");
     // open editor here
-    //post("s4m_dblclick() Double click received, opening editor");
     if (!x->m_editor){
         //post("creating new editor");
         x->m_editor = object_new(CLASS_NOBOX, gensym("jed"), (t_object *)x, 0);
         object_method(x->m_editor, gensym("filename"), x->source_file->s_name, x->source_file_path_id);
+        //post("  - set filename to: %s", x->source_file->s_name);
     }else{
-        // post("setting editor to visible");
+        //post("setting editor to visible");
         object_attr_setchar(x->m_editor, gensym("visible"), 1);
     }
     // we always re-read the file so that it picks up any changes made from an editor
@@ -367,6 +353,10 @@ void s4m_dblclick(t_s4m *x){
     s4m_doread(x, x->source_file, true, true);
     // load the editors buffer with the file contents
     object_method(x->m_editor, gensym("settext"), *x->source_text_handle, gensym("utf-8"));
+
+    #ifdef _MSC_VER
+        object_error((t_object *)x, "WARNING: saving from editor not working yet on Windows");
+    #endif
 }
 
 void s4m_edclose(t_s4m *x, char **ht, long size){
@@ -377,12 +367,14 @@ void s4m_edclose(t_s4m *x, char **ht, long size){
 }
 
 long s4m_edsave(t_s4m *x, char **ht, long size){
-    // post("s4m_edsave()");
+    //post("s4m_edsave(), returning 0 to save");
     // eval the text
+    
     s7_pointer res; 
     res = s7_eval_c_string(x->s7, *ht); 
-    post("s4m: file saved and loaded, result: %s", s7_object_to_c_string(x->s7, res) ); 
+    //post("s4m: file contents reloaded, result: %s", s7_object_to_c_string(x->s7, res) ); 
     // return 0 to tell editor to save the text
+    // XXX: 2020-05 this is not working on windows.
     return 0;       
 }
 
@@ -408,8 +400,9 @@ long s4m_scan_iterator(t_s4m *x, t_object *b){
     t_object *obj = jbox_get_object(b);
     // if this subobject has a scripting name, save obj in the registry by scripting name
     if(varname != gensym("")){
-          //post("storing symbol '%s' in registry", varname->s_name );
-          hashtab_store(x->registry, varname, obj);
+        post("storing object '%s' in registry", varname->s_name );
+        // note that varname is already a pointer to a symbol
+        hashtab_store(x->registry, gensym(varname->s_name), obj);
     }
     return 0;
 }
@@ -442,7 +435,7 @@ void s4m_read(t_s4m *x, t_symbol *s){
 // read function to either pass on a filename or open the file selector box
 // skip_s7_load indicates to load the file from disk but not into s7. (prob should be refactored)
 void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file, bool skip_s7_load){
-    post("s4m_doread()");
+    //post("s4m_doread()");
     t_fourcc filetype = 'TEXT', outtype;
     short numtypes = 1;
     char filename[MAX_PATH_CHARS];
@@ -457,11 +450,11 @@ void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file, bool skip_s7_lo
             return;
         }
     }
-    post("filename: %s", filename);
+    //post("filename: %s", filename);
     // block for copying file contents into the buffer for filling the editor
     // only want this to happen if we're calling doread for the main source file
     if( is_main_source_file ){
-        post("s4m: locally loading main source file %s", filename);
+        //post("s4m: locally loading main source file %s", filename);
         if(path_opensysfile(filename, path_id, &x->source_file_handle, READ_PERM)){
             object_error((t_object *)x, "s4m: error opening %s", filename);
             return;
@@ -472,37 +465,20 @@ void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file, bool skip_s7_lo
     
     // we have a file and a path short, need to convert it to abs path for scheme load
     char full_path[1024]; 
-    char conformed_path[1024]; 
+
     path_toabsolutesystempath(path_id, filename, full_path);
-    post("prior to name conform %s", full_path);
     // on windows, nameconform changes / to \, but that doesnt seem to help the load
-    path_nameconform(full_path, conformed_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
-    post("path after name conform %s", conformed_path);
+
+    // XXX: seems like the below is not necessary anymore
+    //char conformed_path[1024]; 
+    //path_nameconform(full_path, conformed_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
     // save the full path for using with text editor opening
     x->source_file_path_id = path_id;
 
     // This is where we load the actual file into S7, which we don't always do 
     // because we could be reading it into the text editor buffer
     if( ! skip_s7_load ){
-
-        // XXX: 2020-05-03
-        // the below hangs max when trying to load the bootstrap file on startup
-        // full_path Z:/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m.scm/scm/s4m.scm
         s4m_s7_load(x, full_path);
-       
-        // the below (with / to \) just hangs max (unresponsive) 
-        // conformed_path: "Z:\Documents\Max 8\Packages\max-sdk-8.0.3\source\scheme4max\s4m.scm\scm\s4m.scm"
-        // s4m_s7_load(x, conformed_path);
-       
-        // what is really weird is that the file DOES load if use my repl editor and send the s-exp below
-        // copying the command directly from the max console
-        // (load "Z:/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m.scm/scm/s4m.scm")
-        
-        // but the below (trying to do that programmatically) also hangs. argh!
-        //char load_command[1024];
-        //sprintf(load_command, "(load \"%s\")", full_path);
-        //post("load command: %s", load_command);
-        //s4m_s7_eval_string(x, load_command);
     }
 }
 
@@ -516,7 +492,7 @@ void s4m_assist(t_s4m *x, void *b, long m, long a, char *s){
 }
 
 void s4m_free(t_s4m *x){ 
-    post("s4m: calling free()");
+    //post("s4m: calling free()");
     hashtab_chuck(x->registry);
 
     // XXX: the below were causing crashed, but pretty sure we're leaking memory now
@@ -723,12 +699,6 @@ void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args){
 // call s7_load, with error logging
 void s4m_s7_load(t_s4m *x, char *full_path){
     // post("s4m_s7_load() %s", full_path);
-
-    // 2020-05-03 hmm, maybe it's the call to calloc in here....    
-    // tried running it with only the below (no error msg handling), still hangs on windows
-    // s7_pointer res = s7_load(x->s7, full_path);
-    // s4m_post_s7_res(x, res);
-
     int gc_loc;
     s7_pointer old_port, result;
     const char *errmsg = NULL;
@@ -864,6 +834,7 @@ void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
         ap = argv + i;
         s7_args = s7_cons(x->s7, max_atom_to_s7_obj(x->s7, ap), s7_args); 
     }
+    
     // add the first message to the arg list (it's always a symbol)
     // for inlet 0, it will be "flist" (so as not to collide with scheme reserved word "list")
     // for inlet 1+, it will be :list (for registered listeners)
@@ -926,8 +897,7 @@ void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
         }
         // add the first message to the arg list (it's always a symbol)
         s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, s->s_name), s7_args); 
-        //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
-        // call the s7 dispatch function, sending in all args as an s7 list
+        // call the s7 eval function, sending in all args as an s7 list
         s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-eval"), s7_args);
     }
 
@@ -1384,33 +1354,31 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
 // s7 function for sending a generic message to a max object
 // assumes the max object has a scripting name and has been found by a call to 'scan' to the s4m object
 static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
-    // post("s7_send_message()");
+    //post("s7_send_message()");
     // table names could come in from s7 as either strings or symbols, if using keyword table names
     t_s4m *x = get_max_obj(s7);
     char *obj_name;
     char *msg_symbol;
     t_object *obj = NULL;
-    t_max_err err;
+    t_max_err err = NULL;
     // initialize return value to nil, as we need to return to S7 even on errors
     s7_pointer *s7_return_value = s7_nil(x->s7); 
     // where we look in s7 args for max method args, normally 2
     int starting_arg = 2;   
-    
+
     if( s7_is_symbol( s7_car(args) ) ){ 
         obj_name = s7_symbol_name( s7_car(args) );
-        //post("obj_name: %s", obj_name);
     }else{
         object_error((t_object *)x, "s4m: (send): arg 1 must be a symbol of a Max scripting name");
         return s7_return_value;
-    }   
+    }  
     // now find the object, if we can't find it by scripting name, then no message can go
+     
     err = hashtab_lookup(x->registry, gensym(obj_name), &obj);
     if(err){
-        object_error((t_object *)x, "s4m: (send): no object found in registry for scripting name '%s', did you run 'scan'?", obj_name);
-        return s7_return_value;
+          object_error((t_object *)x, "s4m: (send): no object found in registry for scripting name %s, did you run 'scan'?", obj_name);
+          return s7_return_value;
     }
-
-    // TODO bangs
 
     // message to be sent could be an int, real, message
     // NB: in max, a message "1 2 3" is actually sent internally as "list 1 2 3"
@@ -1436,10 +1404,7 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
     }else{
         object_error((t_object *)x, "s4m: (send): arg 2 should be a symbol of the message to send");
     }
-    //post("msg_symbol: %s, starting arg index: %i", msg_symbol, starting_arg);
-
     int s7_arg_length = s7_list_length(s7, args);
-    // post("s7 args length: %i", s7_arg_length);
     
     // loop through the args to build an atom list of the right length
     // TODO learn how to do this correctly, and add error handling for over the limit yo
@@ -1454,7 +1419,6 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
             return s7_return_value;
         }
     }
-
     // send the message to the registered object 
     err = object_method_typed(obj, gensym(msg_symbol), num_atoms, arg_atoms, NULL);
     if(err){
@@ -1463,7 +1427,7 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
     }
     // N.B. ALTERNATE method of sending messages is to send args as a C string
     //object_method_parse(obj, gensym("list"), "1.2 3.4", NULL);
-
+    
     return s7_return_value;
 }
 
