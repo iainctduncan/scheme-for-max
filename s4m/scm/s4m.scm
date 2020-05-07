@@ -1,20 +1,19 @@
 ;; the scm4max scheme code to build the API
-(max-post "Bootstrapping s4m.scm")
+(max-post "--Bootstrapping s4m.scm")
+
+;; s7-stuff.scm contains the scheme level s7 helper definitions and must be loaded for various
+;; s4m functions to work ok. this file is called "stuff.scm" in regular s7 sources
+(load-from-max "s7-stuff.scm")
 
 ;; By default, we load the following s7 extras below
 ;; the are not necessary for core Scheme-for-Max to run though, so you can disable
 ;; if you know you don't want them
-;(load-from-max "stuff.scm")
-
 ;; load the common music files
 ;(load-from-max "loop.scm")
-;(load-from-max "utilities.scm")
-; can't load toolbox, will need some alterations
-;(load-from-max "toolbox.scm")
+; (load-from-max "utilities.scm")
 
-;; can't load r7rs.scm without loading libc.scm, and that's throwing an error
-;;(load-from-max "libc.scm")
-;;(load-from-max "r7rs.scm")
+; XXX we can't load toolbox, will need some alterations 
+;(load-from-max "toolbox.scm")
 
 
 ;; misc convenience functions
@@ -93,7 +92,7 @@
 ;; to all other code
 (define s4m-eval
   (lambda args
-    ;;(post "s4m-eval :" args)
+    (post "s4m-eval :" args)
     (eval args (rootlet))))
 
 
