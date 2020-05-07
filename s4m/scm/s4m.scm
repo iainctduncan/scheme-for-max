@@ -5,16 +5,13 @@
 ;; s4m functions to work ok. this file is called "stuff.scm" in regular s7 sources
 (load-from-max "s7-stuff.scm")
 
-;; By default, we load the following s7 extras below
-;; the are not necessary for core Scheme-for-Max to run though, so you can disable
-;; if you know you don't want them
-;; load the common music files
+;; By default, we load the following s7 extras from the Common Music packages
+;; the are not necessary for core Scheme-for-Max to run though, can be omitted safely
 (load-from-max "loop.scm")
 (load-from-max "utilities.scm")
 
 ; XXX we can't load toolbox, will need some alterations 
 ;(load-from-max "toolbox.scm")
-
 
 ;; misc convenience functions
 
