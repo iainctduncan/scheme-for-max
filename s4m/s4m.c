@@ -733,6 +733,7 @@ void s4m_s7_eval_string(t_s4m *x, char *string_to_eval){
     char *msg = NULL;
     old_port = s7_set_current_error_port(x->s7, s7_open_output_string(x->s7));
     gc_loc = s7_gc_protect(x->s7, old_port);
+    //post("calling s7_eval_c_string");
     s7_pointer res = s7_eval_c_string(x->s7, string_to_eval);
     errmsg = s7_get_output_string(x->s7, s7_current_error_port(x->s7));
     if ((errmsg) && (*errmsg)){
@@ -1042,7 +1043,7 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     int outlet_num = s7_integer( s7_car(args) );
-    //post("s7_max_output, outlet: %i", outlet_num);
+    post("s7_max_output, outlet: %i", outlet_num);
     t_s4m *x = get_max_obj(s7);
 
     // check if outlet number exists
@@ -1076,6 +1077,7 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
 
     }else if( s7_is_list(s7, s7_out_val)){
         // we can output a list of simple types, as a max list style message
+        //post("attempting to output list");
         int length = s7_list_length(s7, s7_out_val);
         t_atom out_list[MAX_ATOMS_PER_OUTPUT_LIST];
         for(int i=0; i<length; i++){
@@ -1088,6 +1090,11 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
                 atom_setsym( out_list + i, gensym( s7_symbol_name( list_item ) ) );
             }else if( s7_is_string( list_item ) ){ 
                 atom_setsym( out_list + i, gensym( s7_string( list_item ) ) );
+            }else if(s7_is_character( list_item )){
+                char *s7_char_string = s7_object_to_c_string(s7, list_item);          
+                atom_setsym( out_list + i, gensym( s7_char_string ) );
+            }else{
+                error("attempted Max output of unhandled type or data");
             }
         }   
         outlet_anything( x->outlets[outlet_num], gensym("list"), length, out_list);     
