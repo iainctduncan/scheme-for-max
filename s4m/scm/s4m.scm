@@ -5,15 +5,13 @@
 ;; s4m functions to work ok. this file is called "stuff.scm" in regular s7 sources
 (load-from-max "s7-stuff.scm")
 
-;; By default, we load the following s7 extras from the Common Music packages
-;; the are not necessary for core Scheme-for-Max to run though, can be omitted safely
-(load-from-max "loop.scm")
-(load-from-max "utilities.scm")
+;; Uncomment the below to load the loop macro and various utilities from Common Music
+;; They are not necessary for core Scheme-for-Max run
+;; NB: 2020-05-08 there is an issue with loop.scm on windows, we are working on it.
+;(load-from-max "loop.scm")
+;(load-from-max "utilities.scm")
 
-; XXX we can't load toolbox, will need some alterations 
-;(load-from-max "toolbox.scm")
-
-;; misc convenience functions
+;; misc convenience functions we use
 
 ;; convert to a string for our post function
 (define (stringify item)
@@ -47,6 +45,7 @@
     ;; use the same setting to mute logging lists of nulls: (() () ())
     ((and (list? res) (every? null? res) (not s4m-log-nulls)) :no-log)
     (else res))) 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Default callbacks that do nothing but remind you there's no callback registered yet
@@ -105,34 +104,5 @@
 (define (out-7 args) (max-output 7 args))
 
 (define s4m-done-bootstrap #t)
-
-
-;********************************************************************************
-;* table i/o stuff
-
-;; a table object function
-(define (table name)
-  (let ((table-name name))
-    ;; returns a function that takes variable number of args
-    (lambda args
-      (cond    
-        ;; (my-table idx) -> returns value at idx
-        ( (and (= 1 (length args)) (integer? (args 0))) 
-          (table-ref table-name (args 0)))
-        ;; (my-table idx val) -> sets idx to val (experimental)
-        ( (and (= 2 (length args)) (integer? (args 0)) (integer? (args 1))) 
-          (table-set! table-name (args 0) (args 1)))
-        ;; (my-table idx seq) -> writes all values in seq to table
-        ( (and (= 2 (length args)) (integer? (args 0)) (sequence? (args 1)))
-          ;; to be faster, this should really happen in C
-          (let loop ((i 0))
-            (table-set! table-name i ((args 1) i)) ;; set table[i] to seq[i] 
-            (if (< i (- (length (args 1)) 1)) 
-              (loop (+ i 1))))) 
-      ))))
-
-
-;(define t (table 'foobar))
-;(post "table t: " table)
 
 (post "s4m.scm BOOTSTRAP COMPLETE")
