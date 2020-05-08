@@ -6,7 +6,7 @@
 (load-from-max "s7-stuff.scm")
 
 ;; Uncomment the below to load the loop macro and various utilities from Common Music
-;; They are not necessary for core Scheme-for-Max run
+;; They are not necessary for core Scheme-for-Max to run
 ;; NB: 2020-05-08 there is an issue with loop.scm on windows, we are working on it.
 ;(load-from-max "loop.scm")
 ;(load-from-max "utilities.scm")
