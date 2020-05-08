@@ -4,7 +4,10 @@ Max/MSP with Scheme / Lisp. It is available as a packages for Mac and Windows, a
 
 **2020-05-06 0.1.5: This release is the first windows beta. This required the main object to be renamed from s4m.scm to s4m.  Demo videos are not yet updated.** 
 
-**Windows Issues: Note that saving from the popup editor is not yet working on Windows, and the Control keys for the repl bpatcher won't work because they collide with windows keys.**
+**Windows Known Issues:**
+* Saving from the popup editor is not yet working on Windows
+* The Control keys for the repl bpatcher won't work because they collide with windows keys.
+* There seems to be an issue in Common Music's loop macro in loop.scm, so this is not loaded by default anymore. To use it on osx, edit s4m.scm and uncomment the line that loads loop.scm
 
 **Documentation** lives here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
