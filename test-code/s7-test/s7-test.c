@@ -24,11 +24,16 @@ int main(int argc, char **argv){
     //eval_string(s7, "(1 2)");
 
     // verify s7 working ok, these are fine on windows
-    //printf("verifying basics...\n"); 
-    eval_string(s7, "(define a 1)");
-    eval_string(s7, "(define b 2)");
+    printf("verifying basics, should display 5 ...\n"); 
+    eval_string(s7, "(define a 2)");
+    eval_string(s7, "(define b 3)");
     eval_string(s7, "(define (addr x y) (+ x y))");
     eval_string(s7, "(display (addr a b))");
+
+    printf("\n loading and using mult, should display 2 ...\n");
+    // try loading a function from an external file
+    eval_string(s7, "(load \"mult.scm\")");
+    eval_string(s7, "(display (mult a b))");
 
     // call loop. on windows with VS2019, this just hangs the screen. 
     // on osx, these run fine
