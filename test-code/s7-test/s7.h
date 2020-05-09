@@ -1,8 +1,8 @@
 #ifndef S7_H
 #define S7_H
 
-#define S7_VERSION "8.18"
-#define S7_DATE "2020-5-4"
+#define S7_VERSION "9.0"
+#define S7_DATE "2020-5-11"
 
 #include <stdint.h>           /* for int64_t */
 
@@ -674,87 +674,87 @@ typedef s7_double (*s7_float_function)(s7_scheme *sc, s7_pointer args);
 s7_float_function s7_float_optimize(s7_scheme *sc, s7_pointer expr);
 
 typedef s7_double (*s7_d_t)(void);
-void s7_set_d_function(s7_pointer f, s7_d_t df);
+void s7_set_d_function(s7_scheme *sc, s7_pointer f, s7_d_t df);
 s7_d_t s7_d_function(s7_pointer f);
 
 typedef s7_double (*s7_d_d_t)(s7_double x);
-void s7_set_d_d_function(s7_pointer f, s7_d_d_t df);
+void s7_set_d_d_function(s7_scheme *sc, s7_pointer f, s7_d_d_t df);
 s7_d_d_t s7_d_d_function(s7_pointer f);
 
 typedef s7_double (*s7_d_dd_t)(s7_double x1, s7_double x2);
-void s7_set_d_dd_function(s7_pointer f, s7_d_dd_t df);
+void s7_set_d_dd_function(s7_scheme *sc, s7_pointer f, s7_d_dd_t df);
 s7_d_dd_t s7_d_dd_function(s7_pointer f);
 
 typedef s7_double (*s7_d_ddd_t)(s7_double x1, s7_double x2, s7_double x3);
-void s7_set_d_ddd_function(s7_pointer f, s7_d_ddd_t df);
+void s7_set_d_ddd_function(s7_scheme *sc, s7_pointer f, s7_d_ddd_t df);
 s7_d_ddd_t s7_d_ddd_function(s7_pointer f);
 
 typedef s7_double (*s7_d_dddd_t)(s7_double x1, s7_double x2, s7_double x3, s7_double x4);
-void s7_set_d_dddd_function(s7_pointer f, s7_d_dddd_t df);
+void s7_set_d_dddd_function(s7_scheme *sc, s7_pointer f, s7_d_dddd_t df);
 s7_d_dddd_t s7_d_dddd_function(s7_pointer f);
 
 typedef s7_double (*s7_d_v_t)(void *v);
-void s7_set_d_v_function(s7_pointer f, s7_d_v_t df);
+void s7_set_d_v_function(s7_scheme *sc, s7_pointer f, s7_d_v_t df);
 s7_d_v_t s7_d_v_function(s7_pointer f);
 
 typedef s7_double (*s7_d_vd_t)(void *v, s7_double d);
-void s7_set_d_vd_function(s7_pointer f, s7_d_vd_t df);
+void s7_set_d_vd_function(s7_scheme *sc, s7_pointer f, s7_d_vd_t df);
 s7_d_vd_t s7_d_vd_function(s7_pointer f);
 
 typedef s7_double (*s7_d_vdd_t)(void *v, s7_double x1, s7_double x2);
-void s7_set_d_vdd_function(s7_pointer f, s7_d_vdd_t df);
+void s7_set_d_vdd_function(s7_scheme *sc, s7_pointer f, s7_d_vdd_t df);
 s7_d_vdd_t s7_d_vdd_function(s7_pointer f);
 
 typedef s7_double (*s7_d_vid_t)(void *v, s7_int i, s7_double d);
-void s7_set_d_vid_function(s7_pointer f, s7_d_vid_t df);
+void s7_set_d_vid_function(s7_scheme *sc, s7_pointer f, s7_d_vid_t df);
 s7_d_vid_t s7_d_vid_function(s7_pointer f);
 
 typedef s7_double (*s7_d_p_t)(s7_pointer p);
-void s7_set_d_p_function(s7_pointer f, s7_d_p_t df);
+void s7_set_d_p_function(s7_scheme *sc, s7_pointer f, s7_d_p_t df);
 s7_d_p_t s7_d_p_function(s7_pointer f);
 
 typedef s7_double (*s7_d_pd_t)(s7_pointer v, s7_double x);
-void s7_set_d_pd_function(s7_pointer f, s7_d_pd_t df);
+void s7_set_d_pd_function(s7_scheme *sc, s7_pointer f, s7_d_pd_t df);
 s7_d_pd_t s7_d_pd_function(s7_pointer f);
 
 typedef s7_double (*s7_d_7pi_t)(s7_scheme *sc, s7_pointer v, s7_int i);
-void s7_set_d_7pi_function(s7_pointer f, s7_d_7pi_t df);
+void s7_set_d_7pi_function(s7_scheme *sc, s7_pointer f, s7_d_7pi_t df);
 s7_d_7pi_t s7_d_7pi_function(s7_pointer f);
 
 typedef s7_double (*s7_d_7pid_t)(s7_scheme *sc, s7_pointer v, s7_int i, s7_double d);
-void s7_set_d_7pid_function(s7_pointer f, s7_d_7pid_t df);
+void s7_set_d_7pid_function(s7_scheme *sc, s7_pointer f, s7_d_7pid_t df);
 s7_d_7pid_t s7_d_7pid_function(s7_pointer f);
 
 typedef s7_double (*s7_d_id_t)(s7_int i, s7_double d);
-void s7_set_d_id_function(s7_pointer f, s7_d_id_t df);
+void s7_set_d_id_function(s7_scheme *sc, s7_pointer f, s7_d_id_t df);
 s7_d_id_t s7_d_id_function(s7_pointer f);
 
 typedef s7_double (*s7_d_ip_t)(s7_int i, s7_pointer p);
-void s7_set_d_ip_function(s7_pointer f, s7_d_ip_t df);
+void s7_set_d_ip_function(s7_scheme *sc, s7_pointer f, s7_d_ip_t df);
 s7_d_ip_t s7_d_ip_function(s7_pointer f);
 
 typedef s7_int (*s7_i_i_t)(s7_int x);
-void s7_set_i_i_function(s7_pointer f, s7_i_i_t df);
+void s7_set_i_i_function(s7_scheme *sc, s7_pointer f, s7_i_i_t df);
 s7_i_i_t s7_i_i_function(s7_pointer f);
 
 typedef s7_int (*s7_i_7d_t)(s7_scheme *sc, s7_double x);
-void s7_set_i_7d_function(s7_pointer f, s7_i_7d_t df);
+void s7_set_i_7d_function(s7_scheme *sc, s7_pointer f, s7_i_7d_t df);
 s7_i_7d_t s7_i_7d_function(s7_pointer f);
 
 typedef s7_int (*s7_i_ii_t)(s7_int i1, s7_int i2);
-void s7_set_i_ii_function(s7_pointer f, s7_i_ii_t df);
+void s7_set_i_ii_function(s7_scheme *sc, s7_pointer f, s7_i_ii_t df);
 s7_i_ii_t s7_i_ii_function(s7_pointer f);
 
 typedef s7_int (*s7_i_7p_t)(s7_scheme *sc, s7_pointer p);
-void s7_set_i_7p_function(s7_pointer f, s7_i_7p_t df);
+void s7_set_i_7p_function(s7_scheme *sc, s7_pointer f, s7_i_7p_t df);
 s7_i_7p_t s7_i_7p_function(s7_pointer f);
 
 typedef bool (*s7_b_p_t)(s7_pointer p);
-void s7_set_b_p_function(s7_pointer f, s7_b_p_t df);
+void s7_set_b_p_function(s7_scheme *sc, s7_pointer f, s7_b_p_t df);
 s7_b_p_t s7_b_p_function(s7_pointer f);
 
 typedef s7_pointer (*s7_p_d_t)(s7_scheme *sc, s7_double x);
-void s7_set_p_d_function(s7_pointer f, s7_p_d_t df);
+void s7_set_p_d_function(s7_scheme *sc, s7_pointer f, s7_p_d_t df);
 s7_p_d_t s7_p_d_function(s7_pointer f);
 
 /* Here is an example of using these functions; more extensive examples are in clm2xen.c in sndlib, and in s7.c.
@@ -769,7 +769,7 @@ s7_p_d_t s7_p_d_function(s7_pointer f);
  * void plusone_init(s7_scheme *sc)
  * {
  *   s7_define_safe_function(sc, "plusone", g_plusone, 1, 0, false, "");
- *   s7_set_i_i_function(s7_name_to_value(sc, "plusone"), plusone);
+ *   s7_set_i_i_function(sc, s7_name_to_value(sc, "plusone"), plusone);
  * }
  * --------
  * gcc -c plus.c -fPIC -O2 -lm
@@ -878,6 +878,7 @@ void s7_set_gc_stats(s7_scheme *sc, bool on);                        /* (set! (*
  * 
  *        s7 changes
  *
+ * 6-May:     added s7_scheme* initial arguments to s7_set_* opt_func calls (s7_set_d_d_function for example).
  * 23-Apr:    added s7_scheme* initial argument to s7_is_eqv.
  * 9-Mar:     move openlets to (*s7* 'openlets), s7-version to (*s7* 'version), deprecate nan.0 and inf.0.
  * 17-Feb:    s7_let_field_ref|set for *s7* access. *function* to replace __func__.
