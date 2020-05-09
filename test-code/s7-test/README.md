@@ -7,8 +7,8 @@ Prep:
 
 Compile:
 * OSX:
-  ** gcc -c s7.c
-  ** gcc s7-test.c -L. -I. s7.o -lm
+** gcc -c s7.c
+** gcc s7-test.c -L. -I. s7.o -lm
 
 * Windows: 
   ** open s7-test.vcxproj in VS2019, and build.
