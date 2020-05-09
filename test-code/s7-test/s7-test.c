@@ -23,10 +23,17 @@ int main(int argc, char **argv){
     // a runtime error:
     //eval_string(s7, "(1 2)");
 
+    // verify s7 working ok, these are fine on windows
+    //printf("verifying basics...\n"); 
+    eval_string(s7, "(define a 1)");
+    eval_string(s7, "(define b 2)");
+    eval_string(s7, "(define (addr x y) (+ x y))");
+    eval_string(s7, "(display (addr a b))");
+
     // call loop. on windows with VS2019, this just hangs the screen. 
     // on osx, these run fine
-    eval_string(s7, "(define total (loop for i below 10 sum i))");
-    eval_string(s7, "(loop for i below 10 do (display i))");
+    //eval_string(s7, "(define total (loop for i below 10 sum i))");
+    //eval_string(s7, "(loop for i below 10 do (display i))");
     
     printf("\nDONE\n");
 }
