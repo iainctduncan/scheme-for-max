@@ -16,6 +16,20 @@ Compile:
 Results:
 - Iain's results, 2020-05-09
   OSX:
-    works as expected, loop macro does it's thing
+    works as expected, s7 builds, loop macro does it's thing
 
   Win 10, VS 2019:  
+    compiling S7 throws errors for lines 11121 to 11125: 
+    Error	C2491	'asinh': definition of dllimport function not allowed
+    Error	C2491	'acosh': definition of dllimport function not allowed
+    Error	C2491	'atanh': definition of dllimport function not allowed
+    Error	C2491	'cbrt': definition of dllimport function not allowed
+    - IAIN: I can comment these out to build successfully
+  
+    - program runs fine, unless there is a call to loop, in which case it hangs
+
+    
+    
+
+
+      
