@@ -6,28 +6,27 @@
 static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args);
 void eval_string(s7_scheme *s7, char *string_to_eval);
 
-
 int main(int argc, char **argv){
     printf("s7-test.c running\n");    
 
     s7_scheme *s7;
     s7 = s7_init();
     eval_string(s7, "(display \"loading loop\")");
-    //eval_string(s7, "1");
-    //eval_string(s7, "(define a 99)");
-
+    // load loop, copy of loop.scm is in same directory
     eval_string(s7, "(load \"loop.scm\")");
-    eval_string(s7, "loop");
+    // see if loop is loaded
+    //eval_string(s7, "loop");
 
-    // verify error handling ok - working
+    // verify error handling ok - yup, working
     // a read error:
     //eval_string(s7, "(1 2");
     // a runtime error:
     //eval_string(s7, "(1 2)");
 
-    // call loop. on windows, this hangs. 
+    // call loop. on windows with VS2019, this just hangs the screen. 
+    // on osx, these run fine
     eval_string(s7, "(define total (loop for i below 10 sum i))");
-    eval_string(s7, "total");
+    eval_string(s7, "(loop for i below 10 do (display i))");
     
     printf("\nDONE\n");
 }
