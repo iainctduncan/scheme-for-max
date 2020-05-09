@@ -6,12 +6,12 @@ Prep:
   https://github.com/spurious/snd-mirror/blob/master/s7.c
 
 Compile:
-- OSX:
-    gcc -c s7.c
-    gcc s7-test.c -L. -I. s7.o -lm
+* OSX:
+  ** gcc -c s7.c
+  ** gcc s7-test.c -L. -I. s7.o -lm
 
-  Windows: 
-     open s7-test.vcxproj in VS2019, and build.
+* Windows: 
+  ** open s7-test.vcxproj in VS2019, and build.
 
 Results:
 - Iain's results, 2020-05-09
