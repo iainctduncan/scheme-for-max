@@ -984,24 +984,38 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
 }
 
 t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
-    //post("s7_obj_to_max_atom");
-   
-    // TODO: does not handle arrays or hashes yet 
-    if( s7_is_integer(s7_obj)){
-        //post("creating int atom, %i", s7_integer(s7_obj));
+    // post("s7_obj_to_max_atom");
+  
+    // booleans are cast to ints 
+    if( s7_is_boolean(s7_obj) ){
+        // post("creating int from s7 boolean");
+        atom_setlong(atom, (int)s7_boolean(s7, s7_obj));  
+    }
+    else if( s7_is_integer(s7_obj)){
+        // post("creating int atom, %i", s7_integer(s7_obj));
         atom_setlong(atom, s7_integer(s7_obj));
-    }else if( s7_is_real(s7_obj)){
-        //post("creating float atom, %.2f", s7_real(s7_obj));
+    }
+    else if( s7_is_real(s7_obj)){
+        // post("creating float atom, %.2f", s7_real(s7_obj));
         atom_setfloat(atom, s7_real(s7_obj));
-    }else if( s7_is_symbol(s7_obj) ){
+    }
+    else if( s7_is_symbol(s7_obj) ){
         // both s7 symbols and strings are converted to max symbols
-        //post("creating symbol atom, %s", s7_symbol_name(s7_obj));
+        /// post("creating symbol atom, %s", s7_symbol_name(s7_obj));
         atom_setsym(atom, gensym( s7_symbol_name(s7_obj)));
-    }else if( s7_is_string(s7_obj) ){
+    }
+    else if( s7_is_string(s7_obj) ){
         //post("creating symbol atom from string, %s", s7_string(s7_obj));
         atom_setsym(atom, gensym( s7_string(s7_obj)));
-    }else{
-        post("ERROR: unhandled s7 to atom conversion for: %s", s7_string(s7_obj));
+    }
+    else if( s7_is_character(s7_obj) ){
+        //post("creating symbol atom from character");
+        char out[2] = " \0";
+        out[0] = s7_character(s7_obj);
+        atom_setsym(atom, gensym(out));
+    }
+    else{
+        post("ERROR: unhandled Scheme to Max conversion for: %s", s7_object_to_c_string(s7, s7_obj));
         // TODO: should return t_errs I guess?
         return (t_max_err) 1;     
     } 
@@ -1043,7 +1057,7 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     int outlet_num = s7_integer( s7_car(args) );
-    post("s7_max_output, outlet: %i", outlet_num);
+    //post("s7_max_output, outlet: %i", outlet_num);
     t_s4m *x = get_max_obj(s7);
 
     // check if outlet number exists
@@ -1053,56 +1067,80 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
     }
 
     s7_pointer s7_out_val = s7_cadr(args);
+    t_symbol *msg_sym;  // the first symbol for the outlet_anything message 
     t_atom output_atom; 
+    t_max_err *err;
 
-    // figure out what type the s7 args second member is 
-    // then make and send out the corresponding max atom
-    if( s7_is_integer( s7_out_val ) ){
-        long value = s7_integer( s7_cadr(args) );
-        atom_setlong(&output_atom, value);
+    // whole bunch of branching based on output type
+
+    // bools and ints get converted to max int messages
+    if( s7_is_integer(s7_out_val) || s7_is_boolean(s7_out_val) ){
+        err = s7_obj_to_max_atom(s7, s7_out_val, &output_atom);
         outlet_anything( x->outlets[outlet_num], gensym("int"), 1, &output_atom);
-
-    }else if( s7_is_real( s7_out_val ) ){
-        double value = s7_real( s7_out_val );
-        atom_setfloat(&output_atom, value);
+    }
+    // floats
+    else if( s7_is_real( s7_out_val ) ){
+        atom_setfloat(&output_atom, s7_real(s7_out_val));
         outlet_anything( x->outlets[outlet_num], gensym("float"), 1, &output_atom);
-
-    }else if( s7_is_string( s7_out_val ) ){
-        const char * value = s7_string( s7_out_val );
-        outlet_anything( x->outlets[outlet_num], gensym(value), 0, NULL);
-
-    }else if( s7_is_symbol( s7_out_val ) ){
-        const char * value = s7_symbol_name( s7_out_val );
-        outlet_anything( x->outlets[outlet_num], gensym(value), 0, NULL);
-
-    }else if( s7_is_list(s7, s7_out_val)){
-        // we can output a list of simple types, as a max list style message
-        //post("attempting to output list");
-        int length = s7_list_length(s7, s7_out_val);
+    }
+    // symbols, keywords, chars, and strings all become Max symbols
+    else if( s7_is_string(s7_out_val) || s7_is_symbol(s7_out_val) || s7_is_character(s7_out_val) ){
+        // note that symbol catches keywords as well
+        err = s7_obj_to_max_atom(s7, s7_out_val, &output_atom);
+        outlet_anything( x->outlets[outlet_num], atom_getsym(&output_atom), 0, NULL);
+    }
+    // lists
+    else if( s7_is_list(s7, s7_out_val) && !s7_is_null(s7, s7_out_val) ){
+        // array of atoms to output, we overallocate for now rather than do dynamic allocation 
         t_atom out_list[MAX_ATOMS_PER_OUTPUT_LIST];
-        for(int i=0; i<length; i++){
-            s7_pointer list_item = s7_list_ref(s7, s7_out_val, i);
-            if( s7_is_integer( list_item ) ){
-                atom_setlong( out_list + i, s7_integer(list_item) );             
-            }else if( s7_is_real( list_item ) ){
-                atom_setfloat( out_list + i, s7_real(list_item) );             
-            }else if( s7_is_symbol( list_item ) ){
-                atom_setsym( out_list + i, gensym( s7_symbol_name( list_item ) ) );
-            }else if( s7_is_string( list_item ) ){ 
-                atom_setsym( out_list + i, gensym( s7_string( list_item ) ) );
-            }else if(s7_is_character( list_item )){
-                char *s7_char_string = s7_object_to_c_string(s7, list_item);          
-                atom_setsym( out_list + i, gensym( s7_char_string ) );
-            }else{
-                error("attempted Max output of unhandled type or data");
+        s7_pointer *first = s7_car(s7_out_val);
+        int length = s7_list_length(s7, s7_out_val);
+
+        // lists have have two cases: start with symbol or start with number/bool
+        if( s7_is_number(first) || s7_is_boolean(first) ){
+            //post("outputting list with numeric or bool first arg, becomes 'list' message");
+            for(int i=0; i<length; i++){
+                s7_obj_to_max_atom(s7, s7_list_ref(s7, s7_out_val, i), &out_list[i]);
             }
-        }   
+            // add the symbol "list" as the first item for the message output
+            outlet_anything( x->outlets[outlet_num], gensym("list"), length, out_list);     
+        }
+        else {
+            //post("list starting with a symbol");     
+            // build the atom list, starting from the second item 
+            for(int i=1; i<length; i++){
+                s7_obj_to_max_atom(s7, s7_list_ref(s7, s7_out_val, i), &out_list[i - 1]);
+            }
+            // convert the first item to use as symbol for message
+            err = s7_obj_to_max_atom(s7, first, &output_atom); 
+            outlet_anything( x->outlets[outlet_num], atom_getsym(&output_atom), length - 1, out_list);     
+        }
+    }
+    // vectors are supported for bool, int, float only
+    else if( s7_is_vector(s7_out_val) && s7_vector_length(s7_out_val) > 0 ){
+        t_atom out_list[MAX_ATOMS_PER_OUTPUT_LIST];
+        int length = s7_vector_length(s7_out_val);
+        for(int i=0; i<length; i++){
+            // if invalid type, return with error
+            s7_pointer *item = s7_vector_ref(s7, s7_out_val, i);
+            if( s7_is_number(item) || s7_is_boolean(item)){
+                s7_obj_to_max_atom(s7, item, &out_list[i]);
+            }else{
+                error("s4m: Vector output only supported for ints, floats, & booleans");
+                return s7_nil(s7);
+            }
+        }
+        // didn't hit an invalid type, we can output the list
         outlet_anything( x->outlets[outlet_num], gensym("list"), length, out_list);     
- 
+    } 
+    // unhandled output type, post an error
+    else{
+        error("s4m: Unhandled output type %s", s7_object_to_c_string(s7, s7_out_val));
     }
     // returns nil so that the console is not chatting on every output message
     return s7_nil(s7);
 }
+
 
 // read an integer from a named table and index (max tables only store ints)
 // becomes scheme function 'table-ref'
