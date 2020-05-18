@@ -1,0 +1,32 @@
+Notes on table and buffer io
+
+API to support
+
+(table-ref table-name index)
+(table-set! table-name index value)
+(table->vector table-name)
+(table-ref-vector table-name vector {index} {count})
+(table-set-vector! table-name vector {index} {count})
+
+
+- table-set-vector! tabs
+  table-set! table vector 
+- table-set! table-name index value
+
+
+
+- working now, but if we send floats, they get converted to 0s, which is probably not what we want??
+  - not sure if it's better to have it slow down table update to change the value or not.. hmm
+
+
+
+DONE:
+- table-ref and table-set! now working with proper error messages
+NEXT:
+- create vector from table 
+- 
+tabv
+tabsv
+vector->table -> make a named table in Max? not sure if we want to do that
+
+left off working on table->vector

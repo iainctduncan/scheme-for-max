@@ -88,6 +88,7 @@ long s4m_scan_iterator(t_s4m *x, t_object *b);
 
 int s4m_table_read(t_s4m *x, char *table_name, long index, long *value);
 int s4m_table_write(t_s4m *x, char *table_name, int index, int value);
+int s4m_table_write_array(t_s4m *x, char *table_name, int *source_data, int index, int count);
 
 int s4m_buffer_read(t_s4m *x, char *buffer_name, long index, double *value);
 int s4m_buffer_write(t_s4m *x, char *buffer_name, long index, double value);
@@ -108,8 +109,11 @@ static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_table_read(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_table_ref(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_table_set(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_table_set_vector(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_table_to_vector(s7_scheme *s7, s7_pointer args);
+
 static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_write(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_mc_buffer_read(s7_scheme *s7, s7_pointer args);
@@ -275,10 +279,18 @@ void s4m_init_s7(t_s4m *x){
     // define functions that will be implemented in C and available from scheme
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
     s7_define_function(x->s7, "load-from-max", s7_load_from_max, 1, 0, false, "load files from the max path");
-    s7_define_function(x->s7, "table-ref", s7_table_read, 2, 0, false, "(table-ref :foo 4) returns value at index 4 from table :foo");
-    s7_define_function(x->s7, "table-set!", s7_table_write, 3, 0, false, "(table-set! :foo 4 127) writes value 4 to index 127 of table :foo");
-    s7_define_function(x->s7, "tabr", s7_table_read, 2, 0, false, "short-hand alias for table-ref");
-    s7_define_function(x->s7, "tabw", s7_table_write, 3, 0, false, "short-hand alias for table-set!");
+
+    // table i/o
+    s7_define_function(x->s7, "table-ref", s7_table_ref, 2, 0, false, "(table-ref :foo 4) returns value at index 4 from table :foo");
+    s7_define_function(x->s7, "tabr", s7_table_ref, 2, 0, false, "(tabr :foo 4) returns value at index 4 from table :foo");
+    s7_define_function(x->s7, "table-set!", s7_table_set, 3, 0, false, "(table-set! :foo 4 127) writes value 4 to index 127 of table :foo");
+    s7_define_function(x->s7, "tabs", s7_table_set, 3, 0, false, "short-hand alias for table-set!");
+    s7_define_function(x->s7, "table->vector", s7_table_to_vector, 1, 2, false, "create new vector from table");
+
+    // NOW
+    s7_define_function(x->s7, "table-set-vector!", s7_table_set_vector, 2, 2, false, "copy contents of a vector to a Max table");
+
+
     s7_define_function(x->s7, "buf-get", s7_buffer_read, 2, 0, false, "(buf-get :foo 4) returns value at channel 0, index 4 from buffer :foo");
     s7_define_function(x->s7, "buf-set", s7_buffer_write, 3, 0, false, "(buf-set :foo 4 127) writes value 4 to index 127 of buffer :foo");
     s7_define_function(x->s7, "mc-buf-get", s7_mc_buffer_read, 3, 0, false, "(mcbuf-get :foo 4 1) returns value at channel 1, index 4 from buffer :foo");
@@ -523,11 +535,12 @@ int s4m_table_read(t_s4m *x, char *table_name, long index, long *value){
     long **data = NULL;
     long i, size;
     if( table_get(gensym(table_name), &data, &size) ){
-        object_error((t_object *)x, "s4m: Could not load table %s", table_name);
+        // errors being
+        //object_error((t_object *)x, "s4m: Could not load table %s", table_name);
         return 1;
     }
     if( index < 0 || index >= size){
-        object_error((t_object *)x, "s4m: Index %i out of range for table %s", index, table_name);
+        //object_error((t_object *)x, "s4m: Index %i out of range for table %s", index, table_name);
         return 1;
     }
     // copy the data into our value int and return success
@@ -553,6 +566,29 @@ int s4m_table_write(t_s4m *x, char *table_name, int index, int value){
     table_dirty( gensym(table_name) );
     return 0;
 } 
+
+// write from data, {count} values starting at {index}, to table_name
+int s4m_table_write_array(t_s4m *x, char *table_name, int *source_data, int index, int count){
+    post("s4m_table_write_array() %s i:%i v:%i", table_name, index, count);
+    long **data = NULL;
+    long size;
+    int res = table_get(gensym(table_name), &data, &size);
+    if(res){
+        post("s4m: ERROR: could not load table %s", table_name);
+        return res; 
+    }
+    if( index < 0 || index >= size || (index + count) > size){
+        error("s4m: error attempt to write out of range to table %s", table_name);
+        return 1;
+    }
+    // copy from the source array
+    for(int i=0; i < count; i++){
+        (*data)[index + i] = source_data[i];
+    }
+    table_dirty( gensym(table_name) );
+    return 0;
+}
+
 
 // get a max named buffer, write a single data point, and return it
 // hmm, I guess this needs to write the result into a pointer in order
@@ -1143,54 +1179,189 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
 
 
 // read an integer from a named table and index (max tables only store ints)
-// becomes scheme function 'table-ref'
-// returns #f on error 
-static s7_pointer s7_table_read(s7_scheme *s7, s7_pointer args) {
+// becomes scheme function 'table-ref' and 'tabr' (alias)
+static s7_pointer s7_table_ref(s7_scheme *s7, s7_pointer args) {
     // table names could come in from s7 as either strings or symbols, if using keyword table names
-    char *table_name;
+    char *table_name = NULL;
+    long **table_data = NULL;
+    long table_size = NULL;
+    char err_msg[128];
+    t_s4m *x = get_max_obj(s7);
+
     if( s7_is_symbol( s7_car(args) ) ){ 
         table_name = s7_symbol_name( s7_car(args) );
-    } else if( s7_is_string( s7_car(args) ) ){
+    }else if( s7_is_string( s7_car(args) ) ){
         table_name = s7_string( s7_car(args) );
     }else{
-        post("s4m: ERROR in tabr, table name is not a keyword, string, or symbol");
-        return;
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "table name is not a keyword, string, or symbol"));
     }
     long index = s7_integer( s7_cadr(args) );
-    long value; 
-    t_s4m *x = get_max_obj(s7);
-    int res = s4m_table_read(x, table_name, index, &value);
-    if(!res){
-        return s7_make_integer(s7, value);
-    }else{
-        post("s4m: ERROR reading table %s index %i, returning #f", table_name, index);
-        return s7_make_boolean(s7, 0);
+
+    if( table_get(gensym(table_name), &table_data, &table_size) ){
+        sprintf(err_msg, "could not load table %s from Max", table_name);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg)); 
     }
+    if( index < 0 || index >= table_size){
+        sprintf(err_msg, "index %i out of range for table %s", index, table_name);
+        return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, err_msg));
+    }
+    // return value from the table as s7 int
+    return s7_make_integer(s7, (*table_data)[index] );
 }
 
 // write an integer to a named table index (max tables only store ints)
-// becomes scheme function 'table-set!'
-static s7_pointer s7_table_write(s7_scheme *s7, s7_pointer args) {
+// becomes scheme function 'table-set!' and 'tabs' (alias)
+static s7_pointer s7_table_set(s7_scheme *s7, s7_pointer args) {
     // table names could come in from s7 as either strings or symbols, if using keyword table names
-    char *table_name;
+    char *table_name = NULL;
+    long **table_data = NULL;
+    long table_size = NULL;
+    char err_msg[128];
+    t_s4m *x = get_max_obj(s7);
+
     if( s7_is_symbol( s7_car(args) ) ){ 
         table_name = s7_symbol_name( s7_car(args) );
     } else if( s7_is_string( s7_car(args) ) ){
         table_name = s7_string( s7_car(args) );
     }else{
-        post("s4m: ERROR in tabw, table name is not a keyword, string, or symbol");
-        return;
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "table name is not a keyword, string, or symbol"));
     }
     int index = s7_integer( s7_cadr(args) );
     long value = s7_integer(s7_caddr(args));
-    t_s4m *x = get_max_obj(s7);
-    int err_res = s4m_table_write(x, table_name, index, value);
-    if(err_res){
-        return s7_make_boolean(s7, 0);
-    }else{
-        // return the value written to s7
-        return s7_make_integer(s7, value);
+    
+    if( table_get(gensym(table_name), &table_data, &table_size) ){
+        sprintf(err_msg, "could not load table %s from Max", table_name);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg)); 
     }
+    if( index < 0 || index >= table_size){
+        sprintf(err_msg, "index %i out of range for table %s", index, table_name);
+        return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, err_msg));
+    }
+
+    // write to the data array and mark table dirty
+    (*table_data)[index] = value; 
+    table_dirty( gensym(table_name) );
+    // return the value written to s7
+    return s7_make_integer(s7, value);
+}
+
+// return a scheme vector with contents of table
+static s7_pointer s7_table_to_vector(s7_scheme *s7, s7_pointer args) {
+    // post("s7_table_to_vector()");
+    char *table_name = NULL;
+    long **table_data = NULL;
+    long table_size = NULL;
+    long target_index = 0;
+    long count = NULL;
+    char err_msg[128];
+    t_s4m *x = get_max_obj(s7);
+
+    // first args is the table name
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        table_name = s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        table_name = s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "table name is not a keyword, string, or symbol"));
+    }
+    // get table from Max, also fetches table size
+    if( table_get(gensym(table_name), &table_data, &table_size) ){
+        sprintf(err_msg, "could not load table %s from Max", table_name);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg)); 
+    }
+    // (table->vector tab-name index) copy all of table from index on into vector 
+    if( s7_list_length(s7, args) >= 2 ){
+        target_index = s7_integer( s7_cadr(args) );
+    }
+    // (table->vector tab-name index count) copy count points from index into vector
+    if( s7_list_length(s7, args) == 3){
+        count = s7_integer( s7_caddr(args) );
+    }else{
+        // if no count given, we're copying the rest of the table
+        count = table_size - target_index;
+    }
+    // check range
+    if(target_index + count > table_size){
+        sprintf(err_msg, "index %i out of range for table %s", target_index + count, table_name);
+        return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, err_msg));
+    } 
+    // create a new vector with all points from max table
+    s7_pointer *new_vector = s7_make_vector(s7, count); 
+    for(int i=0; i<count; i++){
+        s7_vector_set(s7, new_vector, i, s7_make_integer(s7, (*table_data)[target_index + i] ) ); 
+    }
+    return new_vector;
+}    
+
+
+
+// scheme function to write a vector to a table
+// returns nil on success, throws 'io-error on errors
+static s7_pointer s7_table_set_vector(s7_scheme *s7, s7_pointer args) {
+    // post("s7_table_set_vector()");
+    t_s4m *x = get_max_obj(s7);
+    int target_index = 0;   // default target index is 0 unless overridden
+    int count = NULL; 
+    char *table_name = NULL;
+
+    // first two args are always table-name and vector
+    s7_pointer *s7_table_name = s7_car(args);
+    s7_pointer *s7_source_vector = s7_cadr(args);
+
+    // error if not an int vector and table name
+    if( !s7_is_symbol(s7_table_name) && !s7_is_string(s7_table_name) ){
+        char *error_msg = "table-set-vector! : arg 1 must be a string or symbol";
+        error(error_msg);
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, error_msg) );
+    }else{
+        table_name = s7_object_to_c_string(s7, s7_table_name);
+    }
+    if( !s7_is_vector(s7_source_vector) ){
+        char *error_msg = "table-set-vector! : arg 2 must be a vector";
+        error(error_msg);
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, error_msg) );
+    }
+    
+    // (vector->table vector tab-name index) copy entire vector into index of buffer
+    if( s7_list_length(s7, args) >= 3 ){
+        target_index = s7_integer( s7_caddr(args) );
+    }
+    // (vector-table vector tab-name index count)
+    if( s7_list_length(s7, args) == 4){
+        count = s7_integer( s7_cadddr(args) );
+    }else{
+        // if no count given, we're copying the whole vector
+        count = s7_vector_length(s7_source_vector);
+    }
+
+    // get the vector as a C array (it needs to be ints or it's not valid for table writing
+    //s7_int *s7_int_array = s7_int_vector_elements(s7_source_vector);
+    s7_int *s7_vector_values = s7_vector_elements(s7_source_vector);
+    long **table_data = NULL;
+    long table_size;
+
+    int res = table_get( gensym(table_name), &table_data, &table_size);
+    if(res){
+        char *error_msg = "table-set-vector! : could not load Max table";
+        error(error_msg);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, error_msg) );
+    }
+    if( target_index < 0 || (target_index + count) > table_size){
+        char *error_msg = "table-set-vector! : index out of range for table";
+        error(error_msg);
+        return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, error_msg) );
+    }
+    // copy from the source array
+    for(int i=0; i < count; i++){
+        (*table_data)[target_index + i] = s7_integer( s7_vector_values[i] );
+    }
+    // mark table as altered for max
+    table_dirty( gensym(table_name) );
+    // we should return the vector 
+    return s7_source_vector;
 }
 
 // read an float from a named buffer and index 
