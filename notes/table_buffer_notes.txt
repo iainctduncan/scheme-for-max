@@ -7,7 +7,7 @@ API to support
 (table->vector table-name)
 (table-ref-vector table-name vector {index} {count})
 (table-set-vector! table-name vector {index} {count})
-
+(vector->table ?? ) ? make a new max table? do we want this??
 
 - table-set-vector! tabs
   table-set! table vector 
