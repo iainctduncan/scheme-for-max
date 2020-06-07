@@ -109,6 +109,9 @@ static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
+
+static s7_pointer s7_is_table(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_table_length(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_table_ref(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_table_set(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_table_to_vector(s7_scheme *s7, s7_pointer args);
@@ -282,6 +285,9 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "load-from-max", s7_load_from_max, 1, 0, false, "load files from the max path");
 
     // table i/o
+    s7_define_function(x->s7, "table?", s7_is_table, 1, 0, false, "(table? table-name) returns true if table-name is a Max table");
+    s7_define_function(x->s7, "table-length", s7_table_length, 1, 0, false, "(table-length table-name) returns length of table as int");
+    s7_define_function(x->s7, "tabl", s7_table_length, 1, 0, false, "alias for table-length");
     s7_define_function(x->s7, "table-ref", s7_table_ref, 2, 0, false, "(table-ref :foo 4) returns value at index 4 from table :foo");
     s7_define_function(x->s7, "tabr", s7_table_ref, 2, 0, false, "(tabr :foo 4) returns value at index 4 from table :foo");
     s7_define_function(x->s7, "table-set!", s7_table_set, 3, 0, false, "(table-set! :foo 4 127) writes value 4 to index 127 of table :foo");
@@ -1168,7 +1174,57 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
     return s7_nil(s7);
 }
 
+// return the size of a table or 0 if not found
+static s7_pointer s7_is_table(s7_scheme *s7, s7_pointer args) {
+    // table names could come in from s7 as either strings or symbols, if using keyword table names
+    char *table_name = NULL;
+    long **table_data = NULL;
+    long table_size = NULL;
+    t_s4m *x = get_max_obj(s7);
 
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        table_name = s7_symbol_name( s7_car(args) );
+    }else if( s7_is_string( s7_car(args) ) ){
+        table_name = s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "table name is not a keyword, string, or symbol"));
+    }
+    if( table_get(gensym(table_name), &table_data, &table_size) ){
+        return s7_make_boolean(s7, false);
+    }else{
+        return s7_make_boolean(s7, true);
+    }
+}
+
+// read an integer from a named table and index (max tables only store ints)
+// becomes scheme function 'table-ref' and 'tabr' (alias)
+static s7_pointer s7_table_length(s7_scheme *s7, s7_pointer args) {
+    // table names could come in from s7 as either strings or symbols, if using keyword table names
+    char *table_name = NULL;
+    long **table_data = NULL;
+    long table_size = NULL;
+    char err_msg[128];
+    t_s4m *x = get_max_obj(s7);
+
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        table_name = s7_symbol_name( s7_car(args) );
+    }else if( s7_is_string( s7_car(args) ) ){
+        table_name = s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "table name is not a keyword, string, or symbol"));
+    }
+    long index = s7_integer( s7_cadr(args) );
+
+    if( table_get(gensym(table_name), &table_data, &table_size) ){
+        sprintf(err_msg, "could not load table %s from Max", table_name);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg)); 
+    }else{
+        // return value from the table as s7 int
+        return s7_make_integer(s7, table_size);
+    }
+}
 // read an integer from a named table and index (max tables only store ints)
 // becomes scheme function 'table-ref' and 'tabr' (alias)
 static s7_pointer s7_table_ref(s7_scheme *s7, s7_pointer args) {
