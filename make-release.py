@@ -20,9 +20,9 @@ patcher_dest = "dist/Scheme-For-Max/patchers"
 # tuple of source/dest
 scm_files = [
     ("s4m.scm", "s4m.scm"),
-    ("stuff.scm", "s7-stuff.scm"),
-    ("cm/loop.scm", "loop.scm"),
-    ("cm/utilities.scm", "utilities.scm")
+    ("s7-stuff.scm", "s7-stuff.scm"),
+    ("loop.scm", "loop.scm"),
+    ("utilities.scm", "utilities.scm")
 ]
 # list of patchers aside from the external
 patcher_files = [

@@ -1,15 +1,20 @@
 ;; the scm4max scheme code to build the API
 (max-post "Bootstrapping s4m.scm")
 
-;; s7-stuff.scm contains the scheme level s7 helper definitions and must be loaded for various
+
+;; stuff.scm contains the scheme level s7 helper definitions and must be loaded for various
 ;; s4m functions to work ok. this file is called "stuff.scm" in regular s7 sources
-(load-from-max "s7-stuff.scm")
+(load-from-max "stuff.scm")
+
+;; S74 is a convenience layer over S7, with functions from various other lisps
+;; (Racket, Clojure, etc)
+(load-from-max "s74.scm")
 
 ;; Uncomment the below to load the loop macro and various utilities from Common Music
 ;; They are not necessary for core Scheme-for-Max to run
 ;; NB: 2020-05-08 there is an issue with loop.scm on windows, we are working on it.
-;(load-from-max "loop.scm")
-;(load-from-max "utilities.scm")
+(load-from-max "loop.scm")
+(load-from-max "utilities.scm")
 
 ;; misc convenience functions we use
 
@@ -33,7 +38,8 @@
                   (cond 
                     ((null? lat) "")
                     (else (string-append (stringify (car lat)) " " (log-string (cdr lat))))))))
-    (max-post (log-string args))))
+    (max-post (log-string args))
+))
 
 ;; helper to set whether we see nulls logged to the console, defaults to false
 (define s4m-log-nulls #f)
@@ -88,7 +94,7 @@
 ;; to all other code
 (define s4m-eval
   (lambda args
-    (post "s4m-eval :" args)
+    ;(post "s4m-eval :" args)
     (eval args (rootlet))))
 
 
