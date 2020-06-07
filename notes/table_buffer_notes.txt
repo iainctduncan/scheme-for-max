@@ -1,32 +1,56 @@
 Notes on table and buffer io
 
-API to support
+API settling on:
 
-(table-ref table-name index)
-(table-set! table-name index value)
-(table->vector table-name)
-(table-ref-vector table-name vector {index} {count})
-(table-set-vector! table-name vector {index} {count})
-(vector->table ?? ) ? make a new max table? do we want this??
+table-ref       tabr
+table-set!      tabs
+table->vector : t->v  returns new vector
+vector-set-from-table! :    (vector-set-from-table! vector {vec-index} 'table {index} {count})
+table-set-from-vector! : tsfv
 
-- table-set-vector! tabs
-  table-set! table vector 
-- table-set! table-name index value
+- maybe the default on vector-set-from-table! should actually be one point unless count is there?
+  - let's look at the max buffer JS api for ref
 
 
+(table->vector table {start} {count}) -> return vector from table
 
-- working now, but if we send floats, they get converted to 0s, which is probably not what we want??
-  - not sure if it's better to have it slow down table update to change the value or not.. hmm
+(vector-set-from-table! vector {vector-start) 'table-name {table-start} {count})
+- count will default to whole table, or as much as fits in the table and vector
+(table-set-from-vector! working now too
+
+(vecst
+
+- plan for buffers:
+- drop the mc/vs single channel shit and copy the js sig
+
+(bufr {buffer-name} {chan} {index})
+(bufr {buffer-name} {index}) -> assumes channel 0
+
+(bufs {buffer-name} {chan} {index} {value})
+(bufs {buffer} {index} {value}
+
+(buffer->vector {buff} {chan} {start} {count}}
+- equivalent in sig and function to js peek
+- note than in JS, chan is 1 based counting. do we want to do that??
+
+(buffer-set-from-vector! {buff} {chan} {opt-index} {vector} {opt-index} {opt-count}) 
+
+(vector-set-from-buffer! {vector} {index} {buffer} {chan} {count}
 
 
+LATER:
+(buffer->vector* {buff} {start} {count}) 
+  - returns multi-dimensional vector from all channels in the buffer
 
-DONE:
-- table-ref and table-set! now working with proper error messages
-NEXT:
-- create vector from table 
-- 
-tabv
-tabsv
-vector->table -> make a named table in Max? not sure if we want to do that
+- returns a vector from a buffer
+(vector-set-from-buffer! vector {vstart} {buffer} {chan} {bstart-opt} {count-opt}
+(buffer-set-from-vector! buffer {opt-chan} {opt-buff-index} vector {opt-start} {opt-count} 
 
-left off working on table->vector
+- later add multi-dimensional versions to work with multi-dimensional vectors
+
+TO CHECK:
+
+ALSO NEED
+- table-length function
+- buffer-samples (in samples)
+- buffer-channels

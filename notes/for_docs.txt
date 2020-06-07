@@ -1,0 +1,4 @@
+- to add to docs:
+- vectors of ints and reals supported, not other values
+- numbers of ints and reals supported only (no rational or complex)
+
