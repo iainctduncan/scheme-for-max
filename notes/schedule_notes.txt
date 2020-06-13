@@ -1,0 +1,56 @@
+notes on adding ability to schedule in future:
+
+in scheme
+
+(eval-delay 100 '(list to eval))
+
+
+- the C function that is called in the future must have the sig:
+  void myobject_do (myObject *client, t_symbol *s, short argc, t_atom *argv);  
+
+- so I think in order to do delay's properly, we need a smooth way of going from
+  an s7 arg list to a list of atoms (which we have for flat lists...)
+- the list to eval-delay might need to be flattenable
+ 
+  so that one would have to do something like
+
+
+  (let ((foo (lambda(x)(x))))
+        (eval-delay '100 '(foo 1)))
+
+- I think I have this backwards, I don't think we want to pass through max at all,
+  we want somehow to register the function in the scheme env to get triggered
+  from max so that the max side is really only triggering a gensym or something
+  - probably need to understand environments properly.
+  - I think this will actually be pretty hard
+
+- maybe it uses gensym or something
+
+- we want user to be able to do:
+  (delay 1000 '(post "I'm delayed!" :foobar))
+  or 
+  (delay 1000 my-fun)
+
+
+- let's get it working with single fuction first
+
+- s4m-registered-callbacks is a datastructure
+
+- on C level:
+  - function gets stored in a gensym
+  - gensym gets passed to C with (s4m-schedule time {symbol}) 
+
+- at the C level, the scheduled function just needs the gensym key
+
+- next step is just to make something that receives and fires the gensym
+
+post :foobar -> delay 1000
+list post :foo :bar -> delay 1000 -> set! handle 
+
+(list post :foo :bar -> delay 1000 -> set! handle)
+
+- scheme calls a function in which we pass it the del time and the gensym handle
+
+- issue, I don't know how to pass the gensym to C, need to look that up
+  - I think it's just a symbol
+

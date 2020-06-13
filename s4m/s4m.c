@@ -41,6 +41,8 @@ typedef struct _s4m {
    t_hashtab *registry;            // will hold objects by scripting name
   
    t_object *m_editor;             // text editor
+    
+   t_object *test_obj; 
 
 } t_s4m;
 
@@ -118,6 +120,8 @@ static s7_pointer s7_table_to_vector(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_vector_set_from_table(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args);
 
+static s7_pointer s7_is_buffer(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_buffer_size(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_write(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_mc_buffer_read(s7_scheme *s7, s7_pointer args);
@@ -126,6 +130,8 @@ static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args);
+
+static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args);
 
 /********************************************************************************
 / some helpers */
@@ -299,6 +305,8 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "vector-set-from-table!", s7_vector_set_from_table, 2, 3, false, "copy contents of a Max table to an existing vector");
     s7_define_function(x->s7, "vecst", s7_vector_set_from_table, 3, 2, false, "copy contents of a Max table to an existing vector");
 
+    s7_define_function(x->s7, "buffer?", s7_is_buffer, 1, 0, false, "(buffer? 'foo) returns true if buffer named foo exists");
+    s7_define_function(x->s7, "buffer-size", s7_buffer_size, 1, 0, false, "(buffer-length 'foo) returns framecount of buffer"); 
 
     s7_define_function(x->s7, "buf-get", s7_buffer_read, 2, 0, false, "(buf-get :foo 4) returns value at channel 0, index 4 from buffer :foo");
     s7_define_function(x->s7, "buf-set", s7_buffer_write, 3, 0, false, "(buf-set :foo 4 127) writes value 4 to index 127 of buffer :foo");
@@ -311,7 +319,9 @@ void s4m_init_s7(t_s4m *x){
 
     s7_define_function(x->s7, "send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
     
+    s7_define_function(x->s7, "s4m-schedule-callback", s7_schedule_callback, 2, 0, true, "(s4m-schedule-callback {time} {cb-handle}");
        
+
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
     uintptr_t max_obj_ptr = (uintptr_t)x;
@@ -332,26 +342,30 @@ void s4m_init_s7(t_s4m *x){
 
 // test of making a thing via the patcher object triggered by "make" message
 void s4m_make(t_s4m *x){
-    post("s4m_make()");
+    post("s4m_make(), attempting to make a table");
     t_max_err err;
 
     // send a message to the patcher object to create a thing
-    // the below works, now what about sending a generic message, this patcher style?
+    // the below works, but makes patcher box instead of just the table data object
     post("creating object with newobject_sprintf()");
-    t_object *toggle = newobject_sprintf(x->patcher, "@maxclass toggle @varname foo @patching_position %.2f %.2f", 10, 10);
+    x->test_obj = newobject_sprintf(x->patcher, "@maxclass newobj @text \"table foobar\" @size 4 @hidden 1 @patching_position %.2f %.2f", 10, 10);
+    //table_dirty( gensym("foobar") );
 
-    // send the message to the registered object this patcher object 
-    // the below did *not* work 
-    // thispatcher message: "script newobject coll"
     //t_atom arg_atoms[ MAX_ATOMS_PER_MESSAGE ];
-    //atom_setsym(arg_atoms, "newobject");
-    //atom_setsym(arg_atoms+1, "coll");
-    //int num_atoms = 2;
-    //err = object_method_typed(x->patcher, gensym("script"), num_atoms, arg_atoms, NULL);
+    //atom_setsym(arg_atoms, "foobar");
+    //int num_atoms = 1;
+    //x->test_obj = object_new_typed(CLASS_NOBOX, gensym("table"), num_atoms, arg_atoms);
+
+    // the below is executing ok, but we aren't getting the table
+    //x->test_obj = object_new(CLASS_NOBOX, gensym("table"), (t_object *)x, 0);
+    //object_attr_setsym(x->test_obj, gensym("name"), gensym("foobar"));
+    //object_attr_setlong(x->test_obj, gensym("size"), 4);
+    //table_dirty( gensym("foobar") );
+    
     //if(err){
     //    object_error((t_object *)x, "s4m: (send) error sending message");
     //}
-    //post("did we get a coll, yo?");
+    post("did we get a new table named foobar?");
 
 }
 
@@ -921,6 +935,12 @@ void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
             s4m_init_s7(x);
             return;
         }
+        // reset message wipes the s7 env and reloads the source file if present
+        if( gensym("make") == gensym(s->s_name) ){
+            post("s4m: make");
+            s4m_make(x);
+            return;
+        }
         // for all other input to inlet 0, we treat as list of atoms, so
         // make an S7 list out of them, and send to S7 to eval (treat them as code list)
         // this assumes the first word is a valid first word in an s7 form (ie not a number)
@@ -969,6 +989,17 @@ void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     }
 
 }
+
+// execute a registered callback, this is called with scheduling and delaying
+void s4m_execute_callback(t_s4m *x, t_symbol *s, short ac, t_atom *av){ 
+    //post("s4m_execute_callback(), handle: %s", *s);
+    // call (s4m-execute-callback {cb_gensym})
+    s7_pointer *s7_args = s7_nil(x->s7);
+    s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, s->s_name), s7_args); 
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-callback"), s7_args);    
+} 
+
+
 
 // convert a max atom to the appropriate type of s7 pointer
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
@@ -1546,6 +1577,54 @@ static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args) {
     return s7_source_vector;
 }
 
+
+// check if a buffer exists
+// becomes scheme function 'buffer?'
+static s7_pointer s7_is_buffer(s7_scheme *s7, s7_pointer args) {
+    // buffer names could come in from s7 as either strings or symbols, if using keyword buffer names
+    t_s4m *x = get_max_obj(s7);
+    char *buffer_name;
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        buffer_name = s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        buffer_name = s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "buffer name is not a keyword, string, or symbol"));
+    }
+    t_buffer_ref *buffer_ref = buffer_ref_new((t_object *)x, gensym(buffer_name));
+    if( buffer_ref_exists( buffer_ref ) ){
+        return s7_make_boolean(s7, true );
+    }else{
+        return s7_make_boolean(s7, false );
+    }
+}
+
+// get size of a buffer in frames
+// becomes scheme function 'buffer-length
+static s7_pointer s7_buffer_size(s7_scheme *s7, s7_pointer args) {
+    // buffer names could come in from s7 as either strings or symbols, if using keyword buffer names
+    t_s4m *x = get_max_obj(s7);
+    char *buffer_name;
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        buffer_name = s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        buffer_name = s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "buffer name is not a keyword, string, or symbol"));
+    }
+    t_buffer_ref *buffer_ref = buffer_ref_new((t_object *)x, gensym(buffer_name));
+    t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
+    if( buffer==NULL ){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "error fetching buffer"));
+    }else{
+        long frames = buffer_getframecount(buffer);
+        return s7_make_integer(s7, frames);
+    }
+}
+
 // read an float from a named buffer and index 
 // becomes scheme function 'buf-get'
 static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args) {
@@ -1748,6 +1827,29 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
     err = dictobj_release(dict);
     return s7_value;
 }
+
+static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args){
+    // post("s7_schedule_callback()");
+    char *cb_handle_str;
+    t_s4m *x = get_max_obj(s7);
+
+    // TODO error handling for bad args on arg 1 and 2
+
+    // first arg is integer of time in ms (should it be a float actually?) 
+    long delay_time = s7_integer( s7_car(args) );
+    // second arg is the symbol from gensym
+    s7_pointer *s7_cb_handle = s7_cadr(args);
+    cb_handle_str = s7_symbol_name(s7_cb_handle);
+    //post("s7_schedule_callback() time: %i handle: %s", delay_time, cb_handle_str);
+   
+    // now we schedule the execute callback function
+    schedule_delay(x, s4m_execute_callback, delay_time, gensym(cb_handle_str), 0, NULL);
+ 
+    // return the handle on success
+    return s7_make_symbol(s7, cb_handle_str);
+}
+
+
 
 // s7 function for sending a generic message to a max object
 // assumes the max object has a scripting name and has been found by a call to 'scan' to the s4m object

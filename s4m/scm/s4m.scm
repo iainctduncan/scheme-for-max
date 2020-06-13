@@ -42,7 +42,7 @@
 ))
 
 ;; helper to set whether we see nulls logged to the console, defaults to false
-(define s4m-log-nulls #f)
+(define s4m-log-nulls #t)
 (define (s4m-filter-result res)
   ;; if we replace what would be returned by :no-log, s4m will not print to console
   (cond 

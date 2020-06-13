@@ -1,11 +1,26 @@
 ;; s74.scm - s74 is a convenience layer over s7 with various
 ;; scheme functions ported from other implementations such as Racket, Clojure, R6RS, etc
 ;; Racket's dec and inc functions
+
+; return arg incremented by
+(define (inc arg)
+  (+ 1 arg))
+
+; return arg decremented by 1
 (define (dec arg) 
   (- arg 1))
 
-(define (inc arg)
-  (+ 1 arg))
+;; return a list of integers from start to finish (doesn't do skipping, yet)
+;; not the best implementation, but will do for now
+(define (range start end)
+  (post "range" start end)
+  (reverse 
+    (let loop ((res (list start)))  
+      (cond   
+        ((= (- end 1) (car res)) res)
+        (else (loop (cons (+ 1 (car res)) res)))))))
+              
+
 
 (define (member? a lat)
   (cond
@@ -24,3 +39,10 @@
     ((null? lat) '())
     ((not (predicate? (car lat))) (filter predicate? (cdr lat)))
     (else (cons (car lat) (filter predicate? (cdr lat))))))
+
+;; MIT scheme's list-copy
+(define (list-copy list)
+  (if (null? list)
+      '()
+      (cons (car list)
+            (list-copy (cdr list)))))
