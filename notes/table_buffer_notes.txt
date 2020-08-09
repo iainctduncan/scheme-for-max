@@ -6,10 +6,12 @@ DONE & TESTED
 - table->vector             (t->v)
 - vector-set-from-table!    (vecst)  (vector-set-from-table! vector {vec-index} 'table {index} {count})
 - table-set-from-vector!    (tabsv)  (table-set-from-vector! table {table-index} 'vector {index} {count})
-
-TODO:
 - table-length              (tabl)  (table-length table)   
+- table? 
 
+- make-table (is such a thing possible??)
+  - I think I can use object_new_typed to do this?
+  - also see the examples in s4m_dblclick
 
 
 - plan for buffers:
@@ -42,6 +44,6 @@ LATER:
 TO CHECK:
 
 ALSO NEED
-- table-length function
-- buffer-samples (in samples)
+- table-length function D
+- buffer-size (in samples)
 - buffer-channels
