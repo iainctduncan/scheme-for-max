@@ -122,7 +122,7 @@ static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_is_buffer(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_size(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_buffer_ref(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_write(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_mc_buffer_read(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_mc_buffer_write(s7_scheme *s7, s7_pointer args);
@@ -287,6 +287,7 @@ void s4m_init_s7(t_s4m *x){
     x->s7 = s7_init();
 
     // define functions that will be implemented in C and available from scheme
+    s7_define_function(x->s7, "max-output", s7_max_output, 2, 0, false, "(max-output 1 99) sends value 99 out outlet 1");
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
     s7_define_function(x->s7, "load-from-max", s7_load_from_max, 1, 0, false, "load files from the max path");
 
@@ -306,15 +307,16 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "vecst", s7_vector_set_from_table, 3, 2, false, "copy contents of a Max table to an existing vector");
 
     s7_define_function(x->s7, "buffer?", s7_is_buffer, 1, 0, false, "(buffer? 'foo) returns true if buffer named foo exists");
-    s7_define_function(x->s7, "buffer-size", s7_buffer_size, 1, 0, false, "(buffer-length 'foo) returns framecount of buffer"); 
+    s7_define_function(x->s7, "buffer-size", s7_buffer_size, 1, 0, false, "(buffer-size 'foo) returns framecount of buffer"); 
 
-    s7_define_function(x->s7, "buf-get", s7_buffer_read, 2, 0, false, "(buf-get :foo 4) returns value at channel 0, index 4 from buffer :foo");
-    s7_define_function(x->s7, "buf-set", s7_buffer_write, 3, 0, false, "(buf-set :foo 4 127) writes value 4 to index 127 of buffer :foo");
-    s7_define_function(x->s7, "mc-buf-get", s7_mc_buffer_read, 3, 0, false, "(mcbuf-get :foo 4 1) returns value at channel 1, index 4 from buffer :foo");
-    s7_define_function(x->s7, "mc-buf-set", s7_mc_buffer_write, 4, 0, false, "(mcbuf-set :foo 4 127 1) writes value 4 to index 127 of buffer :foo");
-    s7_define_function(x->s7, "max-output", s7_max_output, 2, 0, false, "(max-output 1 99) sends value 99 out outlet 1");
-    s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
-    s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
+    s7_define_function(x->s7, "buffer-ref", s7_buffer_ref, 2, 1, false, "(buffer-ref :foo 4) returns value at channel 0, index 4 from buffer :foo");
+    s7_define_function(x->s7, "bufr", s7_buffer_ref, 2, 1, false, "alias for buffer-ref");
+
+    //s7_define_function(x->s7, "buf-set", s7_buffer_write, 3, 0, false, "(buf-set :foo 4 127) writes value 4 to index 127 of buffer :foo");
+    //s7_define_function(x->s7, "mc-buf-get", s7_mc_buffer_read, 3, 0, false, "(mcbuf-get :foo 4 1) returns value at channel 1, index 4 from buffer :foo");
+    //s7_define_function(x->s7, "mc-buf-set", s7_mc_buffer_write, 4, 0, false, "(mcbuf-set :foo 4 127 1) writes value 4 to index 127 of buffer :foo");
+    //s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
+    //s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
    
 
     s7_define_function(x->s7, "send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
@@ -644,19 +646,19 @@ int s4m_mc_buffer_read(t_s4m *x, char *buffer_name, int channel, long index, dou
     t_buffer_ref *buffer_ref = buffer_ref_new((t_object *)x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
     if(buffer == NULL){
-        object_error((t_object *)x, "Unable to reference buffer named %s", buffer_name);                
+        object_error((t_object *)x, "Error: Unable to reference buffer named %s", buffer_name);                
         return 1;
     }
     t_atom_long channels;
     channels = buffer_getchannelcount(buffer);
-    if(channel > channels){
-        object_error((t_object *)x, "Buffer %s does not contain %i channel(s) %s", buffer_name, channel);                
+    if(channel + 1 > channels){
+        object_error((t_object *)x, "Error: Buffer %s does not contain %i channel(s) %s", buffer_name, channel + 1);                
         return 1;
     }
     t_atom_long frames;
     frames = buffer_getframecount(buffer);
     if(index >= frames){
-        object_error((t_object *)x, "Buffer %s does not contain %i samples", buffer_name, index);                
+        object_error((t_object *)x, "Error: Buffer %s does not contain %i samples", buffer_name, index);                
         return 1;
     } 
     // we need to lock the buffer before fetching from it
@@ -1626,28 +1628,46 @@ static s7_pointer s7_buffer_size(s7_scheme *s7, s7_pointer args) {
 }
 
 // read an float from a named buffer and index 
-// becomes scheme function 'buf-get'
-static s7_pointer s7_buffer_read(s7_scheme *s7, s7_pointer args) {
+// becomes scheme function 'buffer-ref' of 'bufr'
+// polymorphic: (buffer-ref 'buf chan index) or (buffer-ref 'buf index)
+static s7_pointer s7_buffer_ref(s7_scheme *s7, s7_pointer args) {
     // buffer names could come in from s7 as either strings or symbols, if using keyword buffer names
     char *buffer_name;
+    int num_args = (int) s7_list_length(s7, args);
+    // default to channel 0
+    int channel = 0; 
+    long index;
+
+    // get first arg, buffer name as symbol or string
     if( s7_is_symbol( s7_car(args) ) ){ 
         buffer_name = s7_symbol_name( s7_car(args) );
     } else if( s7_is_string( s7_car(args) ) ){
         buffer_name = s7_string( s7_car(args) );
     }else{
-        post("s4m: ERROR in buf-get, buffer name is not a keyword, string, or symbol");
-        return;
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "error fetching buffer, buffer name is not a keyword, string, or symbol"));
     }
-    long index = s7_integer( s7_list_ref(s7, args, 1) );
-    double value; 
-    post(" buffer: %s index: %i", buffer_name, index);
+    // second arg is index if only two args or channel if three args
+    if( num_args == 2 ){
+        index = s7_integer( s7_list_ref(s7, args, 1) );
+    }else if(num_args == 3){
+        //int channel= s7_integer( s7_list_ref(s7, args, 2) );
+        channel = s7_integer( s7_list_ref(s7, args, 1) );
+        index = s7_integer( s7_list_ref(s7, args, 2) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "wrong number of args, must be buffer,index or buffer,channel,index"));
+    }
+
+    post(" buffer: %s channel: %d index: %d", buffer_name, channel, index);
     t_s4m *x = get_max_obj(s7);
-    int res = s4m_buffer_read(x, buffer_name, index, &value);
-    post("s7_buffer_read, value: %f", value);
+    double value;
+    int res = s4m_mc_buffer_read(x, buffer_name, channel, index, &value);
     if(!res){
         return s7_make_real(s7, value);
     }else{
-        post("s4m: ERROR reading buffer %s index %i", buffer_name, index);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "error reading from buffer"));
     }
 }
 

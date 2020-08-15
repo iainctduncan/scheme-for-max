@@ -18,6 +18,11 @@
 
 ;; misc convenience functions we use
 
+;; catenated object to string reprs of things
+(define (str-repr . args) 
+ (let ((repr (lambda x (string-append (object->string x) " "))))
+   (apply string-append (map repr args))))
+
 ;; convert to a string for our post function
 (define (stringify item)
   (cond
@@ -97,6 +102,9 @@
     ;(post "s4m-eval :" args)
     (eval args (rootlet))))
 
+
+;; roll all this in later
+(load-from-max "schedule.scm")
 
 ;; convenience functions for output, sometimes you want a one arg function...
 (define (out outlet_num args) (max-output outlet_num args))
