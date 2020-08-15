@@ -123,9 +123,8 @@ static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_is_buffer(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_size(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_ref(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_buffer_write(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_mc_buffer_read(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_mc_buffer_write(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_buffer_set(s7_scheme *s7, s7_pointer args);
+
 static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
 
@@ -311,8 +310,9 @@ void s4m_init_s7(t_s4m *x){
 
     s7_define_function(x->s7, "buffer-ref", s7_buffer_ref, 2, 1, false, "(buffer-ref :foo 4) returns value at channel 0, index 4 from buffer :foo");
     s7_define_function(x->s7, "bufr", s7_buffer_ref, 2, 1, false, "alias for buffer-ref");
+    s7_define_function(x->s7, "buffer-set!", s7_buffer_set, 3, 1, false, "(buffer-set! :foo 4 127) writes value 4 to index 127 of buffer :foo");
+    s7_define_function(x->s7, "bufs", s7_buffer_set, 3, 1, false, "(buffer-set! :foo 4 127) writes value 4 to index 127 of buffer :foo");
 
-    //s7_define_function(x->s7, "buf-set", s7_buffer_write, 3, 0, false, "(buf-set :foo 4 127) writes value 4 to index 127 of buffer :foo");
     //s7_define_function(x->s7, "mc-buf-get", s7_mc_buffer_read, 3, 0, false, "(mcbuf-get :foo 4 1) returns value at channel 1, index 4 from buffer :foo");
     //s7_define_function(x->s7, "mc-buf-set", s7_mc_buffer_write, 4, 0, false, "(mcbuf-set :foo 4 127 1) writes value 4 to index 127 of buffer :foo");
     //s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
@@ -1651,7 +1651,6 @@ static s7_pointer s7_buffer_ref(s7_scheme *s7, s7_pointer args) {
     if( num_args == 2 ){
         index = s7_integer( s7_list_ref(s7, args, 1) );
     }else if(num_args == 3){
-        //int channel= s7_integer( s7_list_ref(s7, args, 2) );
         channel = s7_integer( s7_list_ref(s7, args, 1) );
         index = s7_integer( s7_list_ref(s7, args, 2) );
     }else{
@@ -1672,78 +1671,41 @@ static s7_pointer s7_buffer_ref(s7_scheme *s7, s7_pointer args) {
 }
 
 // write a float to a named buffer index (max tables only store ints)
-// becomes scheme function 'buf-set'
+// becomes scheme function buffer-set!, aliased as bufs
 // returns value written (for chaining)
-static s7_pointer s7_buffer_write(s7_scheme *s7, s7_pointer args) {
+static s7_pointer s7_buffer_set(s7_scheme *s7, s7_pointer args) {
     // table names could come in from s7 as either strings or symbols, if using keyword table names
     char *buffer_name;
-    if( s7_is_symbol( s7_car(args) ) ){ 
-        buffer_name = s7_symbol_name( s7_car(args) );
-    } else if( s7_is_string( s7_car(args) ) ){
-        buffer_name = s7_string( s7_car(args) );
-    }else{
-        post("s4m: ERROR in buff-set, buffer name is not a keyword, string, or symbol");
-        return;
-    }
-    long index = s7_integer( s7_list_ref(s7, args, 1) );
-    double value = s7_real( s7_list_ref(s7, args, 2) );
-    t_s4m *x = get_max_obj(s7);
-    s4m_buffer_write(x, buffer_name, index, value);
-    // return the value written to s7
-    return s7_make_real(s7, value);
-}
+    int channel = 0; 
+    long index;
+    double value;
+    int num_args = (int) s7_list_length(s7, args);
 
-// read an float from a named buffer and index 
-// becomes scheme function 'buf-get'
-static s7_pointer s7_mc_buffer_read(s7_scheme *s7, s7_pointer args) {
-    // buffer names could come in from s7 as either strings or symbols, if using keyword buffer names
-    char *buffer_name;
     if( s7_is_symbol( s7_car(args) ) ){ 
-        buffer_name = s7_symbol_name( s7_car(args) );
+        buffer_name = (char *) s7_symbol_name( s7_car(args) );
     } else if( s7_is_string( s7_car(args) ) ){
-        buffer_name = s7_string( s7_car(args) );
+        buffer_name = (char *) s7_string( s7_car(args) );
     }else{
-        post("s4m: ERROR in buf-get, buffer name is not a keyword, string, or symbol");
-        return;
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "error fetching buffer, buffer name is not a keyword, string, or symbol"));
     }
-    int channel = s7_integer( s7_list_ref(s7, args, 1) );
-    long index = s7_integer( s7_list_ref(s7, args, 2) );
-    double value; 
-    post(" buffer: %s channel: %i, index: %i", buffer_name, channel, index);
-    t_s4m *x = get_max_obj(s7);
-    int res = s4m_mc_buffer_read(x, buffer_name, channel, index, &value);
-    post("s7_buffer_read, value: %f", value);
-    if(!res){
-        return s7_make_real(s7, value);
+    // second arg is index if only two args or channel if three args
+    if( num_args == 3 ){
+        index = s7_integer( s7_list_ref(s7, args, 1) );
+        value = s7_real( s7_list_ref(s7, args, 2) );
+    }else if(num_args == 4){
+        channel = s7_integer( s7_list_ref(s7, args, 1) );
+        index = s7_integer( s7_list_ref(s7, args, 2) );
+        value = s7_real( s7_list_ref(s7, args, 3) );
     }else{
-        post("s4m: ERROR reading buffer %s index %i", buffer_name, index);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "wrong number of args, must be buffer,index,value or buffer,channel,index,value"));
     }
-}
-
-// write a float to a named buffer index (max tables only store ints)
-// becomes scheme function 'buf-set'
-// returns value written (for chaining)
-static s7_pointer s7_mc_buffer_write(s7_scheme *s7, s7_pointer args) {
-    // table names could come in from s7 as either strings or symbols, if using keyword table names
-    char *buffer_name;
-    if( s7_is_symbol( s7_car(args) ) ){ 
-        buffer_name = s7_symbol_name( s7_car(args) );
-    } else if( s7_is_string( s7_car(args) ) ){
-        buffer_name = s7_string( s7_car(args) );
-    }else{
-        post("s4m: ERROR in buff-set, buffer name is not a keyword, string, or symbol");
-        return;
-    }
-    int channel = s7_integer( s7_list_ref(s7, args, 1) );
-    long index = s7_integer( s7_list_ref(s7, args, 2) );
-    double value = s7_real( s7_list_ref(s7, args, 3) );
     t_s4m *x = get_max_obj(s7);
     s4m_mc_buffer_write(x, buffer_name, channel, index, value);
     // return the value written to s7
     return s7_make_real(s7, value);
 }
-
-
 
 
 // read a value from a named dict, scheme function dict-get
