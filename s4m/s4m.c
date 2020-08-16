@@ -124,6 +124,7 @@ static s7_pointer s7_is_buffer(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_size(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_ref(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_set(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
@@ -312,9 +313,10 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "bufr", s7_buffer_ref, 2, 1, false, "alias for buffer-ref");
     s7_define_function(x->s7, "buffer-set!", s7_buffer_set, 3, 1, false, "(buffer-set! :foo 4 127) writes value 4 to index 127 of buffer :foo");
     s7_define_function(x->s7, "bufs", s7_buffer_set, 3, 1, false, "(buffer-set! :foo 4 127) writes value 4 to index 127 of buffer :foo");
+    s7_define_function(x->s7, "buffer->vector", s7_buffer_to_vector, 1, 2, false, "create new vector from buffer");
+    s7_define_function(x->s7, "b->v", s7_buffer_to_vector, 1, 2, false, "create new vector from buffer");
 
-    //s7_define_function(x->s7, "mc-buf-get", s7_mc_buffer_read, 3, 0, false, "(mcbuf-get :foo 4 1) returns value at channel 1, index 4 from buffer :foo");
-    //s7_define_function(x->s7, "mc-buf-set", s7_mc_buffer_write, 4, 0, false, "(mcbuf-set :foo 4 127 1) writes value 4 to index 127 of buffer :foo");
+
     //s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
     //s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
    
@@ -641,7 +643,7 @@ int s4m_buffer_read(t_s4m *x, char *buffer_name, long index, double *value){
 
 // multi-channel buffer read, channels numbered 1 up
 int s4m_mc_buffer_read(t_s4m *x, char *buffer_name, int channel, long index, double *value){
-    //post("s4m_mc_buffer_read() %s c:%i i:%i", buffer_name, channel, index);
+    post("s4m_mc_buffer_read() %s c:%i i:%i", buffer_name, channel, index);
     
     t_buffer_ref *buffer_ref = buffer_ref_new((t_object *)x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
@@ -1706,6 +1708,48 @@ static s7_pointer s7_buffer_set(s7_scheme *s7, s7_pointer args) {
     // return the value written to s7
     return s7_make_real(s7, value);
 }
+
+// return a scheme vector with entire contents of a bffer
+// in scheme: buffer->vector aka b->v
+static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
+    // post("s7_make_vector_from_buffer()");
+    char *buffer_name = NULL;
+    long buffer_size = NULL;
+    long target_index = 0;
+    long count = NULL;
+    char err_msg[128];
+    t_s4m *x = get_max_obj(s7);
+
+    // first args is the buffer name
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        buffer_name = (char *) s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        buffer_name = (char *) s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "buffer name is not a keyword, string, or symbol"));
+    }
+    // get buffer from Max, also fetches buffer size
+    t_buffer_ref *buffer_ref = buffer_ref_new((t_object *)x, gensym(buffer_name));
+    t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
+    if(buffer == NULL){
+        object_error((t_object *)x, "Unable to reference buffer named %s", buffer_name);                
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "Could not retrieve buffer"));
+    }
+    t_atom_long frames;
+    frames = buffer_getframecount(buffer);
+    float *buffer_data = buffer_locksamples(buffer);
+    
+    // create a new vector and copy from buffer
+    s7_pointer *new_vector = s7_make_vector(s7, frames); 
+    for(int i=0; i<frames; i++){
+        s7_vector_set(s7, new_vector, i, s7_make_real(s7, (buffer_data)[i] ) ); 
+    }
+    buffer_unlocksamples(buffer);
+    object_free(buffer_ref);
+    return new_vector;
+}    
 
 
 // read a value from a named dict, scheme function dict-get
