@@ -39,12 +39,20 @@ typedef struct _s4m {
       
    t_object *patcher;   
    t_hashtab *registry;            // will hold objects by scripting name
+
+   t_hashtab *clocks;            // will hold clocks by handle
   
    t_object *m_editor;             // text editor
     
    t_object *test_obj; 
 
 } t_s4m;
+
+typedef struct _s4m_clock_callbacks {
+   t_s4m obj;
+   t_symbol *handle; 
+} t_s4m_clock_callback;
+
 
 // global class pointer variable
 void *s4m_class;
@@ -126,12 +134,17 @@ static s7_pointer s7_buffer_ref(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_set(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args);
 
+static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args);
+
 static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args);
+
+void clock_callback(void *arg);
 
 /********************************************************************************
 / some helpers */
@@ -255,8 +268,13 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     }
     
     // create the registry for patch objects by scripting name
+    // OBJ_FLAG_REF means don't free data 
     x->registry = (t_hashtab *)hashtab_new(0);
     hashtab_flags(x->registry, OBJ_FLAG_REF);
+
+    // registry for clocks
+    x->clocks = (t_hashtab *)hashtab_new(0);
+    hashtab_flags(x->clocks, OBJ_FLAG_REF);
 
     // save the patcher object (equiv of thispatcher)
     object_obex_lookup(x, gensym("#P"), &x->patcher);
@@ -316,6 +334,8 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "buffer->vector", s7_buffer_to_vector, 1, 2, false, "create new vector from buffer");
     s7_define_function(x->s7, "b->v", s7_buffer_to_vector, 1, 2, false, "create new vector from buffer");
 
+    s7_define_function(x->s7, "buffer-set-from-vector!", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
+    s7_define_function(x->s7, "bufsv", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
 
     //s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
     //s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
@@ -324,6 +344,7 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
     
     s7_define_function(x->s7, "s4m-schedule-callback", s7_schedule_callback, 2, 0, true, "(s4m-schedule-callback {time} {cb-handle}");
+    s7_define_function(x->s7, "s4m-schedule-clock", s7_schedule_clock, 2, 0, true, "(s4m-schedule-clock {time} {cb-handle}");
        
 
     // make the address of this object available in scheme as "maxobj" so that 
@@ -1751,6 +1772,146 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
     return new_vector;
 }    
 
+// scheme function to write (some) data from a vector into an existing table
+// (buffer-set-from-vector! buffer {opt-chan} {index} vector {opt-start} {opt-count}) 
+static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
+    // post("s7_table_set_from_vector()");
+    t_s4m *x = get_max_obj(s7);
+    int buffer_channel = 0;
+    long buffer_offset = 0;   // default target index is 0 unless overridden
+    long vector_offset = 0;  // default start of vector to copy
+    long count = NULL; 
+    char *buffer_name = NULL;
+    char *vector_name = NULL;
+ 
+    int num_args = (int) s7_list_length(s7, args);
+    if( num_args < 2 || num_args > 6){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "wrong number of arguments"));
+    }
+    
+    // get the buffer name, always comes from arg 0 
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        buffer_name = (char *) s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        buffer_name = (char *) s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "error fetching buffer, buffer name is not a keyword, string, or symbol"));
+    }
+
+    
+    // buffer-set-from-vector! buffer-name {buffer-chan} {buffer-index}
+    // after the buffer name arg, there may be two optional integer ars
+    // if only one given, it is taken as index, and channel is assumed to be 0
+    
+    int vector_arg_num;     // to store which arg has the vector name
+    if( s7_is_integer(s7_list_ref(s7, args, 1)) && s7_is_integer(s7_list_ref(s7, args, 2))){
+        // we were called with optional buff channel 
+        buffer_channel = s7_integer(s7_list_ref(s7, args, 1)); 
+        buffer_offset = s7_integer(s7_list_ref(s7, args, 2)); 
+        vector_arg_num = 3;
+        post("optional buffer chan and buffer offset detected: %i %i", buffer_channel, buffer_offset);
+    }else if( s7_is_integer(s7_list_ref(s7, args, 1)) && !s7_is_integer(s7_list_ref(s7, args, 2))){
+        buffer_channel = 0;
+        buffer_offset = s7_integer(s7_list_ref(s7, args, 1)); 
+        vector_arg_num = 2;
+        post("optional buffer offset detected: chan %i offset %i", buffer_channel, buffer_offset);
+    }else{
+        // no optional channel arg used
+        buffer_channel = 0;
+        buffer_offset = 0;
+        vector_arg_num = 1;
+        post("no optional buffer args: chan %i offset %i", buffer_channel, buffer_offset);
+    }
+
+    // get the vector 
+    s7_pointer source_vector = s7_list_ref(s7, args, vector_arg_num);
+    // if it's not really a vector, we have an error
+    if( !s7_is_vector(source_vector) ){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "missing vector arg or wrong type"));
+    }
+   
+    // there may be two optional integer args after the vector, for offset and count
+    // if only 1, it is taken as offset 
+    // if missing, offset is 0 and count is the whole vector 
+    if( num_args > vector_arg_num + 1){
+        vector_offset = s7_integer( s7_list_ref(s7, args, vector_arg_num+1));
+        // count stays at default of 0, will be adjusted later
+    }
+    // case for both count and offset
+    if( num_args > vector_arg_num + 2){
+        count = s7_integer( s7_list_ref(s7, args, vector_arg_num+2));
+    }
+
+    // Note: at this point count may be 0, it will be overridden below 
+    post("dest-buff: %s chan: %i index: %i vector-offset: %i count: %i",
+        buffer_name, buffer_channel, buffer_offset, vector_offset, count);
+
+    // now have: buffer_name, buffer_channel, buffer_offset, vector_offset, count
+ 
+    // get the vector and buffer
+    long vector_size = s7_vector_length(source_vector);
+    
+    // get buffer from Max, also fetches buffer size
+    t_buffer_ref *buffer_ref = buffer_ref_new((t_object *)x, gensym(buffer_name));
+    t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
+    if(buffer == NULL){
+        object_error((t_object *)x, "Unable to reference buffer named %s", buffer_name);                
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "Could not retrieve buffer"));
+    }
+    t_atom_long buffer_size;
+    buffer_size = buffer_getframecount(buffer);
+    float *buffer_data = buffer_locksamples(buffer);
+
+    // if no count specified, count is set to as much of the vector as fits, given the buffer size and offset
+    if( count == 0 ) count = vector_size - vector_offset; 
+    if( count > vector_size - vector_offset) count = vector_size - vector_offset;
+    if( count > (buffer_size - buffer_offset) ) count = buffer_size - buffer_offset;
+
+    // sanity check ranges and indexes 
+    if( buffer_offset < 0 || count < 0 || (buffer_offset + count) > buffer_size 
+      || (vector_offset + count) > vector_size){
+        return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, 
+            "buffer-set-from-vector! : index out of range")); 
+    }
+    // 2020-09-19 working here
+    post("argument calcs done: b-size: %i b-chan: %i b-offset: %i v-size: %i v-start: %i count: %i", 
+        buffer_size, buffer_channel, buffer_offset, vector_size, vector_offset, count);
+
+    // copy data, converting ints to floats, C style (truncate, not round)
+    // in future we might allow disabling checks for speed
+    double value;
+    // NB: we are only dealing with float buffers at preset
+    s7_pointer *s7_vector_values = s7_vector_elements(source_vector);
+
+    for(int i=0; i < count; i++){
+        s7_pointer *source_value = s7_vector_values[ i + vector_offset ];
+        if( s7_is_real(source_value) ){
+            value = (double)s7_real(source_value);     
+        }else if( s7_is_integer(source_value) ){
+            value = (long) s7_integer(source_value);     
+        }else{     
+            return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7,
+               "buffer-set-from-vector! : value is not an int or float, aborting")); 
+        }
+        // TODO: what should happens with number of channels here???
+        int dest_index = buffer_offset + i;
+        //post("writing value %.5f to index: %i", dest_index, value);
+        buffer_data[dest_index] = value;
+    }
+    // unlock buffers
+    buffer_unlocksamples(buffer);
+    object_free(buffer_ref);
+    // return the vector
+    return source_vector;
+}
+
+
+
+
 
 // read a value from a named dict, scheme function dict-get
 // at present, only supports simple types for values and keywords or symbols for keys
@@ -1854,6 +2015,7 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
     return s7_value;
 }
 
+// the non-clock version of schedule
 static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args){
     // post("s7_schedule_callback()");
     char *cb_handle_str;
@@ -1875,7 +2037,55 @@ static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args){
     return s7_make_symbol(s7, cb_handle_str);
 }
 
+// the newer clock version of schedule
+static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args){
+    post("s7_schedule_clock()");
+    char *cb_handle_str;
+    t_s4m *x = get_max_obj(s7);
 
+    // first arg is float of time in ms 
+    double delay_time = s7_real( s7_car(args) );
+    // second arg is the symbol from gensym
+    s7_pointer *s7_cb_handle = s7_cadr(args);
+    cb_handle_str = s7_symbol_name(s7_cb_handle);
+    post("s7_schedule_clock() time: %5.2f handle: '%s'", delay_time, cb_handle_str);
+   
+    post("now we make a clock");
+
+    // allocate memory for our struct that holds the symbol and the ref to the s4m obj
+    t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
+    clock_cb->obj = *x;
+    clock_cb->handle = gensym(cb_handle_str);
+ 
+    //void *clock = clock_new((t_object *)x, (method)clock_callback);
+    void *clock = clock_new( (void *)clock_cb, (method)clock_callback);
+
+    // store the clock ref in the clocks hashtab (used to get at them for cancelling) 
+    hashtab_store(x->clocks, gensym(cb_handle_str), clock);            
+    // schedule for 1 second
+    clock_fdelay(clock, delay_time);
+ 
+    // return the handle on success
+    return s7_make_symbol(s7, cb_handle_str);
+}
+
+// the generic clock callback, fires at the right time, with
+// access to the handle we will use to get the function from the scheme registry
+// arg is a void pointer to a struct with the the s4m object and the cb handle 
+void clock_callback(void *arg){
+    t_s4m_clock_callback *ccb = (t_s4m_clock_callback *) arg;
+    t_s4m *x = &(ccb->obj);
+    t_symbol handle = *ccb->handle; 
+    post("clock_callback()");
+    post(" - handle %s", handle);
+    s7_pointer *s7_args = s7_nil(x->s7);
+    s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, handle.s_name), s7_args); 
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-callback"), s7_args);   
+    // remove the clock from the clock registry and free it
+    hashtab_delete(x->clocks, &handle);
+    // free the memory for the struct we used to get at callback info
+    sysmem_freeptr(arg);
+}
 
 // s7 function for sending a generic message to a max object
 // assumes the max object has a scripting name and has been found by a call to 'scan' to the s4m object

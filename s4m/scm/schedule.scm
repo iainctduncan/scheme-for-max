@@ -1,8 +1,5 @@
 (post "schedule.scm")
 
-(define (test-fun)
-  (post "test-fun executing"))
-
 
 ;; internal registry of callbacks registered by gensyms
 (define s4m-callback-registry (hash-table))
@@ -23,8 +20,8 @@
     cb-function))
 
 
-;; get a callback from the registry and run it
-;; this gets called from C code
+;; internal function to get a callback from the registry and run it
+;; this gets called from C code when the C timing function happens
 ;; todo: later add env support
 (define (s4m-execute-callback key)
   ;;(post "s4m-execute-callback" key)
@@ -35,14 +32,26 @@
     ;; if callback retrieval got false, return false else execute function
     (if (eq? #f cb-fun) '() (cb-fun))))
 
-;delay a function by time ms
+; public function to delay a function by time ms
+; returns the callback key, which can be used to cancel it
 (define (delay time arg)
-  ;;(post "(delay) time:" time "arg:" arg)
+  ;(post "(delay) time:" time "arg:" arg)
   ;; register the callback and return the handle
   (let ((cb-handle (s4m-register-callback arg)))
     ;; call the C ffi funtion and return the handle
-    (s4m-schedule-callback time cb-handle)
+    (s4m-schedule-callback (floor time) cb-handle)
     cb-handle))
+
+; newer clock version 2020-09-23
+; returns the callback key, which can be used to cancel it
+(define (clock time arg)
+  (post "(clock) time:" time "arg:" arg)
+  ;; register the callback and return the handle
+  (let ((cb-handle (s4m-register-callback arg)))
+    ;; call the C ffi funtion and return the handle
+    (s4m-schedule-clock time cb-handle)
+    cb-handle))
+
 
 ;; delay evaling a list by time ms
 ;; delay 
