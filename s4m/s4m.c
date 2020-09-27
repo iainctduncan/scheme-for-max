@@ -30,6 +30,8 @@ typedef struct _s4m {
    t_filehandle source_file_handle;    // file handle for the source file
    char **source_text_handle;          // string handle for the source file
    
+   char thread;                   // can be 'h', 'l', or 'a' for high, low, any
+
    long num_inlets;
    long proxy_num;
    void *inlet_proxies[MAX_NUM_INLETS];
@@ -57,7 +59,6 @@ typedef struct _s4m_clock_callbacks {
 // global class pointer variable
 void *s4m_class;
 
-
 /********************************************************************************
 / function prototypes
 / standard set */
@@ -65,6 +66,7 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv);
 void s4m_free(t_s4m *x);
 void s4m_init_s7(t_s4m *x);
 void s4m_assist(t_s4m *x, void *b, long m, long a, char *s);
+t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
 
 
 // helpers to do s7 calls with error loggging
@@ -144,6 +146,8 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args);
 
+static s7_pointer s7_isr(s7_scheme *s7, s7_pointer args);
+
 void clock_callback(void *arg);
 
 /********************************************************************************
@@ -220,6 +224,10 @@ void ext_main(void *r){
     CLASS_ATTR_LONG(c, "outs", 0, t_s4m, num_outlets);
     CLASS_ATTR_ACCESSORS(c, "outs", NULL, s4m_outlets_set);
     CLASS_ATTR_SAVE(c, "outs", 0);   // save with patcher
+    // attribute for thread
+    CLASS_ATTR_SYM(c, "thread", 0, t_s4m, thread);
+    CLASS_ATTR_ACCESSORS(c, "thread", NULL, s4m_thread_set);
+    //CLASS_ATTR_SAVE(c, "thread", 0);   // save with patcher
 
     class_addmethod(c, (method)s4m_assist, "assist", A_CANT, 0);
     class_register(CLASS_BOX, c); 
@@ -243,7 +251,9 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     // setup internal member defaults 
     x->num_inlets = 1;
     x->num_outlets = 1;
-    // process @ args, which will likely override the above
+    x->thread = 'h';
+
+    // process @ args, which will possibly override the above
     attr_args_process(x, argc, argv);
 
     // create generic outlets (from right to left)
@@ -345,7 +355,8 @@ void s4m_init_s7(t_s4m *x){
     
     s7_define_function(x->s7, "s4m-schedule-callback", s7_schedule_callback, 2, 0, true, "(s4m-schedule-callback {time} {cb-handle}");
     s7_define_function(x->s7, "s4m-schedule-clock", s7_schedule_clock, 2, 0, true, "(s4m-schedule-clock {time} {cb-handle}");
-       
+
+    s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
 
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
@@ -483,6 +494,23 @@ t_max_err s4m_outlets_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     if( num_outlets < 1) num_outlets = 1;
     x->num_outlets = num_outlets;
     //post("s4m->num_outlets now %i", x->num_outlets); 
+    return 0;
+}
+
+t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
+    //post("s4m_threads_set()");
+    t_symbol *thread_attr = atom_getsym(argv);
+    if( thread_attr == gensym("high") || thread_attr == gensym("h") ){
+        x->thread = 'h';
+    }else if( thread_attr == gensym("low") || thread_attr == gensym("l") ){
+        x->thread = 'l';
+    }else if( thread_attr == gensym("any") || thread_attr == gensym("a") ){
+        x->thread = 'a';
+    }else {
+        // any other symbol, ignore and set to high
+        x->thread = 'h';
+    } 
+    post("s4m->thread: '%c'", x->thread); 
     return 0;
 }
 
@@ -834,8 +862,22 @@ void s4m_s7_eval_string(t_s4m *x, char *string_to_eval){
 }
 
 
+// call bang is used to back to our float message in the case of a schedule or defer call
+void s4m_call_bang(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_call_bang()");
+    return s4m_bang(x);
+}
 // for a bang message, the list of args to the s7 listener will be (:bang)
 void s4m_bang(t_s4m *x){
+    bool in_isr = isr();
+    //post("s4m_bang(): isr: %i", in_isr );
+    // schedule/defer require an A_ANYTHING sig, so we need to call our wrapper s4m_call_bang
+    if( !in_isr && x->thread == 'h' ){ 
+        return schedule(x, s4m_call_bang, 0, NULL, 0, NULL); 
+    }else if( in_isr && x->thread == 'l'){
+        return defer(x, s4m_call_bang, NULL, 0, NULL); 
+    }    
+
     int inlet_num = proxy_getinlet((t_object *)x);
     // post("s4m_bang() message from inlet %i", inlet_num);
     s7_pointer s7_args = s7_nil(x->s7); 
@@ -853,8 +895,30 @@ void s4m_bang(t_s4m *x){
     }
 }
 
+// call float is used to back to our float message in the case of a schedule or defer call
+void s4m_call_int(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_call_int()");
+    long arg = atom_getlong( argv );
+    sysmem_freeptr(argv); 
+    return s4m_int(x, arg);
+}
+
 // handler for any messages to s4m as either single {number} or 'int {number}'
 void s4m_int(t_s4m *x, long arg){
+    bool in_isr = isr();
+    //post("s4m_int(): arg: %i, isr: %i", arg, in_isr );
+    // schedule requires A_ANYTHING sig, so call wrapper s4m_call_int
+    if( !in_isr && x->thread == 'h' ){ 
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        atom_setlong(ap, arg);
+        return schedule(x, s4m_call_int, 0, NULL, 1, ap); 
+    }else if( in_isr && x->thread == 'l'){ 
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        atom_setlong(ap, arg);
+        return defer(x, s4m_call_int, NULL, 1, ap); 
+    }
+    
+
     int inlet_num = proxy_getinlet((t_object *)x);
     //post("s4m_int() message from inlet %i, arg: %i", inlet_num, arg);
     s7_pointer s7_args = s7_nil(x->s7); 
@@ -874,8 +938,28 @@ void s4m_int(t_s4m *x, long arg){
     }
 }
 
+// call float is used to back to our float message in the case of a schedule or defer call
+void s4m_call_float(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_call_float()");
+    double arg = atom_getfloat( argv );
+    sysmem_freeptr(argv); 
+    return s4m_float(x, arg);
+}
 // handler for any messages to s4m as either single {number} or 'int {number}'
 void s4m_float(t_s4m *x, double arg){
+    bool in_isr = isr();
+    //post("s4m_float(): arg: %5.4f, isr: %i", arg, in_isr );
+    if( !in_isr && x->thread == 'h' ){ 
+        // schedule requires A_ANYTHING sig, so call wrapper s4m_call_float
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        atom_setfloat(ap, arg);
+        return schedule(x, s4m_call_float, 0, NULL, 1, ap); 
+    }else if( in_isr && x->thread == 'l'){ 
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        atom_setfloat(ap, arg);
+        return defer(x, s4m_call_float, NULL, 1, ap); 
+    } 
+
     int inlet_num = proxy_getinlet((t_object *)x);
     //post("s4m_float() message from inlet %i, arg: %i", inlet_num, arg);
     s7_pointer s7_args = s7_nil(x->s7); 
@@ -899,6 +983,16 @@ void s4m_float(t_s4m *x, double arg){
 // the max message "list a b c", which includes "1 2 3" and "1 a b", but not "a b c"
 // Note: that's just how Max works, "1 2 3" becomes "list 1 2 3", but "a b c" does not
 void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    bool in_isr = isr();
+    //post("s4m_list(): selector is %s, isr: %i", s->s_name, in_isr );
+    // if this is a low-priority thread message, re-sched as high and exit and vice versa
+    if( !in_isr && x->thread == 'h' ){ 
+        return schedule(x, s4m_list, 0, s, argc, argv); 
+    }else if(  in_isr && x->thread == 'l' ){ 
+        return defer(x, s4m_list, s, argc, argv); 
+    } 
+
+
     t_atom *ap;
     int inlet_num = proxy_getinlet((t_object *)x);
     //post("s4m_list(): selector is %s",s->s_name);
@@ -935,9 +1029,15 @@ void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
 
 // the generic message hander, fires on any symbol messages, which includes lists of numbers or strings
 void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    t_atom *ap;
-    //post("s4m_msg(): selector is %s",s->s_name);
+    bool in_isr = isr();
+    //post("s4m_msg(): selector is %s, isr: %i", s->s_name, in_isr );
+    // if this is a low-priority thread message, re-sched as high and exit and vice versa
+    if( !in_isr && x->thread == 'h' ){ return schedule(x, s4m_msg, 0, s, argc, argv); } 
+    if(  in_isr && x->thread == 'l' ){ return defer(x, s4m_msg, s, argc, argv); } 
+
+
     //post("s4m_msg(): there are %ld arguments",argc);
+    t_atom *ap;
     int inlet_num = proxy_getinlet((t_object *)x);
     //post("message came from inlet %i", inlet_num);
 
@@ -1121,6 +1221,15 @@ t_s4m *get_max_obj(s7_scheme *s7){
     uintptr_t s4m_ptr_from_s7 = (uintptr_t)s7_integer( s7_name_to_value(s7, "maxobj") );
     t_s4m *s4m_ptr = (t_s4m *)s4m_ptr_from_s7;
     return s4m_ptr;
+}
+
+// in scheme is (isr?) -> returns #t if in high priority thread
+static s7_pointer s7_isr(s7_scheme *s7, s7_pointer args){
+    if( isr() ){
+        return s7_make_boolean(s7, true);
+    }else{
+        return s7_make_boolean(s7, false);
+    };
 }
 
 // load a scheme file, searching the max paths to find it
@@ -2039,7 +2148,7 @@ static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args){
 
 // the newer clock version of schedule
 static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args){
-    post("s7_schedule_clock()");
+    //post("s7_schedule_clock()");
     char *cb_handle_str;
     t_s4m *x = get_max_obj(s7);
 
@@ -2050,8 +2159,6 @@ static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args){
     cb_handle_str = s7_symbol_name(s7_cb_handle);
     post("s7_schedule_clock() time: %5.2f handle: '%s'", delay_time, cb_handle_str);
    
-    post("now we make a clock");
-
     // allocate memory for our struct that holds the symbol and the ref to the s4m obj
     t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
     clock_cb->obj = *x;
@@ -2076,8 +2183,7 @@ void clock_callback(void *arg){
     t_s4m_clock_callback *ccb = (t_s4m_clock_callback *) arg;
     t_s4m *x = &(ccb->obj);
     t_symbol handle = *ccb->handle; 
-    post("clock_callback()");
-    post(" - handle %s", handle);
+    //post("clock_callback(), handle %s", handle);
     s7_pointer *s7_args = s7_nil(x->s7);
     s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, handle.s_name), s7_args); 
     s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-callback"), s7_args);   
