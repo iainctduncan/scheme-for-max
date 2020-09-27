@@ -45,7 +45,7 @@
 ; newer clock version 2020-09-23
 ; returns the callback key, which can be used to cancel it
 (define (clock time arg)
-  (post "(clock) time:" time "arg:" arg)
+  ;(post "(clock) time:" time "arg:" arg)
   ;; register the callback and return the handle
   (let ((cb-handle (s4m-register-callback arg)))
     ;; call the C ffi funtion and return the handle

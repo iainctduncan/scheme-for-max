@@ -28,6 +28,7 @@
     ((eq? a (car lat)) #t)
     (else (member? a (cdr lat)))))
 
+;; looks like this is busted
 (define (filter-out members lat)
   (cond
     ((null? lat) '())
@@ -35,6 +36,7 @@
     (else (cons (car lat) (filter-out members (cdr lat))))))
 
 (define (filter predicate? lat)
+  ;; filter out a list with a predicate
   (cond
     ((null? lat) '())
     ((not (predicate? (car lat))) (filter predicate? (cdr lat)))

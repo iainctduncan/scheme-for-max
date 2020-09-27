@@ -1,56 +1,141 @@
-notes on adding ability to schedule in future:
 
-in scheme
+Scheduling notes:
 
-(eval-delay 100 '(list to eval))
+********************************************************************************
+Current Implementation of delay: (working) (2020-09-23)
+- in scheme there is a callback registry hashtable: 
+  sm4-callback-registry
+- registering a callback is done with 
+  (s4m-register-callback cb-function)
+  creates a gensym as a handle, stores the function with this key and returns the gensym handle
 
+- we can retrieve the callback, a onetime op, with (s4m-get-callback key)
+  which retrieves the callback and then deletes the key by storing #4 in the registry
 
-- the C function that is called in the future must have the sig:
-  void myobject_do (myObject *client, t_symbol *s, short argc, t_atom *argv);  
+- callbacks are executed when they are called from C, using 
+  (s4m-execute-callback key)
 
-- so I think in order to do delay's properly, we need a smooth way of going from
-  an s7 arg list to a list of atoms (which we have for flat lists...)
-- the list to eval-delay might need to be flattenable
+- in C, the way this works is that s4m_schedule-callback calls s7_schedule_callback in C
+  which gets the time and the handle, and schedules a one arg function in the future, where
+  the function is s4m_execute_callback, with the key as the arg.
+  schedule_delay(x, s4m_execute_callback, delay_time, gensym(cb_handle_str), 0, NULL);
  
-  so that one would have to do something like
+- the public function is: 
+  (delay time-ms arg)
+  - which registers arg as a callback (getting a handle) and then
+    schedules it with 
+    (s4m-schedule-callback time cb-handle)
+
+- there is also the convenience function
+  (delay-eval time list-arg)
+  which makes a function out of list-arg and delays that
+  i.e. can be used as (delay-eval 1000 '(my-fun a b c))
+
+- NB: we do not have C method in place to *cancel* a callback, we instead change
+  the registered callback to #f so when C calls the function, it's a noop
+
+- potential issue:
+  the gensym is logged to the console each time, bit annoying
 
 
-  (let ((foo (lambda(x)(x))))
-        (eval-delay '100 '(foo 1)))
+********************************************************************************
+Notes from the docs
 
-- I think I have this backwards, I don't think we want to pass through max at all,
-  we want somehow to register the function in the scheme env to get triggered
-  from max so that the max side is really only triggering a gensym or something
-  - probably need to understand environments properly.
-  - I think this will actually be pretty hard
+- the high thread is also called the Scheduler or interrupt thread
+- the low thread is also called the main threa
 
-- maybe it uses gensym or something
+- isr() function returns whether we are in Max's scheduler thread
+  - what does the scheduler thread mean? does that mean high-priority?
+- defer() defers to the front of the low priority thread
+- defer_low() defers the back of the low priority thread
 
-- we want user to be able to do:
-  (delay 1000 '(post "I'm delayed!" :foobar))
-  or 
-  (delay 1000 my-fun)
+- I think that schedule_delay always puts things into the timer level (ie high thread)
+  - could check with isr call
+
+- I *think* that my current implementation is out of date, in that I should reimplement schedule_delay
+  using clocks to get fpoint accuracy (instead of ms accuracy)
 
 
-- let's get it working with single fuction first
+TODO:
+- implement defer and defer low
+- make a wrapper for isr to allow calling from scheme
 
-- s4m-registered-callbacks is a datastructure
+QUESTIONS:
+- does my delay call as it is stay in whatever thread it triggered in?
+  - should be able find this out with a clicking test
 
-- on C level:
-  - function gets stored in a gensym
-  - gensym gets passed to C with (s4m-schedule time {symbol}) 
+********************************************************************************
+ITM notes
 
-- at the C level, the scheduled function just needs the gensym key
+- I believe an itm corresponds to a named transport
 
-- next step is just to make something that receives and fires the gensym
+- itm_barbeatunitstoticks() - convert bbu to ticks
+- itm_getglobal() - get the global itm object
+- itm_getname() - get the name of an itm object
+- itm_getnamed() - gets a named itm object, optionally creates it if it doesn't exist
+- itm_getticks() gets current time of the itm in ticks
+  - does this stay at zero if global tempo is not moving??
+  TODO implement - get-ticks
+- itm_gettime() - returns current internal time for an itm
+  - is the same as calling clock_getftime()
+  TODO implement get-time
+- itm_gettimesignature() - get numerator and denominator of current time
+  - TODO implement get-time-sig
+- itm_mstosamps()
+- itm_pause() - sets transport to stoped
+- 
+- itm-schedule 
 
-post :foobar -> delay 1000
-list post :foo :bar -> delay 1000 -> set! handle 
+- t_timeobject - A high-level time object for tempo-based scheduling.
 
-(list post :foo :bar -> delay 1000 -> set! handle)
+- look at c74support/max-includes/ext_itm.h
+- sort of an example in Packages/max-sdk-8.0.3/source/basics/delay2
 
-- scheme calls a function in which we pass it the del time and the gensym handle
+- time_getitm() - returns the itm associated with a time object
+  - so I guess a time
 
-- issue, I don't know how to pass the gensym to C, need to look that up
-  - I think it's just a symbol
 
+
+********************************************************************************
+Useful pages with examples
+https://cycling74.com/forums/setting-tempo-of-globalinternal-itm
+- exmaple of getting, pausing, starting an ITM transport
+
+Notes from the delay example:
+
+- clock_fdelay is still used for the actual delaying
+
+  	time_schedule(x->d_timeobj, x->d_quantize);
+	tix = time_getticks(x->d_timeobj);
+	ms = itm_tickstoms(time_getitm(x->d_timeobj), tix);
+	clock_fdelay(x->d_clock, ms);
+
+- a time object can be converted to ticks, so it must be a way to store an *amount* of time
+
+********************************************************************************
+Clock notes
+
+- a clock needs a task function, with a single argument
+- when we make a clock with clock_new, we pass in the arg that will be the first arg in the task, 
+  and the task function
+  x->m_clock = clock_new((t_object *)x, (method)myobject_task);
+
+- scheduling the clock is done with clock_fdelay, passing the reference to the clock
+  clock_fdelay(x->m_clock, 100.);
+- The schedule() function is to clocks as defer() is to qelems. Schedule creates a clock for a task
+   function you specify and calls clock_fdelay() on it to make the task execute at a desired time.
+
+
+********************************************************************************
+Don't forget:
+- to ensure we can call the clock function with either floats or ints
+
+
+********************************************************************************
+TO TRY NEXT:
+- DONE a delay schedule working with clocks (ignoring itm)
+
+LEFTOFF:
+- got clocks working
+- next we need to add the ability to use itm
+- need to look at delay2 again
