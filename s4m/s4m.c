@@ -7,6 +7,8 @@
 #include "ext_hashtab.h"    
 #include "ext_strings.h"
 #include "ext_dictobj.h"
+#include "ext_time.h"
+#include "ext_itm.h"
 #include "stdint.h"
 #include "string.h"
 #include "stdbool.h"
@@ -40,9 +42,11 @@ typedef struct _s4m {
    void *outlets[MAX_NUM_OUTLETS]; // should be a dynamic array, but I'm crashing too much
       
    t_object *patcher;   
-   t_hashtab *registry;            // will hold objects by scripting name
+   t_hashtab *registry;            // objects by scripting name
 
-   t_hashtab *clocks;            // will hold clocks by handle
+   t_hashtab *clocks;              // clocks by handle
+   t_hashtab *time_clocks;          // holds time objs
+   t_hashtab *quant_clocks;          // holds time objs
   
    t_object *m_editor;             // text editor
     
@@ -145,10 +149,11 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_schedule_itm(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_isr(s7_scheme *s7, s7_pointer args);
 
-void clock_callback(void *arg);
+void s4m_clock_callback(void *arg);
 
 /********************************************************************************
 / some helpers */
@@ -355,6 +360,7 @@ void s4m_init_s7(t_s4m *x){
     
     s7_define_function(x->s7, "s4m-schedule-callback", s7_schedule_callback, 2, 0, true, "(s4m-schedule-callback {time} {cb-handle}");
     s7_define_function(x->s7, "s4m-schedule-clock", s7_schedule_clock, 2, 0, true, "(s4m-schedule-clock {time} {cb-handle}");
+    s7_define_function(x->s7, "s4m-schedule-itm", s7_schedule_itm, 2, 1, true, "(s4m-schedule-itm {time} {opt quant} {cb-handle}");
 
     s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
 
@@ -2125,6 +2131,7 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
 }
 
 // the non-clock version of schedule
+// TODO remove this later, should be replaced by the clock version only
 static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args){
     // post("s7_schedule_callback()");
     char *cb_handle_str;
@@ -2146,9 +2153,27 @@ static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args){
     return s7_make_symbol(s7, cb_handle_str);
 }
 
-// the newer clock version of schedule
+// the generic clock callback, fires at the right time, with
+// access to the handle we will use to get the function from the scheme registry
+// arg is a void pointer to a struct with the the s4m object and the cb handle 
+void s4m_clock_callback(void *arg){
+    post("clock_callback()");
+    t_s4m_clock_callback *ccb = (t_s4m_clock_callback *) arg;
+    t_s4m *x = &(ccb->obj);
+    t_symbol handle = *ccb->handle; 
+    post("clock_callback(), handle %s", handle);
+    s7_pointer *s7_args = s7_nil(x->s7);
+    s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, handle.s_name), s7_args); 
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-callback"), s7_args);   
+    // remove the clock from the clock registry and free it
+    hashtab_delete(x->clocks, &handle);
+    // free the memory for the struct we used to get at callback info
+    sysmem_freeptr(arg);
+}
+
+// the newer clock version of schedule, allows float of ms delay
 static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args){
-    //post("s7_schedule_clock()");
+    post("s7_schedule_clock()");
     char *cb_handle_str;
     t_s4m *x = get_max_obj(s7);
 
@@ -2165,7 +2190,7 @@ static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args){
     clock_cb->handle = gensym(cb_handle_str);
  
     //void *clock = clock_new((t_object *)x, (method)clock_callback);
-    void *clock = clock_new( (void *)clock_cb, (method)clock_callback);
+    void *clock = clock_new( (void *)clock_cb, (method)s4m_clock_callback);
 
     // store the clock ref in the clocks hashtab (used to get at them for cancelling) 
     hashtab_store(x->clocks, gensym(cb_handle_str), clock);            
@@ -2176,21 +2201,54 @@ static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args){
     return s7_make_symbol(s7, cb_handle_str);
 }
 
-// the generic clock callback, fires at the right time, with
-// access to the handle we will use to get the function from the scheme registry
-// arg is a void pointer to a struct with the the s4m object and the cb handle 
-void clock_callback(void *arg){
-    t_s4m_clock_callback *ccb = (t_s4m_clock_callback *) arg;
-    t_s4m *x = &(ccb->obj);
-    t_symbol handle = *ccb->handle; 
-    //post("clock_callback(), handle %s", handle);
-    s7_pointer *s7_args = s7_nil(x->s7);
-    s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, handle.s_name), s7_args); 
-    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-callback"), s7_args);   
-    // remove the clock from the clock registry and free it
-    hashtab_delete(x->clocks, &handle);
-    // free the memory for the struct we used to get at callback info
-    sysmem_freeptr(arg);
+// itm version of schedule, allows sending time as either ticks (int), notation (sym) or bbu (sym)
+static s7_pointer s7_schedule_itm(s7_scheme *s7, s7_pointer args){
+    post("s7_schedule_itm()");
+    char *cb_handle_str;
+    t_s4m *x = get_max_obj(s7);
+
+    // first arg is the delay time, as either a symbol or int or float
+    // XXX making this work as int first, will double back for float
+    double delay_time_ticks = s7_real( s7_car(args) );
+    // second arg is the symbol from gensym
+    s7_pointer *s7_cb_handle = s7_cadr(args);
+    cb_handle_str = s7_symbol_name(s7_cb_handle);
+    post("s7_schedule_itm() time: %5.2f handle: '%s'", delay_time_ticks, cb_handle_str);
+  
+    // allocate memory for our struct that holds the symbol and the ref to the s4m obj
+    // note, same kind of struct is fine for clock or time based scheduling 
+    t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
+    clock_cb->obj = *x;
+    clock_cb->handle = gensym(cb_handle_str);
+
+    // now we make the time object, note that the owner is our clock callback struct as void pointer
+    // from which the callback method will get the s4m obj and the callback handle
+    t_object *timeobj =  (t_object *) time_new((void *)clock_cb, gensym("_unused"), (method)s4m_clock_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    t_atom a;
+    atom_setfloat(&a, delay_time_ticks);
+    time_setvalue(timeobj, NULL, 1, &a);
+    //time_setvalue(quantobj, NULL, 1, &a);
+	//t_object *quantobj = (t_object *) time_new((t_object *)x, gensym("_unused_quant_attr"), NULL, TIME_FLAGS_TICKSONLY);
+    // set in note value or bbu with symbols
+    //time_setvalue(timeobj, gensym("2n"), NULL, NULL);
+    //time_setvalue(quantobj, gensym("2n"), NULL, NULL);
+    //time_setvalue(timeobj, gensym("0.2.0"), NULL, NULL);
+    //time_setvalue(quantobj, gensym("0.2.0"), NULL, NULL);
+    // or set in ticks with numbers
+	//time_schedule(timeobj, quantobj);
+
+    //void *clock = clock_new((t_object *)x, (method)clock_callback);
+    //void *clock = clock_new( (void *)clock_cb, (method)clock_callback);
+
+    // store the timeobj ref in the time_clocks hashtab (used to get at them for cancelling) 
+    //hashtab_store(x->time_clocks, gensym(cb_handle_str), timeobj);            
+    hashtab_store(x->clocks, gensym(cb_handle_str), timeobj);            
+    // schedule it
+    // TODO: add quantize
+	time_schedule(timeobj, NULL);
+ 
+    // return the handle on success
+    return s7_make_symbol(s7, cb_handle_str);
 }
 
 // s7 function for sending a generic message to a max object

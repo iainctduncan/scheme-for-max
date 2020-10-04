@@ -2,8 +2,10 @@
 
 (define (f) (post "f running"))
 
-;;(clock 2000.0 f)
+;; call f via clock delay
+;(clock 2000.0 f)
 
+;(delay-t 480 f)
 
 (define (f-list arg)
   (post "f-list, arg:" arg))

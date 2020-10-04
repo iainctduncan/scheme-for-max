@@ -42,7 +42,7 @@
     (s4m-schedule-callback (floor time) cb-handle)
     cb-handle))
 
-; newer clock version 2020-09-23
+; newer clock version 2020-09-23, prob should replace delay
 ; returns the callback key, which can be used to cancel it
 (define (clock time arg)
   ;(post "(clock) time:" time "arg:" arg)
@@ -50,6 +50,17 @@
   (let ((cb-handle (s4m-register-callback arg)))
     ;; call the C ffi funtion and return the handle
     (s4m-schedule-clock time cb-handle)
+    cb-handle))
+
+
+; public function to delay a function by time ms
+; returns the callback key, which can be used to cancel it
+(define (delay-t time arg)
+  (post "(delay-t) time:" time "arg:" arg)
+  ;; register the callback, storing gensym handline in cb-handle 
+  (let ((cb-handle (s4m-register-callback arg)))
+    ;; call the C ffi funtion and return the handle
+    (s4m-schedule-itm time cb-handle)
     cb-handle))
 
 
