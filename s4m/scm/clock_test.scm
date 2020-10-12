@@ -1,9 +1,19 @@
 (post "clock_test.scm")
 
-(define (f) (post "f running"))
+(define playing #f)
 
-;; call f via clock delay
-;(clock 2000.0 f)
+(define (start)
+  (set! playing #t)
+  (delay-t 480 480 tick)
+)
+
+
+(define (tick) 
+  (post "(tick)")
+  (out 0 :bang)
+  (if playing 
+    (delay-t '4n '4n tick))
+) 
 
 ;(delay-t 480 f)
 

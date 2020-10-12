@@ -32,35 +32,29 @@
     ;; if callback retrieval got false, return false else execute function
     (if (eq? #f cb-fun) '() (cb-fun))))
 
-; public function to delay a function by time ms
+
+; public function to delay a function by time ms (float)
 ; returns the callback key, which can be used to cancel it
 (define (delay time arg)
-  ;(post "(delay) time:" time "arg:" arg)
-  ;; register the callback and return the handle
-  (let ((cb-handle (s4m-register-callback arg)))
-    ;; call the C ffi funtion and return the handle
-    (s4m-schedule-callback (floor time) cb-handle)
-    cb-handle))
-
-; newer clock version 2020-09-23, prob should replace delay
-; returns the callback key, which can be used to cancel it
-(define (clock time arg)
   ;(post "(clock) time:" time "arg:" arg)
   ;; register the callback and return the handle
   (let ((cb-handle (s4m-register-callback arg)))
     ;; call the C ffi funtion and return the handle
-    (s4m-schedule-clock time cb-handle)
+    (s4m-schedule-delay time cb-handle)
     cb-handle))
 
-
-; public function to delay a function by time ms
-; returns the callback key, which can be used to cancel it
-(define (delay-t time arg)
-  (post "(delay-t) time:" time "arg:" arg)
+; tempo aware version of delay, args can be numeric (ticks), or max notation ('4n '1:1:1 etc)
+(define (delay-t . args)
+  ;(post "(delay-t) args:" args)
   ;; register the callback, storing gensym handline in cb-handle 
-  (let ((cb-handle (s4m-register-callback arg)))
-    ;; call the C ffi funtion and return the handle
-    (s4m-schedule-itm time cb-handle)
+  (let* ((time (car args))
+        (quant (if (or (symbol? (args 1)) (number? (args 1))) (args 1) #f))
+        (fun (if quant (args 2) (args 1)))
+        (cb-handle (s4m-register-callback fun)))
+    ;; call the C ffi funtion and return the handle 
+    ;; quant will be #f if not passed in to this function
+    ;(post "time:" time "quant:" quant "handle:" cb-handle)
+    (s4m-schedule-delay-itm time quant cb-handle)
     cb-handle))
 
 

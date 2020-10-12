@@ -132,10 +132,31 @@ Don't forget:
 
 
 ********************************************************************************
-TO TRY NEXT:
-- DONE a delay schedule working with clocks (ignoring itm)
-
-LEFTOFF:
-- got clocks working
+- got simple delay with clocks working
+  - a clock gets created in the hashtab and is deleted after it runs
 - next we need to add the ability to use itm
-- need to look at delay2 again
+
+ITM
+- what is the deliverable??
+  - work with tempo based args
+  - work with a quantize value 
+  - accept name of itm transports
+
+(delay-tempo {time} {opt-quant} {fun} {symbol-itm})
+(del-t 
+
+********************************************************************************
+TODO delay and scheduling
+- start, stop, and set a transport
+- looping a transport??
+
+NEXT:
+
+- looping a transport?? can it be done reliably?
+- left off thinking about looping transport
+- not sure why in clock test patch I don't get transport output as expected!!!
+
+
+
+
+

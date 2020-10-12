@@ -1,0 +1,4 @@
+Points for the docs around schedule:
+
+- it you reset a transports time, transports can get out of sync with the master clock
+- my quantize will stay with the master clock

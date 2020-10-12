@@ -1,0 +1,47 @@
+
+- There is definitely the chance of the low or high priority thread interrupting each other
+- we can lockout the other thread with critical_enter and critical_exit
+- maybe this would be fine for if we are in the high priority thread:
+  - a message comes in, if not asked to defer, we lock out
+  - 
+
+- critical_enter described here: https://cycling74.com/sdk/max-sdk-8.0.3/html/chapter_threading.html
+https://cycling74.com/sdk/max-sdk-8.0.3/html/group__critical.html#details
+
+- I guess the thing to find out is if we run ok saying all operations happen in high thread
+  unless specifically deferred, and each eval call is surrounded by a critical_enter
+  - this means no thread switch to low until an eval is done, but I think that should be ok
+
+- so I need to figure out how to promote and demote any eval call
+- I think prob best to get itm working ok first before handling the scheduling stuff
+
+- problem, doc says this: However, it is very important to mention that all outlet calls are now 
+    thread safe and should never be contained inside a critical region.
+  - in which case it is probably better to just always promote high (or low if one wants to run low)
+  - because we can't have critical regions, as we don't know when outlets will run
+
+- so I think when any message comes in, we check with isr and then do the right thing
+
+- maybe the best way is:
+  - by default or @thread high -> all opps that aren't high are scheduled high
+  - @thread low 
+  - @thread any -> up to the user, you should use critical sections, which we can implement using function
+    (lock) and warn in docs that you should not send out outlets while locked. (we could protect against this)
+    (eval-locked) (lock) (unlock) 
+
+- need to promote the non list messages ok: float, int, bang
+- need to add the attributes for the various thread levels
+
+ISSUES:
+- it's not doing the right thing for list messages that get deferred I think>
+  - yes, I get a different behaviour for a non deferred/delayed "1 2 3" then if deferred
+    - one gives me the correct "no f-list message" and the other runs as if the message is (list 1 2 3)
+  - will need to make a way to post the messages to ensure they act the same..
+
+TODO:
+- DONE add attribute to set instance as high or low
+- DONE get all messages defaulting to the right priority for the attribute
+- still need to test on inlet 2, but should just work
+- later add options to have messages specifiy their priority (i.e. defer low or schedule)
+  - only relevant to the @thread any situation, which can be released later on
+

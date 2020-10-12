@@ -149,12 +149,14 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args);
 
-static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_schedule_itm(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_isr(s7_scheme *s7, s7_pointer args);
 
 void s4m_clock_callback(void *arg);
+void s4m_time_callback(t_s4m *x);
 
 /********************************************************************************
 / some helpers */
@@ -259,9 +261,7 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
 
     //x->timeobj = (t_object *) time_new((t_object *)x, gensym("delaytime"), (method)delay2_tick, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
     // init the singleton time and quant objects
-    //x->timeobj = (t_object *) time_new((t_object *)x, gensym("delaytime"), (method)s4m_time_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-    //x->timeobj = (t_object *) time_new((t_object *)x, gensym("delaytime"), (method)s4m_time_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-    x->timeobj = (t_object *) time_new((t_object *)x, gensym("delaytime"), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    x->timeobj = (t_object *) time_new((t_object *)x, gensym("delaytime"), (method)s4m_time_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
 	x->timeobj_quant = (t_object *) time_new((t_object *)x, gensym("quantize"), NULL, TIME_FLAGS_TICKSONLY);
 
     // setup internal member defaults 
@@ -370,9 +370,9 @@ void s4m_init_s7(t_s4m *x){
 
     s7_define_function(x->s7, "send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
     
-    //s7_define_function(x->s7, "s4m-schedule-callback", s7_schedule_callback, 2, 0, true, "(s4m-schedule-callback {time} {cb-handle}");
-    s7_define_function(x->s7, "s4m-schedule-delay", s7_schedule_delay, 2, 0, true, "(s4m-schedule-delay {time} {cb-handle}");
-    s7_define_function(x->s7, "s4m-schedule-delay-itm", s7_schedule_delay_itm, 2, 1, true, "(s4m-schedule-delay-itm {time} {opt quant} {cb-handle}");
+    s7_define_function(x->s7, "s4m-schedule-callback", s7_schedule_callback, 2, 0, true, "(s4m-schedule-callback {time} {cb-handle}");
+    s7_define_function(x->s7, "s4m-schedule-clock", s7_schedule_clock, 2, 0, true, "(s4m-schedule-clock {time} {cb-handle}");
+    s7_define_function(x->s7, "s4m-schedule-itm", s7_schedule_itm, 2, 1, true, "(s4m-schedule-itm {time} {opt quant} {cb-handle}");
 
     s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
 
@@ -2142,39 +2142,51 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
     return s7_value;
 }
 
+// the non-clock version of schedule
+// TODO remove this later, should be replaced by the clock version only
+static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args){
+    // post("s7_schedule_callback()");
+    char *cb_handle_str;
+    t_s4m *x = get_max_obj(s7);
 
+    // TODO error handling for bad args on arg 1 and 2
 
-/*******************************************************************************
-* Schedule, delay, and tempo related functions
-*/
+    // first arg is integer of time in ms (should it be a float actually?) 
+    long delay_time = s7_integer( s7_car(args) );
+    // second arg is the symbol from gensym
+    s7_pointer *s7_cb_handle = s7_cadr(args);
+    cb_handle_str = s7_symbol_name(s7_cb_handle);
+    //post("s7_schedule_callback() time: %i handle: %s", delay_time, cb_handle_str);
+   
+    // now we schedule the execute callback function
+    schedule_delay(x, s4m_execute_callback, delay_time, gensym(cb_handle_str), 0, NULL);
+ 
+    // return the handle on success
+    return s7_make_symbol(s7, cb_handle_str);
+}
 
-// generic clock callback, this fires after being scheduled with clock_fdelay 
-// gets access to the handle and s4m obj through the clock_callback struct that it 
-// as a a void pointer to a struct with the the s4m object and the cb handle 
+// the generic clock callback, fires at the right time, with
+// access to the handle we will use to get the function from the scheme registry
+// arg is a void pointer to a struct with the the s4m object and the cb handle 
 void s4m_clock_callback(void *arg){
     //post("clock_callback()");
     t_s4m_clock_callback *ccb = (t_s4m_clock_callback *) arg;
     t_s4m *x = &(ccb->obj);
     t_symbol handle = *ccb->handle; 
     //post(" - handle %s", handle);
-    // call into scheme with the handle 
     s7_pointer *s7_args = s7_nil(x->s7);
     s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, handle.s_name), s7_args); 
     s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-callback"), s7_args);   
-
-    // clean up the clock_callback struct that was dynamically allocated when
-    // this was scheduled:
     // remove the clock(s) from the clock (and quant) registry and free the cb struct
     hashtab_delete(x->clocks, &handle);
     hashtab_delete(x->clocks_quant, &handle);
-    // free the memory for the clock callback struct 
+    // free the memory for the struct we used to get at callback info
     sysmem_freeptr(arg);
 }
 
-// delay a function using Max clock objects for floating point precision delays
-// called from scheme as 
-static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
-    // post("s7_schedule_delay()");
+// the newer clock version of schedule, allows float of ms delay
+static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args){
+    post("s7_schedule_clock()");
     char *cb_handle_str;
     t_s4m *x = get_max_obj(s7);
 
@@ -2183,10 +2195,9 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     // second arg is the symbol from gensym
     s7_pointer *s7_cb_handle = s7_cadr(args);
     cb_handle_str = s7_symbol_name(s7_cb_handle);
-    //post("s7_schedule_delay() time: %5.2f handle: '%s'", delay_time, cb_handle_str);
+    //post("s7_schedule_clock() time: %5.2f handle: '%s'", delay_time, cb_handle_str);
    
-    // dynmamically allocate memory for our struct that holds the symbol and the ref to the s4m obj
-    // NB: this gets cleaned up by the receiver in the clock callback above
+    // allocate memory for our struct that holds the symbol and the ref to the s4m obj
     t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
     clock_cb->obj = *x;
     clock_cb->handle = gensym(cb_handle_str);
@@ -2194,7 +2205,7 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     // when the callback method fires, it will retrieve the s4m and handle refs from the struct
     void *clock = clock_new( (void *)clock_cb, (method)s4m_clock_callback);
 
-    // store the clock ref in the s4m clocks hashtab (used to get at them for cancelling) 
+    // store the clock ref in the clocks hashtab (used to get at them for cancelling) 
     hashtab_store(x->clocks, gensym(cb_handle_str), clock);            
     // schedule it, this is what actually kicks off the timer
     clock_fdelay(clock, delay_time);
@@ -2203,12 +2214,78 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     return s7_make_symbol(s7, cb_handle_str);
 }
 
+/*
+// test version with no quantization (in case quant is the crash cause
+static s7_pointer s7_schedule_itm(s7_scheme *s7, s7_pointer args){
+    post("s7_schedule_itm()");
+    char *cb_handle_str;
+    t_s4m *x = get_max_obj(s7);
 
-// tempo aware version of delay
+    // first arg is the delay time, int/float for ticks, symbol for note-length notation or bbu
+    s7_pointer time_arg = s7_car(args);
+    
+    // third arg is the callback handle symbol from gensym
+    s7_pointer *s7_cb_handle = s7_cadr(args);
+    cb_handle_str = s7_symbol_name(s7_cb_handle);
+    post("s7_schedule_itm() handle: '%s'", cb_handle_str);
+  
+    // allocate memory for our struct that holds the symbol and the ref to the s4m obj
+    // note, same kind of struct is fine for clock or time based scheduling 
+    t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
+    clock_cb->obj = *x;
+    clock_cb->handle = gensym(cb_handle_str);
+
+    // now we make the time object, note that the owner is our clock callback struct as void pointer
+    // from which the callback method will get the s4m obj and the callback handle
+    //t_object *timeobj =  (t_object *) time_new((void *)clock_cb, gensym("_unused_time"), (method)s4m_clock_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+   
+    // Testing what causes the crash when 
+    // this will crash 
+    //t_object *timeobj =  (t_object *) time_new( (void *)clock_cb, gensym(""), (method)s4m_clock_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    // does this crash? YES
+    //t_object *timeobj =  (t_object *) time_new( (void *)clock_cb, gensym(""), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    // does this crash? YES
+    //t_object *timeobj =  (t_object *) time_new( (void *)clock_cb, gensym(""), NULL, TIME_FLAGS_TICKSONLY );
+    // does this crash? YES
+    //t_object *timeobj =  (t_object *) time_new( (t_object *)clock_cb, gensym(""), NULL, TIME_FLAGS_TICKSONLY );
+    // does this crash? YES
+    //critical_enter(0);
+    //t_object *timeobj =  (t_object *) time_new( (t_object *)x, gensym(""), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK );
+    //critical_exit(0);
+    // does this crash? YES  - adding a valid attr, also added in init
+    // t_object *timeobj =  (t_object *) time_new( (t_object *)x, gensym("delaytime"), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK );
+
+    // store the timeobj ref in the time_clocks hashtab (used to get at them for cancelling) 
+    // it's not this
+    hashtab_store(x->clocks, gensym(cb_handle_str), (void *)timeobj);            
+
+    // set value for the delay time object 
+    // it's not this
+    if( s7_is_real(time_arg) || s7_is_integer(time_arg) ){
+        double delay_time_ticks = s7_real( time_arg );
+        t_atom a;
+        atom_setfloat(&a, delay_time_ticks);
+        time_setvalue( timeobj, NULL, 1, &a);
+    }else if( s7_is_symbol(time_arg) ){
+        time_setvalue( timeobj, gensym( s7_symbol_name(time_arg) ), NULL, NULL);
+    }
+	//time_schedule(timeobj, NULL);
+  
+    // return the handle on success
+    return s7_make_symbol(s7, cb_handle_str);
+}
+*/
+
+// noop callback because time_schedule needs one
+void s4m_time_callback(t_s4m *x){
+    post("s4m_time_callback()"); 
+}
+
+// attempt at hybrid version that does not make lots of time objects 
 // this one uses one main time object for calculation, but then does the actual delaying with clock objects
 // itm version of schedule, allows sending time as either ticks (int/float), notation (sym) or bbu (sym)
-static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
-    // post("s7_schedule_delay_itm()");
+static s7_pointer s7_schedule_itm(s7_scheme *s7, s7_pointer args){
+    post("s7_schedule_itm()");
 
     double ms, tix, ms_q, tix_q;
 
@@ -2220,12 +2297,12 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     // second arg is quantize: #f if none, int/float for ticks, symbol for note-length notation or bbu
     s7_pointer quant_arg = s7_cadr(args);
     bool quantizing = ( (s7_is_boolean(quant_arg) && s7_boolean(s7, quant_arg) == false ) ? false : true);
-    // post("quantizing: %s", ( quantizing ? "true" : "false")); 
+    post("quantizing: %s", ( quantizing ? "true" : "false")); 
     
     // third arg is the callback handle symbol from gensym
     s7_pointer *s7_cb_handle = s7_caddr(args);
     cb_handle_str = s7_symbol_name(s7_cb_handle);
-    //post("s7_schedule_delay_itm() handle: '%s'", cb_handle_str);
+    post("s7_schedule_itm() handle: '%s'", cb_handle_str);
   
     // allocate memory for our struct that holds the symbol and the ref to the s4m obj
     // note, same kind of struct is fine for clock or time based scheduling 
@@ -2256,9 +2333,9 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     double actual_delay_ticks; 
     // now we must branch depending on if we are quantixing or not 
     if( ! quantizing ){
-        //post("scheduling, with no quant");
+        post("scheduling, with no quant");
 	    actual_delay_ticks = time_getticks( x->timeobj );
-        //post(" - actual_delay_ticks: %5.2f", actual_delay_ticks);
+        post(" - actual_delay_ticks: %5.2f", actual_delay_ticks);
     }else{ 
         // set value for the time object used to calculate quantize values 
         if( s7_is_real(quant_arg) || s7_is_integer(quant_arg) ){
@@ -2274,39 +2351,25 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
         // does *not* need a call to schedule to have appeared to work
 	    double delay_ticks = time_getticks(x->timeobj);
 	    double quant_ticks = time_getticks(x->timeobj_quant);
-        //post("delay_ticks: %5.2f quant_tick: %5.2f", delay_ticks, quant_ticks);
+        post("delay_ticks: %5.2f quant_tick: %5.2f", delay_ticks, quant_ticks);
         // this gives us the time and quant values in ms, but not after the quantize calculation        
         
         // get the current time in tix (will be zero if transport stopped and rewound)
         double now_ticks = itm_getticks( itm );
-        //post("now_ticks: %5.2f", now_ticks);
+        post("now_ticks: %5.2f", now_ticks);
 
-        // quantizing can either be to the *next* applicable boundary, or the *closest* applicable boundary
         // we want the event on the next quantize boundary after the delay time
-        double next_boundary_ticks = ( floor( (now_ticks + delay_ticks) / quant_ticks ) + 1 ) * quant_ticks; 
-        //post("next_boundary_ticks: %5.2f", next_boundary_ticks);
+        // I think the correct formula is:
+        // ( floor( (now + delay) / quant ) + 1 ) * quant    
+        double boundary_ticks = ( floor( (now_ticks + delay_ticks) / quant_ticks ) + 1 ) * quant_ticks; 
+        post("boundary_ticks: %5.2f", boundary_ticks);
 
-        // we will make this selectable later
-        bool quantize_closest = true;
-        if( quantize_closest ){
-            // check if the previous boundary tick is a) closer and b) still in the future
-            double prev_boundary_ticks = next_boundary_ticks - quant_ticks;
-            // one would think the below should be > 0, but that can result in cascades of events
-            if( (prev_boundary_ticks - now_ticks > 1) &&
-                (prev_boundary_ticks - now_ticks < next_boundary_ticks - now_ticks) ){
-                actual_delay_ticks = prev_boundary_ticks - now_ticks;
-            }else{
-                actual_delay_ticks = next_boundary_ticks - now_ticks;
-            }     
-        }else{
-            // in next-boundary quantize mode, we always wait for the subsequent boundary
-            actual_delay_ticks = next_boundary_ticks - now_ticks;
-        }
-        //post("actual_delay_ticks: %5.2f", actual_delay_ticks);      
+        actual_delay_ticks = boundary_ticks - now_ticks;
+        post("actual_delay_ticks: %5.2f", actual_delay_ticks);      
     } 
     // turn into ms
     double delay_ms = itm_tickstoms( itm, actual_delay_ticks );
-    //post("delay_ms: %5.2f", delay_ms);
+    post("delay_ms: %5.2f", delay_ms);
     // and schedule our clock, this is what actually kicks off the timer
     clock_fdelay(clock, delay_ms);
  
@@ -2314,6 +2377,73 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     return s7_make_symbol(s7, cb_handle_str);
 }
 
+/*
+// original version of mine, which is not working because of issues in time_new that makes it crash if one makes many time objects
+// itm version of schedule, allows sending time as either ticks (int/float), notation (sym) or bbu (sym)
+static s7_pointer s7_schedule_itm(s7_scheme *s7, s7_pointer args){
+    post("s7_schedule_itm()");
+    char *cb_handle_str;
+    t_s4m *x = get_max_obj(s7);
+
+    // first arg is the delay time, int/float for ticks, symbol for note-length notation or bbu
+    s7_pointer time_arg = s7_car(args);
+    // second arg is quantize: #f if none, int/float for ticks, symbol for note-length notation or bbu
+    s7_pointer quant_arg = s7_cadr(args);
+    bool quantizing = ( (s7_is_boolean(quant_arg) && s7_boolean(s7, quant_arg) == false ) ? false : true);
+    post("quantizing: %s", ( quantizing ? "true" : "false")); 
+    
+    // third arg is the callback handle symbol from gensym
+    s7_pointer *s7_cb_handle = s7_caddr(args);
+    cb_handle_str = s7_symbol_name(s7_cb_handle);
+    post("s7_schedule_itm() handle: '%s'", cb_handle_str);
+  
+    // allocate memory for our struct that holds the symbol and the ref to the s4m obj
+    // note, same kind of struct is fine for clock or time based scheduling 
+    t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
+    clock_cb->obj = *x;
+    clock_cb->handle = gensym(cb_handle_str);
+
+    // now we make the time object, note that the owner is our clock callback struct as void pointer
+    // from which the callback method will get the s4m obj and the callback handle
+    t_object *timeobj =  (t_object *) time_new((void *)clock_cb, gensym("_unused_time"), (method)s4m_clock_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    // store the timeobj ref in the time_clocks hashtab (used to get at them for cancelling) 
+    hashtab_store(x->clocks, gensym(cb_handle_str), timeobj);            
+
+    // set value for the delay time object 
+    if( s7_is_real(time_arg) || s7_is_integer(time_arg) ){
+        double delay_time_ticks = s7_real( time_arg );
+        t_atom a;
+        atom_setfloat(&a, delay_time_ticks);
+        time_setvalue(timeobj, NULL, 1, &a);
+    }else if( s7_is_symbol(time_arg) ){
+        time_setvalue(timeobj, gensym( s7_symbol_name(time_arg) ), NULL, NULL);
+    }
+  
+    if( ! quantizing ){
+	    time_schedule(timeobj, NULL);
+    }else{ 
+        t_object *timeobj_quant = (t_object *) time_new( (void *) clock_cb, gensym("_unused_quant"), NULL, TIME_FLAGS_TICKSONLY);
+        // store the quant clock reg, by same handle
+        hashtab_store(x->clocks_quant, gensym(cb_handle_str), timeobj_quant);            
+    
+        // set value for quantize time object 
+        if( s7_is_real(quant_arg) || s7_is_integer(quant_arg) ){
+            double quant_time_ticks = s7_real( quant_arg );
+            t_atom q;
+            atom_setfloat(&q, quant_time_ticks);
+            time_setvalue(timeobj_quant, NULL, 1, &q);
+        }else if( s7_is_symbol(quant_arg) ){
+            //post("setting quant to: %s", s7_symbol_name(quant_arg));
+            time_setvalue(timeobj_quant, gensym( s7_symbol_name(quant_arg) ), NULL, NULL);
+        }
+        // schedule with quant
+	    time_schedule(timeobj, timeobj_quant);
+    } 
+    
+    // return the handle on success
+    return s7_make_symbol(s7, cb_handle_str);
+}
+*/
 
 // s7 function for sending a generic message to a max object
 // assumes the max object has a scripting name and has been found by a call to 'scan' to the s4m object
