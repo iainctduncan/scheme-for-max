@@ -47,8 +47,12 @@ typedef struct _s4m {
    t_hashtab *clocks;              // clocks by handle, for clocks and time objects
    t_hashtab *clocks_quant;        // clocks by handle for quantization time objects only
  
-   t_object *timeobj;
-   t_object *timeobj_quant;
+   t_object *timeobj;              // timeobj for scheduling delay calls
+   t_object *timeobj_quant;        // quant for the above
+
+   t_object *timeobj_ticker;       // timeobj for every X ticks callback
+   t_object *timeobj_ticker_q;     // quantize for the ticker
+   t_symbol *cb_handle_ticker;     // the scheme cb-handle for tick listener
      
    t_object *m_editor;             // text editor
     
@@ -151,10 +155,18 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_get_state(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_set_state(s7_scheme *s7, s7_pointer args);
+
+static s7_pointer s7_itm_get_ticks(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_get_time(s7_scheme *s7, s7_pointer args);
+
+static s7_pointer s7_itm_listen(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_isr(s7_scheme *s7, s7_pointer args);
 
 void s4m_clock_callback(void *arg);
+void s4m_tick_callback(t_s4m *x);
 
 /********************************************************************************
 / some helpers */
@@ -230,14 +242,19 @@ void ext_main(void *r){
     CLASS_ATTR_LONG(c, "outs", 0, t_s4m, num_outlets);
     CLASS_ATTR_ACCESSORS(c, "outs", NULL, s4m_outlets_set);
     CLASS_ATTR_SAVE(c, "outs", 0);   // save with patcher
-    // attribute for thread
+    
+    // attribute for thread, can be 'h', 'l', or 'a'
     CLASS_ATTR_SYM(c, "thread", 0, t_s4m, thread);
     CLASS_ATTR_ACCESSORS(c, "thread", NULL, s4m_thread_set);
     //CLASS_ATTR_SAVE(c, "thread", 0);   // save with patcher
 
-    class_time_addattr(c, "delaytime", "Delay Time", TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK | TIME_FLAGS_TRANSPORT);
-    class_time_addattr(c, "quantize", "Quantization", TIME_FLAGS_TICKSONLY);   
- 
+    // attrs for the internal time and quantize objects
+    // XXX:, are these even necessary now?
+    class_time_addattr(c, "_delaytime", "Delay Time", TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK | TIME_FLAGS_TRANSPORT);
+    class_time_addattr(c, "_quantize", "Quantization", TIME_FLAGS_TICKSONLY);   
+
+    class_time_addattr(c, "_listen_ticks", "Ticks per callback", TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK | TIME_FLAGS_TRANSPORT);
+
     class_addmethod(c, (method)s4m_assist, "assist", A_CANT, 0);
     class_register(CLASS_BOX, c); 
     s4m_class = c;
@@ -257,12 +274,12 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     x->source_text_handle = sysmem_newhandle(0);
     x->m_editor = NULL;
 
-    //x->timeobj = (t_object *) time_new((t_object *)x, gensym("delaytime"), (method)delay2_tick, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-    // init the singleton time and quant objects
-    //x->timeobj = (t_object *) time_new((t_object *)x, gensym("delaytime"), (method)s4m_time_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-    //x->timeobj = (t_object *) time_new((t_object *)x, gensym("delaytime"), (method)s4m_time_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-    x->timeobj = (t_object *) time_new((t_object *)x, gensym("delaytime"), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-	x->timeobj_quant = (t_object *) time_new((t_object *)x, gensym("quantize"), NULL, TIME_FLAGS_TICKSONLY);
+    // init the singleton time and quant objects, note: they have no task set. 
+    x->timeobj = (t_object *) time_new((t_object *)x, gensym("_delaytime"), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+	x->timeobj_quant = (t_object *) time_new((t_object *)x, gensym("_quantize"), NULL, TIME_FLAGS_TICKSONLY);
+    // attempt at time object for making an every tick callback
+	x->timeobj_ticker = (t_object *) time_new((t_object *)x, gensym("_listen_ticks"), (method) s4m_tick_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+	x->timeobj_ticker_q = (t_object *) time_new((t_object *)x, gensym("_listen_ticks_q"), NULL, TIME_FLAGS_TICKSONLY );
 
     // setup internal member defaults 
     x->num_inlets = 1;
@@ -373,6 +390,13 @@ void s4m_init_s7(t_s4m *x){
     //s7_define_function(x->s7, "s4m-schedule-callback", s7_schedule_callback, 2, 0, true, "(s4m-schedule-callback {time} {cb-handle}");
     s7_define_function(x->s7, "s4m-schedule-delay", s7_schedule_delay, 2, 0, true, "(s4m-schedule-delay {time} {cb-handle}");
     s7_define_function(x->s7, "s4m-schedule-delay-itm", s7_schedule_delay_itm, 2, 1, true, "(s4m-schedule-delay-itm {time} {opt quant} {cb-handle}");
+
+    s7_define_function(x->s7, "itm-state", s7_itm_get_state, 0, 0, true, "");
+    s7_define_function(x->s7, "itm-set-state", s7_itm_set_state, 1, 0, true, "");
+    s7_define_function(x->s7, "itm-ticks", s7_itm_get_ticks, 0, 0, true, "");
+    s7_define_function(x->s7, "itm-time", s7_itm_get_time, 0, 0, true, "");
+
+    s7_define_function(x->s7, "s4m-itm-listen", s7_itm_listen, 2, 0, true, "(s4m-item-listen ticks cb-handle)");
 
     s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
 
@@ -514,6 +538,7 @@ t_max_err s4m_outlets_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     //post("s4m->num_outlets now %i", x->num_outlets); 
     return 0;
 }
+
 
 t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     //post("s4m_threads_set()");
@@ -2131,7 +2156,7 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
         return;
     }
     // set the value in the dictionary now
-    err = dictionary_appendatom(dict, gensym(dict_key), &value);
+        err = dictionary_appendatom(dict, gensym(dict_key), &value);
     if(err){
         object_error((t_object *)x, "error setting value to %s %s", dict_name, dict_key);
         err = dictobj_release(dict);
@@ -2147,6 +2172,116 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
 /*******************************************************************************
 * Schedule, delay, and tempo related functions
 */
+
+// ask to start listening to an itm tick callback
+static s7_pointer s7_itm_listen(s7_scheme *s7, s7_pointer args){
+    post("itm_listen");
+    t_s4m *x = get_max_obj(s7);
+    char err_msg[128]; 
+
+    // get number of ticks from arg 1
+    s7_pointer *s7_num_ticks = s7_car(args);
+    if( ! s7_is_integer(s7_num_ticks) ){
+        // bad arg 1
+        sprintf(err_msg, "itm-listen-ticks : arg 1 must be an integer of ticks");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }
+    int num_ticks = (int) s7_integer( s7_num_ticks );
+
+    // second arg is the cb-handle symbol 
+    s7_pointer *s7_cb_handle = s7_cadr(args);
+    char *cb_handle_str = s7_symbol_name(s7_cb_handle);
+    post(" - ticks: %i handle: %s", num_ticks, cb_handle_str);
+    
+    // save the handle for the listener
+    // just goes in a variable as opposed to the hashtable as there can only be one for listen-ticks
+    x->cb_handle_ticker = gensym(cb_handle_str);
+ 
+    // set up both time and quant to be X ticks and schedule
+    t_atom a;
+    atom_setfloat(&a, num_ticks);
+    time_setvalue(x->timeobj_ticker, NULL, 1, &a);
+    time_setvalue(x->timeobj_ticker_q, NULL, 1, &a);
+    time_schedule(x->timeobj_ticker, x->timeobj_ticker_q);
+    // return the handle
+    return s7_cb_handle;
+}
+
+// call back for the above
+void s4m_tick_callback(t_s4m *x){
+    //post("s4m_tick_callback");
+    
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    double curr_ticks = itm_getticks(itm);
+    itm_dereference(itm);
+
+    //post(" - itm_getticks: %5.8f", ticks);
+
+    // call into scheme to execute the scheme function registered under this handle
+    // build arg list of: handle, ticks
+    s7_pointer *s7_args = s7_nil(x->s7);
+    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, curr_ticks), s7_args); 
+    s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, x->cb_handle_ticker->s_name), s7_args); 
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-tick-callback"), s7_args);   
+        
+    // and schedule next tick
+    // NB: values for the ticker and quant are only set by calls to listen
+    time_schedule(x->timeobj_ticker, x->timeobj_ticker_q);
+}
+
+// get the status of the global transport
+static s7_pointer s7_itm_get_state(s7_scheme *s7, s7_pointer args){
+    //post("itm_get_state");
+    t_itm *itm = itm_getglobal();
+    //t_symbol *itm_name = itm_getname(itm);
+    //post("got itm: %s", itm_name->s_name); 
+    itm_reference(itm);
+    bool state = (bool) itm_getstate(itm);
+    itm_dereference(itm);
+    return s7_make_boolean(s7, state);
+}
+
+// set state of global transport, can be called with either #t/#f or 1/0
+static s7_pointer s7_itm_set_state(s7_scheme *s7, s7_pointer args){
+    post("s7_itm_set_state");
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    s7_pointer arg = s7_car(args);
+    if( (s7_is_boolean(arg) && s7_boolean(s7, arg) ) ||
+        (s7_is_integer(arg) && s7_integer(arg) ) ){
+        itm_resume(itm);
+    }else if( (s7_is_boolean(arg) && s7_boolean(s7, arg) == false ) ||
+        (s7_is_integer(arg) && s7_integer(arg) == 0 ) ){
+        itm_pause(itm);
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "state arg should be boolean integer"));
+    }    
+    itm_dereference(itm);
+    return arg;
+}
+
+// get current time in ticks from transport
+static s7_pointer s7_itm_get_ticks(s7_scheme *s7, s7_pointer args){
+    //post("itm_get_ticks");
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    double ticks = itm_getticks(itm);
+    itm_dereference(itm);
+    return s7_make_real(s7, ticks);
+}
+
+// get current time in ms from transport
+static s7_pointer s7_itm_get_time(s7_scheme *s7, s7_pointer args){
+    //post("itm_get_time");
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    double ticks = itm_gettime(itm);
+    itm_dereference(itm);
+    return s7_make_real(s7, ticks);
+}
+
 
 // generic clock callback, this fires after being scheduled with clock_fdelay 
 // gets access to the handle and s4m obj through the clock_callback struct that it 

@@ -142,21 +142,53 @@ ITM
   - work with a quantize value 
   - accept name of itm transports
 
-(delay-tempo {time} {opt-quant} {fun} {symbol-itm})
-(del-t 
+
+- can't find a function for setting itm to a certain point, strangely
+  - will just have to send messages
+- looks like one might be able to implement a tick based listener directly, 
+  see time_listen
+  - looks like one makes an attribute in the owning object of a time object that
+    will get updated on ticks
+  - can that be callable?? 
+    I think so: https://cycling74.com/sdk/max-sdk-8.0.3/html/chapter_msgattached.html
+  - question is how frequently this would get called
 
 ********************************************************************************
 TODO delay and scheduling
 - start, stop, and set a transport
 - looping a transport??
+- add cleanup of all the clock stuff, see itm page
+https://cycling74.com/sdk/max-sdk-8.0.3/html/chapter_itm.html#chapter_itm_permanent
+- try making a once-per-vector click using itm_sampstoms
+
+ITM functions done
+- state, setstate
+- get ticks, get ms
+- also want to see if I can make it work with a callback every audio cycle
 
 NEXT:
 
 - looping a transport?? can it be done reliably?
-- left off thinking about looping transport
-- not sure why in clock test patch I don't get transport output as expected!!!
+  - leave that off
+
+- gettransport query functions - state, now, mS
+- functions to stop, start - DONE
+- add functions to cancel all callback
+- cancel a delay callback with cancellation to max
+
+  - itm-now
+
+Scheduler stuff to find out:
+- if I do have code in the scheduler thread call delay, do we wait one scheduler pass before
+  it gets picked up, or can it run twice in the scheduler pass???
 
 
+- LEFTOFF working implementing a simple tick callback so s4m can listen and fire every X
+  ticks. 
+  - need to check that it actually works and stays locked in
+  - the idea is that one should be able to use it make a cb that fires every X ticks reliably
+  - and specify the number of ticks, and cancel the callback
 
+(itm-listen tick-cb)
 
-
+    

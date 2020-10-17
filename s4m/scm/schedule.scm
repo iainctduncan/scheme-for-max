@@ -6,7 +6,7 @@
 
 (define (s4m-register-callback cb-function)
   (let ((key (gensym)))
-    ;;(post "registering" cb-function "with key" key)
+    (post "registering" cb-function "with key" key)
     (set! (s4m-callback-registry key) cb-function)
     key))
 
@@ -16,7 +16,6 @@
 (define (s4m-get-callback key)
   ;;(post "s4m-getcallback, key:" key)
   (let ((cb-function (s4m-callback-registry key)))
-    (set! (s4m-callback-registry key) #f)    
     cb-function))
 
 
@@ -24,7 +23,7 @@
 ;; this gets called from C code when the C timing function happens
 ;; todo: later add env support
 (define (s4m-execute-callback key)
-  ;;(post "s4m-execute-callback" key)
+  (post "s4m-execute-callback" key)
   ;; get the func, note that this might return false if was cancelled
   (let ((cb-fun (s4m-get-callback key)))
     ;; dereg the handle
@@ -33,10 +32,22 @@
     (if (eq? #f cb-fun) '() (cb-fun))))
 
 
+;; internal function to get a tick callback from the registry and run it
+;; uses same registry as delay calls, but passes in additional tick arg
+;; and does not automatically expire the handle
+(define (s4m-execute-tick-callback key curr_ticks)
+  (post "s4m-execute-tick-callback" key)
+  ;; get the func, note that this might return false if was cancelled
+  (let ((cb-fun (s4m-get-callback key)))
+    ;; if callback retrieval got false, return false else execute function
+    (post "got callback: " cb-fun)
+    (if (eq? #f cb-fun) '() (cb-fun curr_ticks))))
+
+
 ; public function to delay a function by time ms (float)
 ; returns the callback key, which can be used to cancel it
 (define (delay time arg)
-  ;(post "(clock) time:" time "arg:" arg)
+  (post "(delay) time:" time "arg:" arg)
   ;; register the callback and return the handle
   (let ((cb-handle (s4m-register-callback arg)))
     ;; call the C ffi funtion and return the handle
@@ -74,3 +85,10 @@
   ;;(post "de-registering callback for key" key)
   (set! (s4m-callback-registry key) #f))
 
+;; set up a tick listener
+;; fun should take one arg, current total ticks on the transport
+(define (listen-ticks ticks fun)
+  (let ((cb-handle (s4m-register-callback fun)))
+    ;; call into C to register the listen, returns gensym handle
+    (s4m-itm-listen ticks cb-handle)))
+       

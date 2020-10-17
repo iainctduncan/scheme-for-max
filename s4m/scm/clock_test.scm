@@ -7,13 +7,24 @@
   (delay-t 480 480 tick)
 )
 
-
+;; self scheduling example
 (define (tick) 
   (post "(tick)")
   (out 0 :bang)
   (if playing 
     (delay-t '4n '4n tick))
 ) 
+
+
+;; example using itm listen
+(define (cb-tick cur_ticks) 
+  (post "(cb-tick) cur_ticks:" cur_ticks)
+  (out 0 :bang)
+) 
+
+;(listen-ticks 10 cb-tick)
+
+
 
 ;(delay-t 480 f)
 
@@ -28,6 +39,7 @@
 
 (define (f-bang)
   (post "f-bang"))
+
 
 
 
