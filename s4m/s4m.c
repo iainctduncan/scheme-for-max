@@ -27,6 +27,8 @@ typedef struct _s4m {
    t_object obj;
    s7_scheme *s7;
 
+   bool log_return_values;             // whether to post the return values of evaluating scheme functions
+
    t_symbol *source_file;              // main source file name (if one passed as object arg)
    short *source_file_path_id;         // path to source file
    t_filehandle source_file_handle;    // file handle for the source file
@@ -44,16 +46,17 @@ typedef struct _s4m {
    t_object *patcher;   
    t_hashtab *registry;            // objects by scripting name
 
-   t_hashtab *clocks;              // clocks by handle, for clocks and time objects
+   t_hashtab *clocks;              // delay clocks by handle, for clocks and time objects
    t_hashtab *clocks_quant;        // clocks by handle for quantization time objects only
  
-   t_object *timeobj;              // timeobj for scheduling delay calls
-   t_object *timeobj_quant;        // quant for the above
+   t_object *timeobj;              // timeobjs for calculating quantized delay calls
+   t_object *timeobj_quant;        
 
-   t_object *timeobj_ticker;       // timeobj for every X ticks callback
-   t_object *timeobj_ticker_q;     // quantize for the ticker
-   t_symbol *cb_handle_ticker;     // the scheme cb-handle for tick listener
-     
+   t_object *time_listen_ticks;       // timeobj for every X ticks callback
+   t_object *time_listen_ticks_q;     // quantize for the ticker
+
+   t_object *time_listen_ms;           // time obj used for itm-listen-ms
+
    t_object *m_editor;             // text editor
     
    t_object *test_obj; 
@@ -161,12 +164,18 @@ static s7_pointer s7_itm_set_state(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_itm_get_ticks(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_itm_get_time(s7_scheme *s7, s7_pointer args);
 
-static s7_pointer s7_itm_listen(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_cancel_itm_listen_ticks(s7_scheme *s7, s7_pointer args);
+void s4m_itm_listen_ticks_cb(t_s4m *x);
+
+static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args);
+void s4m_itm_listen_ms_cb(t_s4m *x);
 
 static s7_pointer s7_isr(s7_scheme *s7, s7_pointer args);
 
 void s4m_clock_callback(void *arg);
-void s4m_tick_callback(t_s4m *x);
+
 
 /********************************************************************************
 / some helpers */
@@ -274,12 +283,20 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     x->source_text_handle = sysmem_newhandle(0);
     x->m_editor = NULL;
 
+    // by default we log return values
+    // todo, should this be an attribute??
+    x->log_return_values = false;
+
     // init the singleton time and quant objects, note: they have no task set. 
     x->timeobj = (t_object *) time_new((t_object *)x, gensym("_delaytime"), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
 	x->timeobj_quant = (t_object *) time_new((t_object *)x, gensym("_quantize"), NULL, TIME_FLAGS_TICKSONLY);
-    // attempt at time object for making an every tick callback
-	x->timeobj_ticker = (t_object *) time_new((t_object *)x, gensym("_listen_ticks"), (method) s4m_tick_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-	x->timeobj_ticker_q = (t_object *) time_new((t_object *)x, gensym("_listen_ticks_q"), NULL, TIME_FLAGS_TICKSONLY );
+
+    // time object for the tick listen callback
+	x->time_listen_ticks = (t_object *) time_new((t_object *)x, gensym("_listen_ticks"), (method) s4m_itm_listen_ticks_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+	x->time_listen_ticks_q = (t_object *) time_new((t_object *)x, gensym("_listen_ticks_q"), NULL, TIME_FLAGS_TICKSONLY );
+    // time object for the itm-listen-ms function
+	x->time_listen_ms = (t_object *) time_new((t_object *)x, gensym("_listen_ms"), (method) s4m_itm_listen_ms_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+
 
     // setup internal member defaults 
     x->num_inlets = 1;
@@ -396,7 +413,10 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "itm-ticks", s7_itm_get_ticks, 0, 0, true, "");
     s7_define_function(x->s7, "itm-time", s7_itm_get_time, 0, 0, true, "");
 
-    s7_define_function(x->s7, "s4m-itm-listen", s7_itm_listen, 2, 0, true, "(s4m-item-listen ticks cb-handle)");
+    s7_define_function(x->s7, "s4m-itm-listen-ticks", s7_itm_listen_ticks, 1, 0, true, "(s4m-itm-listen_ticks ticks cb-handle)");
+    s7_define_function(x->s7, "s4m-cancel-itm-listen-ticks", s7_cancel_itm_listen_ticks, 0, 0, true, "(s4m-cancel-itm-listen-ticks)");
+    s7_define_function(x->s7, "s4m-itm-listen-ms", s7_itm_listen_ms, 1, 0, true, "(s4m-itm-listen_ms ms cb-handle)");
+    s7_define_function(x->s7, "s4m-cancel-itm-listen-ms", s7_cancel_itm_listen_ms, 0, 0, true, "(s4m-cancel-itm-listen-ms)");
 
     s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
 
@@ -846,7 +866,7 @@ void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args){
         object_error((t_object *)x, "s4m Error: %s", msg);
         free(msg);
     }else{
-        s4m_post_s7_res(x, res);
+        if(x->log_return_values) s4m_post_s7_res(x, res);
     }
 }
 
@@ -900,7 +920,7 @@ void s4m_s7_eval_string(t_s4m *x, char *string_to_eval){
         object_error((t_object *)x, "s4m Error: %s", msg);
         free(msg);
     }else{
-        s4m_post_s7_res(x, res);
+        if(x->log_return_values) s4m_post_s7_res(x, res);
     }
 }
 
@@ -2170,12 +2190,12 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
 
 
 /*******************************************************************************
-* Schedule, delay, and tempo related functions
+* SECTION SCHEDULE Schedule, delay, and tempo related functions
 */
 
 // ask to start listening to an itm tick callback
-static s7_pointer s7_itm_listen(s7_scheme *s7, s7_pointer args){
-    post("itm_listen");
+static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
+    //post("s7_itm_listen_ticks");
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
 
@@ -2188,28 +2208,27 @@ static s7_pointer s7_itm_listen(s7_scheme *s7, s7_pointer args){
     }
     int num_ticks = (int) s7_integer( s7_num_ticks );
 
-    // second arg is the cb-handle symbol 
-    s7_pointer *s7_cb_handle = s7_cadr(args);
-    char *cb_handle_str = s7_symbol_name(s7_cb_handle);
-    post(" - ticks: %i handle: %s", num_ticks, cb_handle_str);
-    
-    // save the handle for the listener
-    // just goes in a variable as opposed to the hashtable as there can only be one for listen-ticks
-    x->cb_handle_ticker = gensym(cb_handle_str);
- 
     // set up both time and quant to be X ticks and schedule
     t_atom a;
     atom_setfloat(&a, num_ticks);
-    time_setvalue(x->timeobj_ticker, NULL, 1, &a);
-    time_setvalue(x->timeobj_ticker_q, NULL, 1, &a);
-    time_schedule(x->timeobj_ticker, x->timeobj_ticker_q);
-    // return the handle
-    return s7_cb_handle;
+    time_setvalue(x->time_listen_ticks, NULL, 1, &a);
+    time_setvalue(x->time_listen_ticks_q, NULL, 1, &a);
+    time_schedule(x->time_listen_ticks, x->time_listen_ticks_q);
+    // return nil
+    return s7_nil(s7);
+}
+
+// cancel tick listening 
+static s7_pointer s7_cancel_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
+    //post("s7_itm_cancel_listen_ticks");
+    t_s4m *x = get_max_obj(s7);
+    time_stop(x->time_listen_ticks);
+    return s7_nil(s7);
 }
 
 // call back for the above
-void s4m_tick_callback(t_s4m *x){
-    //post("s4m_tick_callback");
+void s4m_itm_listen_ticks_cb(t_s4m *x){
+    //post("s4m_itm_listen_ticks_cb");
     
     t_itm *itm = itm_getglobal();
     itm_reference(itm);
@@ -2219,16 +2238,77 @@ void s4m_tick_callback(t_s4m *x){
     //post(" - itm_getticks: %5.8f", ticks);
 
     // call into scheme to execute the scheme function registered under this handle
-    // build arg list of: handle, ticks
+    // pass current tick number of global transport as arg
     s7_pointer *s7_args = s7_nil(x->s7);
     s7_args = s7_cons(x->s7, s7_make_integer(x->s7, curr_ticks), s7_args); 
-    s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, x->cb_handle_ticker->s_name), s7_args); 
-    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-tick-callback"), s7_args);   
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ticks-callback"), s7_args);   
         
     // and schedule next tick
     // NB: values for the ticker and quant are only set by calls to listen
-    time_schedule(x->timeobj_ticker, x->timeobj_ticker_q);
+    time_schedule(x->time_listen_ticks, x->time_listen_ticks_q);
 }
+
+// time (ms) versions of the above, allow setting a periodic callback by fractional ms (no quantize)
+static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
+    // post("s7_itm_listen_ms");
+    t_s4m *x = get_max_obj(s7);
+    char err_msg[128]; 
+
+    // get number of ms as a double
+    s7_pointer *s7_time_ms = s7_car(args);
+    if( ! s7_is_number(s7_time_ms) ){
+        // bad arg 1
+        sprintf(err_msg, "itm-listen-ms : arg 1 must be number of ms");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }
+    double time_ms = (double) s7_real( s7_time_ms );
+    // TODO: maybe check for greater than zero?
+
+    // figure out how many ticks (fractional) the ms arg equal, because itm times are set in ticks
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    double time_ticks = itm_mstoticks(itm, time_ms);
+    itm_dereference(itm);
+
+    // schedule (using the fractional ticks arg)
+    t_atom a;
+    atom_setfloat(&a, time_ticks);
+    time_setvalue(x->time_listen_ms, NULL, 1, &a);
+    time_schedule(x->time_listen_ms, NULL);
+    // return nil
+    return s7_nil(s7);
+}
+
+// cancel time listen 
+static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args){
+    // post("s7_cancel_itm_listen_ms()");
+    t_s4m *x = get_max_obj(s7);
+    time_stop(x->time_listen_ms);
+    return s7_nil(s7);
+}
+
+// call back for the above
+void s4m_itm_listen_ms_cb(t_s4m *x){
+    //post("s4m_itm_listen_ms_cb");
+   
+    // get the current itm time
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    double curr_time = itm_gettime(itm);
+    itm_dereference(itm);
+    //post(" - itm_gettime: %5.8f", curr_time);
+
+    // call into scheme to execute the scheme function registered under this handle
+    // pass current tick number of global transport as arg
+    s7_pointer *s7_args = s7_nil(x->s7);
+    s7_args = s7_cons(x->s7, s7_make_real(x->s7, curr_time), s7_args); 
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-itm-listen-ms-callback"), s7_args);   
+        
+    // and schedule next tick
+    // NB: values for the below are only set during call to listen
+    time_schedule(x->time_listen_ms, NULL);
+}
+
 
 // get the status of the global transport
 static s7_pointer s7_itm_get_state(s7_scheme *s7, s7_pointer args){
@@ -2244,7 +2324,7 @@ static s7_pointer s7_itm_get_state(s7_scheme *s7, s7_pointer args){
 
 // set state of global transport, can be called with either #t/#f or 1/0
 static s7_pointer s7_itm_set_state(s7_scheme *s7, s7_pointer args){
-    post("s7_itm_set_state");
+    //post("s7_itm_set_state");
     t_itm *itm = itm_getglobal();
     itm_reference(itm);
     s7_pointer arg = s7_car(args);

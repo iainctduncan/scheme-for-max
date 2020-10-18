@@ -16,13 +16,23 @@
 ) 
 
 
-;; example using itm listen
-(define (cb-tick cur_ticks) 
-  (post "(cb-tick) cur_ticks:" cur_ticks)
-  (out 0 :bang)
+;; example using itm listen, tick is total tick count according to global transport
+(define (cb-tick tick) 
+  ;(post "(cb-tick) cur_ticks:" tick)
+  ;; do a bang on quarter notes
+  (if (= 0 (modulo tick 480)) 
+    (out 0 :bang))
 ) 
 
 ;(listen-ticks 10 cb-tick)
+
+(define (cb-ms time-ms) 
+  ;(post "(cb-ms) curr_time:" time-ms)
+  ;; send out a bang
+  ;(out 0 :bang)
+  #f
+) 
+
 
 
 
