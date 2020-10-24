@@ -44,20 +44,22 @@ typedef struct _s4m {
    void *outlets[MAX_NUM_OUTLETS]; // should be a dynamic array, but I'm crashing too much
       
    t_object *patcher;   
-   t_hashtab *registry;            // objects by scripting name
+   t_hashtab *registry;                 // objects by scripting name
 
-   t_hashtab *clocks;              // delay clocks by handle, for clocks and time objects
-   t_hashtab *clocks_quant;        // clocks by handle for quantization time objects only
+   t_hashtab *clocks;                   // delay clocks by handle, for clocks and time objects
+   t_hashtab *clocks_quant;             // clocks by handle for quantization time objects only
  
-   t_object *timeobj;              // timeobjs for calculating quantized delay calls
-   t_object *timeobj_quant;        
+   t_object *timeobj;                   // timeobjs for calculating quantized delay calls
+   t_object *timeobj_quant;             // TODO rename
 
-   t_object *time_listen_ticks;       // timeobj for every X ticks callback
-   t_object *time_listen_ticks_q;     // quantize for the ticker
+   t_object *time_listen_ticks;         // time obj for the listen every X ticks callback
+   t_object *time_listen_ticks_q;       // quantize for the above
 
-   t_object *time_listen_ms;           // time obj used for itm-listen-ms
+   t_object *time_listen_ms;          // time obj used for listen-ms-t (uses transport)
+   t_object *clock_listen_ms;           // clock obj used for listen-ms (no attached transport)
+   double clock_listen_ms_interval;     // time in ms for the listen-ms clock  
 
-   t_object *m_editor;             // text editor
+   t_object *m_editor;                  // text editor
     
    t_object *test_obj; 
 
@@ -160,9 +162,21 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_itm_get_state(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_itm_set_state(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_set_tempo(s7_scheme *s7, s7_pointer args);
+
+static s7_pointer s7_itm_seek(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_seek_ticks(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_seek_bbu(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_itm_get_ticks(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_itm_get_time(s7_scheme *s7, s7_pointer args);
+
+static s7_pointer s7_itm_ticks_to_ms(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_ticks_to_bbu(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_ms_to_ticks(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_ms_to_bbu(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_bbu_to_ticks(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_itm_bbu_to_ms(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_cancel_itm_listen_ticks(s7_scheme *s7, s7_pointer args);
@@ -170,7 +184,11 @@ void s4m_itm_listen_ticks_cb(t_s4m *x);
 
 static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args);
-void s4m_itm_listen_ms_cb(t_s4m *x);
+void   s4m_itm_listen_ms_cb(t_s4m *x);
+
+static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_cancel_listen_ms(s7_scheme *s7, s7_pointer args);
+void   s4m_listen_ms_cb(t_s4m *x);
 
 static s7_pointer s7_isr(s7_scheme *s7, s7_pointer args);
 
@@ -294,8 +312,10 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     // time object for the tick listen callback
 	x->time_listen_ticks = (t_object *) time_new((t_object *)x, gensym("_listen_ticks"), (method) s4m_itm_listen_ticks_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
 	x->time_listen_ticks_q = (t_object *) time_new((t_object *)x, gensym("_listen_ticks_q"), NULL, TIME_FLAGS_TICKSONLY );
-    // time object for the itm-listen-ms function
-	x->time_listen_ms = (t_object *) time_new((t_object *)x, gensym("_listen_ms"), (method) s4m_itm_listen_ms_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    // time object for the itm_listen_ms function
+	x->time_listen_ms = (t_object *) time_new((t_object *)x, gensym("_listen_ms_t"), (method) s4m_itm_listen_ms_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    // clock object used for the listen_ms no transport function
+	x->clock_listen_ms = (t_object *) clock_new((t_object *)x, (method) s4m_listen_ms_cb); 
 
 
     // setup internal member defaults 
@@ -405,20 +425,40 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
     
     //s7_define_function(x->s7, "s4m-schedule-callback", s7_schedule_callback, 2, 0, true, "(s4m-schedule-callback {time} {cb-handle}");
+    s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
     s7_define_function(x->s7, "s4m-schedule-delay", s7_schedule_delay, 2, 0, true, "(s4m-schedule-delay {time} {cb-handle}");
     s7_define_function(x->s7, "s4m-schedule-delay-itm", s7_schedule_delay_itm, 2, 1, true, "(s4m-schedule-delay-itm {time} {opt quant} {cb-handle}");
 
-    s7_define_function(x->s7, "itm-state", s7_itm_get_state, 0, 0, true, "");
-    s7_define_function(x->s7, "itm-set-state", s7_itm_set_state, 1, 0, true, "");
-    s7_define_function(x->s7, "itm-ticks", s7_itm_get_ticks, 0, 0, true, "");
-    s7_define_function(x->s7, "itm-time", s7_itm_get_time, 0, 0, true, "");
+    // transport fuctions, v0.2
+    s7_define_function(x->s7, "transport-state", s7_itm_get_state, 0, 0, true, "");
+    s7_define_function(x->s7, "t-state", s7_itm_get_state, 0, 0, true, "");
+    s7_define_function(x->s7, "transport-set-state", s7_itm_set_state, 1, 0, true, "");
+    s7_define_function(x->s7, "t-state!", s7_itm_set_state, 1, 0, true, "");
+    s7_define_function(x->s7, "transport-set-bpm", s7_itm_set_tempo, 1, 0, true, "");
+    s7_define_function(x->s7, "t-bpm!", s7_itm_set_tempo, 1, 0, true, "");
+    s7_define_function(x->s7, "transport-ticks", s7_itm_get_ticks, 0, 0, true, "");
+    s7_define_function(x->s7, "t-ticks", s7_itm_get_ticks, 0, 0, true, "");
+    // t-seek is polymorphic version of ticks and bbu
+    s7_define_function(x->s7, "t-seek", s7_itm_seek, 1, 2, true, "");   
+    s7_define_function(x->s7, "transport-seek", s7_itm_seek, 1, 2, true, "");   
+
+    // I think this is busted??
+    s7_define_function(x->s7, "t-time", s7_itm_get_time, 0, 0, true, "");
+    // come conversion functions 
+    s7_define_function(x->s7, "ticks->ms", s7_itm_ticks_to_ms, 1, 0, true, "");
+    s7_define_function(x->s7, "ticks->bbu", s7_itm_ticks_to_bbu, 1, 0, true, "");
+    s7_define_function(x->s7, "ms->ticks", s7_itm_ms_to_ticks, 1, 0, true, "");
+    s7_define_function(x->s7, "ms->bbu", s7_itm_ms_to_bbu, 1, 0, true, "");
+    s7_define_function(x->s7, "bbu->ticks", s7_itm_bbu_to_ticks, 3, 0, true, "");
+    s7_define_function(x->s7, "bbu->ms", s7_itm_bbu_to_ms, 3, 0, true, "");
+
 
     s7_define_function(x->s7, "s4m-itm-listen-ticks", s7_itm_listen_ticks, 1, 0, true, "(s4m-itm-listen_ticks ticks cb-handle)");
     s7_define_function(x->s7, "s4m-cancel-itm-listen-ticks", s7_cancel_itm_listen_ticks, 0, 0, true, "(s4m-cancel-itm-listen-ticks)");
     s7_define_function(x->s7, "s4m-itm-listen-ms", s7_itm_listen_ms, 1, 0, true, "(s4m-itm-listen_ms ms cb-handle)");
     s7_define_function(x->s7, "s4m-cancel-itm-listen-ms", s7_cancel_itm_listen_ms, 0, 0, true, "(s4m-cancel-itm-listen-ms)");
-
-    s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
+    s7_define_function(x->s7, "s4m-listen-ms", s7_listen_ms, 1, 0, true, "(s4m-listen_ms ms cb-handle)");
+    s7_define_function(x->s7, "s4m-cancel-listen-ms", s7_cancel_listen_ms, 0, 0, true, "(s4m-cancel--listen-ms)");
 
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
@@ -2193,7 +2233,58 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
 * SECTION SCHEDULE Schedule, delay, and tempo related functions
 */
 
+// functions for (listen-ms) - run a callback every MS seconds
+// non-itm: runs regardless of transport, can be used to run once a scheduler pass
+static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args){
+    post("s7_listen_ms");
+    t_s4m *x = get_max_obj(s7);
+    char err_msg[128]; 
+
+    // get number of ms as a double
+    s7_pointer *s7_time_ms = s7_car(args);
+    if( ! s7_is_number(s7_time_ms) ){
+        // bad arg 1
+        sprintf(err_msg, "listen-ms : arg 1 must be number of ms");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }
+    double time_ms = (double) s7_real( s7_time_ms );
+    x->clock_listen_ms_interval = time_ms;
+    clock_fdelay(x->clock_listen_ms, x->clock_listen_ms_interval);
+    // return nil
+    return s7_nil(s7);
+}
+
+// cancel time listen 
+static s7_pointer s7_cancel_listen_ms(s7_scheme *s7, s7_pointer args){
+    post("s7_cancel_listen_ms()");
+    t_s4m *x = get_max_obj(s7);
+    clock_unset(x->clock_listen_ms);
+    return s7_nil(s7);
+}
+
+// call back for the above
+void s4m_listen_ms_cb(t_s4m *x){
+    post("s4m_listen_ms_cb");
+   
+    // get the current time
+    double curr_time; 
+    clock_getftime(&curr_time);
+    //post(" - itm_gettime: %5.8f", curr_time);
+
+    // call into scheme to execute the scheme function registered under this handle
+    // pass current tick number of global transport as arg
+    s7_pointer *s7_args = s7_nil(x->s7);
+    s7_args = s7_cons(x->s7, s7_make_real(x->s7, curr_time), s7_args); 
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ms-callback"), s7_args);   
+        
+    // and schedule 
+    // NB: values for the below are only set during call to listen
+    clock_fdelay(x->clock_listen_ms, x->clock_listen_ms_interval);
+}
+
+
 // ask to start listening to an itm tick callback
+// used in (listen-ticks)
 static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
     //post("s7_itm_listen_ticks");
     t_s4m *x = get_max_obj(s7);
@@ -2249,6 +2340,7 @@ void s4m_itm_listen_ticks_cb(t_s4m *x){
 }
 
 // time (ms) versions of the above, allow setting a periodic callback by fractional ms (no quantize)
+// but is still attached to the transport (ie stops if transport stopped
 static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
     // post("s7_itm_listen_ms");
     t_s4m *x = get_max_obj(s7);
@@ -2309,7 +2401,6 @@ void s4m_itm_listen_ms_cb(t_s4m *x){
     time_schedule(x->time_listen_ms, NULL);
 }
 
-
 // get the status of the global transport
 static s7_pointer s7_itm_get_state(s7_scheme *s7, s7_pointer args){
     //post("itm_get_state");
@@ -2357,10 +2448,256 @@ static s7_pointer s7_itm_get_time(s7_scheme *s7, s7_pointer args){
     //post("itm_get_time");
     t_itm *itm = itm_getglobal();
     itm_reference(itm);
-    double ticks = itm_gettime(itm);
+    double time = itm_gettime(itm);
     itm_dereference(itm);
-    return s7_make_real(s7, ticks);
+    return s7_make_real(s7, time);
 }
+
+// for transport aware (ticks->ms) 
+static s7_pointer s7_itm_ticks_to_ms(s7_scheme *s7, s7_pointer args){
+    s7_pointer arg = s7_car(args);
+    if( ! s7_is_number(arg) ){
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "ticks->ms arg must be a number"));
+    }
+    double ticks = (double) s7_real(arg);
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    double ms = (double) itm_tickstoms(itm, ticks);
+    itm_dereference(itm);
+    return s7_make_real(s7, ms); 
+}
+
+// for transport aware (ticks->bbu) 
+static s7_pointer s7_itm_ticks_to_bbu(s7_scheme *s7, s7_pointer args){
+    s7_pointer arg = s7_car(args);
+    if( ! s7_is_number(arg) ){
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "ticks->bbu arg must be a number"));
+    }
+    double ticks = (double) s7_real(arg);
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    long bars, beats;
+    double units;
+    itm_tickstobarbeatunits(itm, ticks, &bars, &beats, &units, TIME_FLAGS_LOCATION);
+    itm_dereference(itm);
+    // return a list of bars, beats, units
+    s7_pointer s7_bbu_list = s7_nil(s7); 
+    s7_bbu_list = s7_cons(s7, s7_make_real(s7, units), s7_bbu_list); 
+    s7_bbu_list = s7_cons(s7, s7_make_integer(s7, beats), s7_bbu_list); 
+    s7_bbu_list = s7_cons(s7, s7_make_integer(s7, bars), s7_bbu_list); 
+    return s7_bbu_list;
+}
+
+// for transport aware (ms->ticks) 
+static s7_pointer s7_itm_ms_to_ticks(s7_scheme *s7, s7_pointer args){
+    s7_pointer arg = s7_car(args);
+    if( ! s7_is_number(arg) ){
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "ms->ticks arg must be a number"));
+    }
+    double ms = (double) s7_real(arg);
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    double ticks = (double) itm_mstoticks(itm, ms);
+    itm_dereference(itm);
+    return s7_make_real(s7, ticks); 
+}
+
+// for transport aware (ms->bbu) 
+static s7_pointer s7_itm_ms_to_bbu(s7_scheme *s7, s7_pointer args){
+    s7_pointer arg = s7_car(args);
+    if( ! s7_is_number(arg) ){
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "ms->bby arg must be a number"));
+    }
+    double ms = (double) s7_real(arg);
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    double ticks = (double) itm_mstoticks(itm, ms);
+    long bars, beats;
+    double units;
+    itm_tickstobarbeatunits(itm, ticks, &bars, &beats, &units, TIME_FLAGS_LOCATION);
+    itm_dereference(itm);
+    // return a list of bars, beats, units
+    s7_pointer s7_bbu_list = s7_nil(s7); 
+    s7_bbu_list = s7_cons(s7, s7_make_real(s7, units), s7_bbu_list); 
+    s7_bbu_list = s7_cons(s7, s7_make_integer(s7, beats), s7_bbu_list); 
+    s7_bbu_list = s7_cons(s7, s7_make_integer(s7, bars), s7_bbu_list); 
+    return s7_bbu_list;
+}
+
+
+// for transport aware (bbu->ticks) 
+static s7_pointer s7_itm_bbu_to_ticks(s7_scheme *s7, s7_pointer args){
+    s7_pointer *arg_1 = s7_car(args);
+    s7_pointer *arg_2 = s7_cadr(args);
+    s7_pointer *arg_3 = s7_caddr(args);
+    if( ! (s7_is_integer(arg_1) && s7_is_integer(arg_2) && s7_is_number(arg_3)) ){
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "bbu->ticks args must be int, int, number "));
+    }
+    long bars = (long) s7_integer(arg_1);
+    long beats = (long) s7_integer(arg_2);
+    double units = (double) s7_real(arg_3);
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    double ticks;
+    itm_barbeatunitstoticks(itm, bars, beats, units, &ticks, TIME_FLAGS_LOCATION);
+    itm_dereference(itm);
+    return s7_make_real(s7, ticks); 
+}
+
+// for transport aware (bbu->ms) 
+static s7_pointer s7_itm_bbu_to_ms(s7_scheme *s7, s7_pointer args){
+    s7_pointer *arg_1 = s7_car(args);
+    s7_pointer *arg_2 = s7_cadr(args);
+    s7_pointer *arg_3 = s7_caddr(args);
+    if( ! (s7_is_integer(arg_1) && s7_is_integer(arg_2) && s7_is_number(arg_3)) ){
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "bbu->ticks args must be int, int, number "));
+    }
+    double bars = (double) s7_integer(arg_1);
+    double beats = (double) s7_integer(arg_2);
+    long units = (long) s7_real(arg_3);
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    double ticks;
+    itm_barbeatunitstoticks(itm, bars, beats, units, &ticks, TIME_FLAGS_LOCATION);
+    long ms = itm_tickstoms(itm, ticks);
+    itm_dereference(itm);
+    // return ms
+    return s7_make_real(s7, ms);
+}
+
+// message to set the transports tempo 
+static s7_pointer s7_itm_set_tempo(s7_scheme *s7, s7_pointer args){
+    //post("s7_itm_set_tempo");
+    t_s4m *x = get_max_obj(s7);
+
+    s7_pointer arg_1 = s7_car(args);
+    if( ! s7_is_number( arg_1 ) ){
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "tempo arg should be a number"));
+    }
+    double tempo = (double) s7_real(arg_1);
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    // attempt to send tempo message, no idea if it works
+    t_atom a;
+    atom_setfloat(&a, tempo);
+    // send the message to the itm object
+    t_max_err err = NULL; 
+    err = object_method_typed(itm, gensym("tempo"), 1, &a, NULL);
+    if(err){
+        object_error((t_object *)x, "s4m: error sending tempo message");
+    }
+    itm_dereference(itm);
+    return arg_1;
+}
+
+// polymorphic version of seek: 1 arg for ticks, 3 args for bbu
+static s7_pointer s7_itm_seek(s7_scheme *s7, s7_pointer args){
+    //post("s7_itm_seek");
+    t_s4m *x = get_max_obj(s7);
+    long bars, beats;
+    double units, ticks;
+   
+    int argc = (int) s7_list_length(s7, args);
+
+    // case ticks, called with 1 arg of float or int
+    if (argc == 1){
+        s7_pointer *arg_1 = s7_car(args);
+        if( ! s7_is_number( arg_1 ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "position in ticks should be a number"));
+        }
+        t_itm *itm = itm_getglobal();
+        itm_reference(itm);
+        double old_ticks = itm_getticks(itm); 
+        double new_ticks = (double) s7_real(arg_1);
+        // from ext_itm.h, but not in documentation
+        // void itm_seek(t_itm *x, double oldticks, double newticks, long chase);
+        itm_seek(itm, old_ticks, new_ticks, 0);     
+        itm_dereference(itm);
+        return arg_1;
+    }
+    // 3 args is Bars-Beats-Units
+    else if(argc == 3){ 
+        s7_pointer *arg_1 = s7_car(args);
+        s7_pointer *arg_2 = s7_cadr(args);
+        s7_pointer *arg_3 = s7_caddr(args);
+        if( ! s7_is_integer( arg_1 ) || ! s7_is_integer( arg_2) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "bars and beats should be integers"));
+        }else{
+            bars = (long) s7_integer(arg_1);
+            beats = (long) s7_integer(arg_2);
+        }
+        if( ! s7_is_number( arg_3 ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "units should be an integer or float"));
+        }else{
+            units = (double) s7_real(arg_3);
+        }
+
+        t_itm *itm = itm_getglobal();
+        itm_reference(itm);
+        double old_ticks = itm_getticks(itm); 
+        double new_ticks;
+        itm_barbeatunitstoticks(itm, bars, beats, units, &new_ticks, TIME_FLAGS_LOCATION);
+        // from ext_itm.h, but not in documentation
+        // void itm_seek(t_itm *x, double oldticks, double newticks, long chase);
+        itm_seek(itm, old_ticks, new_ticks, 0);     
+        itm_dereference(itm);
+        return s7_make_real(s7, new_ticks);
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "seek reqires either 1 number (ticks) or 3 (bbu)"));
+    }
+
+}
+
+// attempt  to set the transport position with the list message
+// NOT WORKING, no idea why, keeping here in case I find issues with the undocumented itm_seek
+/*
+static s7_pointer s7_itm_set_ticks(s7_scheme *s7, s7_pointer args){
+    post("s7_itm_set_position");
+    t_s4m *x = get_max_obj(s7);
+
+    s7_pointer arg_1 = s7_car(args);
+    if( ! s7_is_number( arg_1 ) ){
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "tempo arg should be a number"));
+    }
+   
+    t_itm *itm = itm_getglobal();
+    itm_reference(itm);
+    double old_ticks = itm_getticks(itm); 
+    double new_ticks = (double) s7_real(arg_1);
+
+    // below is my attempt to do this by sending a max list message to the itm object, which does not work for some reason
+    // even though it DOES work in the GUI
+    long bars, beats;
+    double units;
+    itm_tickstobarbeatunits(itm, ticks, &bars, &beats, &units, TIME_FLAGS_LOCATION);
+    post("  - bars: %i beats: %i units: %5.2f", bars, beats, units); 
+
+    t_atom atoms[3];
+    atom_setlong( &atoms[0], bars);
+    atom_setlong( &atoms[1], beats);
+    atom_setfloat( &atoms[2], units);
+    // send the message to the itm object
+    t_max_err err = NULL; 
+    // weird, the below is giving us back an itm: doesn't understand 'list' error
+    err = object_method_typed(itm, gensym("list"), 3, atoms, NULL);
+    //object_method_parse(itm, gensym("list"), "1 2 0", NULL);
+
+    itm_dereference(itm);
+    return arg_1;
+}
+*/
 
 
 // generic clock callback, this fires after being scheduled with clock_fdelay 
@@ -2387,7 +2724,7 @@ void s4m_clock_callback(void *arg){
 }
 
 // delay a function using Max clock objects for floating point precision delays
-// called from scheme as 
+// called from scheme as (delay)
 static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     // post("s7_schedule_delay()");
     char *cb_handle_str;
@@ -2399,7 +2736,9 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     s7_pointer *s7_cb_handle = s7_cadr(args);
     cb_handle_str = s7_symbol_name(s7_cb_handle);
     //post("s7_schedule_delay() time: %5.2f handle: '%s'", delay_time, cb_handle_str);
-   
+ 
+    // lock while we create clock objects and store 
+    critical_enter(); 
     // dynmamically allocate memory for our struct that holds the symbol and the ref to the s4m obj
     // NB: this gets cleaned up by the receiver in the clock callback above
     t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
@@ -2408,11 +2747,11 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     // make a clock, setting our callback struct as owner, as void pointer
     // when the callback method fires, it will retrieve the s4m and handle refs from the struct
     void *clock = clock_new( (void *)clock_cb, (method)s4m_clock_callback);
-
     // store the clock ref in the s4m clocks hashtab (used to get at them for cancelling) 
     hashtab_store(x->clocks, gensym(cb_handle_str), clock);            
     // schedule it, this is what actually kicks off the timer
     clock_fdelay(clock, delay_time);
+    critical_exit(); 
  
     // return the handle on success
     return s7_make_symbol(s7, cb_handle_str);
@@ -2441,7 +2780,10 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     s7_pointer *s7_cb_handle = s7_caddr(args);
     cb_handle_str = s7_symbol_name(s7_cb_handle);
     //post("s7_schedule_delay_itm() handle: '%s'", cb_handle_str);
-  
+ 
+     
+    // lock while we create clock objects and store (docs imply clock_new not thread safe from high thread)
+    critical_enter(); 
     // allocate memory for our struct that holds the symbol and the ref to the s4m obj
     // note, same kind of struct is fine for clock or time based scheduling 
     t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
@@ -2453,6 +2795,7 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     // store the clock ref in the clocks hashtab (used to get at them for cancelling) 
     hashtab_store(x->clocks, gensym(cb_handle_str), clock);  
     // clock will get scheduled after we figure out all the timing below
+    critical_exit(); 
 
     // set value for the time object, used only for itm time calculating purproses 
     if( s7_is_real(time_arg) || s7_is_integer(time_arg) ){
@@ -2529,6 +2872,11 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     return s7_make_symbol(s7, cb_handle_str);
 }
 
+
+
+
+/* End of schedule/itm related functions 
+********************************************************************************/
 
 // s7 function for sending a generic message to a max object
 // assumes the max object has a scripting name and has been found by a call to 'scan' to the s4m object
