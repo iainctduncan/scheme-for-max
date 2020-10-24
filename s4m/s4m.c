@@ -423,7 +423,6 @@ void s4m_init_s7(t_s4m *x){
     //s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
     //s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
    
-
     s7_define_function(x->s7, "send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
     
     //s7_define_function(x->s7, "s4m-schedule-callback", s7_schedule_callback, 2, 0, true, "(s4m-schedule-callback {time} {cb-handle}");
@@ -2750,6 +2749,7 @@ void s4m_itm_listen_ms_cb(t_s4m *x){
     // NB: values for the below are only set during call to listen
     time_schedule(x->time_listen_ms, NULL);
 }
+
 // generic clock callback, this fires after being scheduled with clock_fdelay 
 // gets access to the handle and s4m obj through the clock_callback struct that it 
 // as a a void pointer to a struct with the the s4m object and the cb handle 
@@ -2759,12 +2759,12 @@ void s4m_clock_callback(void *arg){
     t_s4m *x = &(ccb->obj);
     t_symbol handle = *ccb->handle; 
     //post(" - handle %s", handle);
-    // call into scheme with the handle 
+    // call into scheme with the handle, where scheme will call the registered delayed function
     s7_pointer *s7_args = s7_nil(x->s7);
     s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, handle.s_name), s7_args); 
     s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-callback"), s7_args);   
 
-    // clean up the clock_callback struct that was dynamically allocated when
+    // clean up the clock_callback info struct that was dynamically allocated when
     // this was scheduled:
     // remove the clock(s) from the clock (and quant) registry and free the cb struct
     hashtab_delete(x->clocks, &handle);
@@ -2776,7 +2776,8 @@ void s4m_clock_callback(void *arg){
 // delay a function using Max clock objects for floating point precision delays
 // called from scheme as (delay)
 static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
-    // post("s7_schedule_delay()");
+    //post("s7_schedule_delay()");
+    //post("isr: %i", isr());
     char *cb_handle_str;
     t_s4m *x = get_max_obj(s7);
 
@@ -2786,24 +2787,25 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     s7_pointer *s7_cb_handle = s7_cadr(args);
     cb_handle_str = s7_symbol_name(s7_cb_handle);
     //post("s7_schedule_delay() time: %5.2f handle: '%s'", delay_time, cb_handle_str);
- 
-    // lock while we create clock objects and store 
-    critical_enter(); 
+
+    // NB: the Max SDK docs say one should not be creating clocks outside of the main thread
+    // Even under load testing this seems to be OK. But I could be wrong....
+    // (btw, surrounding the clock_new code in a critical region crashes it)
+    
     // dynmamically allocate memory for our struct that holds the symbol and the ref to the s4m obj
     // NB: this gets cleaned up by the receiver in the clock callback above
-    t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
-    clock_cb->obj = *x;
-    clock_cb->handle = gensym(cb_handle_str);
-    // make a clock, setting our callback struct as owner, as void pointer
-    // when the callback method fires, it will retrieve the s4m and handle refs from the struct
-    void *clock = clock_new( (void *)clock_cb, (method)s4m_clock_callback);
+    t_s4m_clock_callback *clock_cb_info = sysmem_newptr(sizeof(t_s4m_clock_callback));
+    clock_cb_info->obj = *x;
+    clock_cb_info->handle = gensym(cb_handle_str);
+    // make a clock, setting our callback info struct as the owner, as void pointer
+    // when the callback method fires, it will retrieve this pointer as an arg 
+    // and use it to get the handle for calling into scheme  
+    void *clock = clock_new( (void *)clock_cb_info, (method)s4m_clock_callback);
     // store the clock ref in the s4m clocks hashtab (used to get at them for cancelling) 
     hashtab_store(x->clocks, gensym(cb_handle_str), clock);            
     // schedule it, this is what actually kicks off the timer
     clock_fdelay(clock, delay_time);
-    critical_exit(); 
- 
-    // return the handle on success
+    // return the handle on success so that scheme code can save it for possibly cancelling later
     return s7_make_symbol(s7, cb_handle_str);
 }
 
