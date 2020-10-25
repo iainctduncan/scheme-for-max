@@ -72,7 +72,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 156.0, 197.0, 31.0, 31.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 39.0, 128.0, 31.0, 31.0 ],
+					"presentation_rect" : [ 103.0, 113.0, 31.0, 31.0 ],
 					"style" : "chiba",
 					"uncheckedcolor" : [ 0.811764705882353, 0.035294117647059, 0.035294117647059, 1.0 ]
 				}
@@ -99,8 +99,7 @@
 					"outlettype" : [ "int" ],
 					"patching_rect" : [ 156.0, 169.0, 85.0, 22.0 ],
 					"presentation" : 1,
-					"presentation_linecount" : 2,
-					"presentation_rect" : [ 39.0, 101.0, 67.0, 35.0 ],
+					"presentation_rect" : [ 103.0, 86.0, 92.0, 22.0 ],
 					"text" : "tests-transport"
 				}
 
@@ -116,7 +115,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 86.0, 21.0, 33.0, 33.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 71.0, 21.0, 33.0, 33.0 ]
+					"presentation_rect" : [ 80.0, 21.0, 33.0, 33.0 ]
 				}
 
 			}
