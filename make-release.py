@@ -6,13 +6,13 @@ import os
 # its job is to copy the package, including the binary assets and scm files, into the 
 # dist directory, ready for zipping up for release
 
-version = "0.1.6-beta"     # appended to tarball name
+version = "0.1.7-beta-osx"     # appended to tarball name
 dry_run = False
 
 externals_src = "../../externals"
 externals_dest = "dist/Scheme-For-Max/externals"
 scm_src = "s4m/scm"
-scm_dest = "dist/Scheme-For-Max/patchers"
+scm_dest = "dist/Scheme-For-Max/extras"
 patcher_src = "s4m/patchers"
 patcher_dest = "dist/Scheme-For-Max/patchers"
 
@@ -20,7 +20,7 @@ patcher_dest = "dist/Scheme-For-Max/patchers"
 # tuple of source/dest
 scm_files = [
     ("s4m.scm", "s4m.scm"),
-    ("stuff.scm", "s7-stuff.scm"),
+    ("stuff.scm", "stuff.scm"),
     ("cm/loop.scm", "loop.scm"),
     ("cm/utilities.scm", "utilities.scm")
 ]
