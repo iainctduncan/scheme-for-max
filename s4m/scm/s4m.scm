@@ -1,9 +1,9 @@
 ;; the scm4max scheme code to build the API
 (max-post "Bootstrapping s4m.scm")
 
-;; s7-stuff.scm contains the scheme level s7 helper definitions and must be loaded for various
-;; s4m functions to work ok. this file is called "stuff.scm" in regular s7 sources
-(load-from-max "s7-stuff.scm")
+;; stuff.scm contains the scheme level s7 helper definitions and must be loaded for various
+;; s4m functions to work ok. it comes from S7 upstream 
+(load-from-max "stuff.scm")
 
 ;; Uncomment the below to load the loop macro and various utilities from Common Music
 ;; They are not necessary for core Scheme-for-Max to run
@@ -88,7 +88,7 @@
 ;; to all other code
 (define s4m-eval
   (lambda args
-    (post "s4m-eval :" args)
+    ;(post "s4m-eval :" args)
     (eval args (rootlet))))
 
 
