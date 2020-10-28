@@ -55,9 +55,10 @@ typedef struct _s4m {
    t_object *time_listen_ticks;         // time obj for the listen every X ticks callback
    t_object *time_listen_ticks_q;       // quantize for the above
 
-   t_object *time_listen_ms;          // time obj used for listen-ms-t (uses transport)
+   t_object *time_listen_ms;            // time obj used for listen-ms-t (uses transport)
    t_object *clock_listen_ms;           // clock obj used for listen-ms (no attached transport)
    double clock_listen_ms_interval;     // time in ms for the listen-ms clock  
+   double clock_listen_ms_t_interval;   // time in ms for the listen-ms-t clock  
 
    t_object *m_editor;                  // text editor
     
@@ -2723,6 +2724,8 @@ void s4m_itm_listen_ticks_cb(t_s4m *x){
 }
 
 // (listen-ms-t) ms based timer but dependant on transport  
+// has some special logic to set the first callback to go at time zero
+// because presumably when you hit play, you want the first one firing 
 static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
     // post("s7_itm_listen_ms");
     t_s4m *x = get_max_obj(s7);
@@ -2748,7 +2751,9 @@ static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
     t_atom a;
     atom_setfloat(&a, time_ticks);
     time_setvalue(x->time_listen_ms, NULL, 1, &a);
-    time_schedule(x->time_listen_ms, NULL);
+    // Note: we are quatizing by the ms value below too, so that if the user
+    // stops transport, runs listen, and hits play, the first event is on time 0
+    time_schedule(x->time_listen_ms, x->time_listen_ms);
     // return nil
     return s7_nil(s7);
 }
