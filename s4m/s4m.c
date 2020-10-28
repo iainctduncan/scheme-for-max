@@ -2772,18 +2772,16 @@ static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args){
 // gets access to the handle and s4m obj through the clock_callback struct that it 
 // as a a void pointer to a struct with the the s4m object and the cb handle 
 void s4m_clock_callback(void *arg){
-    post("clock_callback()");
+    //post("clock_callback()");
     t_s4m_clock_callback *ccb = (t_s4m_clock_callback *) arg;
     t_s4m *x = &(ccb->obj);
     t_symbol handle = *ccb->handle; 
-    post(" - handle %s", handle);
+    //post(" - handle %s", handle);
     // call into scheme with the handle, where scheme will call the registered delayed function
     s7_pointer *s7_args = s7_nil(x->s7);
     s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, handle.s_name), s7_args); 
     s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-callback"), s7_args);   
-
-    // clean up the clock_callback info struct that was dynamically allocated when
-    // this was scheduled:
+    // clean up the clock_callback info struct that was dynamically allocated when this was scheduled:
     // remove the clock(s) from the clock (and quant) registry and free the cb struct
     hashtab_delete(x->clocks, &handle);
     hashtab_delete(x->clocks_quant, &handle);
@@ -2809,6 +2807,7 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     // NB: the Max SDK docs say one should not be creating clocks outside of the main thread
     // Even under load testing this seems to be OK. But I could be wrong....
     // (btw, surrounding the clock_new code in a critical region crashes it)
+    // FUTURE: make a clock pool and allocate from that
     
     // dynmamically allocate memory for our struct that holds the symbol and the ref to the s4m obj
     // NB: this gets cleaned up by the receiver in the clock callback above
@@ -2885,10 +2884,8 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
 // this one uses one main time object for calculation, but then does the actual delaying with clock objects
 // itm version of schedule, allows sending time as either ticks (int/float), notation (sym) or bbu (sym)
 static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args){
-    post("s7_schedule_delay_itm_quant()");
-
+    //post("s7_schedule_delay_itm_quant()");
     double ms, tix, ms_q, tix_q;
-
     char *cb_handle_str;
     t_s4m *x = get_max_obj(s7);
 
@@ -2945,7 +2942,7 @@ static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args){
     // does *not* need a call to schedule to have appeared to work
 	double delay_ticks = time_getticks(x->timeobj);
 	double quant_ticks = time_getticks(x->timeobj_quant);
-    post("delay_ticks: %5.2f quant_tick: %5.2f", delay_ticks, quant_ticks);
+    //post("delay_ticks: %5.2f quant_tick: %5.2f", delay_ticks, quant_ticks);
     // this gives us the time and quant values in ms, but not after the quantize calculation        
     
     // get the current time in tix (will be zero if transport stopped and rewound)
@@ -2978,10 +2975,9 @@ static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args){
     
     // turn into ms
     double delay_ms = itm_tickstoms( itm, actual_delay_ticks );
-    post("delay_ms: %5.2f", delay_ms);
+    //post("delay_ms: %5.2f", delay_ms);
     // and schedule our clock, this is what actually kicks off the timer
     clock_fdelay(clock, delay_ms);
- 
     // return the handle on success
     return s7_make_symbol(s7, cb_handle_str);
 }
