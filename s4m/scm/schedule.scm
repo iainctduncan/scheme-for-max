@@ -137,10 +137,10 @@
 (define s4m-itm-listen-ms-callback #f)
 
 ;; internal function called from the C ms callback
-(define (s4m-exec-itm-listen-ms-callback time-ms)
+(define (s4m-exec-itm-listen-ms-callback)
   ;(post "s4m-exec-itm-listen-ms-callback time:" time-ms)
   ;; as there can only be one of these at once, just use the global tick callback function
-  (if (eq? #f s4m-itm-listen-ms-callback) '() (s4m-itm-listen-ms-callback time-ms)))
+  (if (eq? #f s4m-itm-listen-ms-callback) '() (s4m-itm-listen-ms-callback)))
 
 ; public function to start listening every {ms} miliseconds, but only if transport running 
 (define (listen-ms-t ms fun)
@@ -150,7 +150,7 @@
 
 ; public function to cancel the itm ms listener
 (define (cancel-listen-ms-t)
-  (post "cancel-listen-ms-t")
+  ;(post "cancel-listen-ms-t")
   ;; call into C to cancel the scheduled event
   (s4m-cancel-itm-listen-ms)
   (set! s4m-itm-listen-ms #f) 
@@ -162,7 +162,7 @@
 
 ;; internal function called from the C ms callback
 (define (s4m-exec-listen-ms-callback)
-  (post "s4m-exec-listen-ms-callback")
+  ;(post "s4m-exec-listen-ms-callback")
   ;; as there can only be one of these at once, just use the global tick callback function
   (if (eq? #f s4m-listen-ms-callback) '() (s4m-listen-ms-callback)))
 
@@ -174,7 +174,7 @@
 
 ; public function to cancel the itm ms listener
 (define (cancel-listen-ms)
-  (post "(cancel-listen-ms)")
+  ;(post "(cancel-listen-ms)")
   ;; call into C to cancel the scheduled event
   (s4m-cancel-listen-ms)
   (set! s4m-listen-ms #f) 

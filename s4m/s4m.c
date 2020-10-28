@@ -2636,7 +2636,7 @@ static s7_pointer s7_itm_set_ticks(s7_scheme *s7, s7_pointer args){
 // functions for (listen-ms) - run a callback every MS seconds
 // non-itm: runs regardless of transport, can be used to run once a scheduler pass
 static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args){
-    post("s7_listen_ms");
+    //post("s7_listen_ms");
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
 
@@ -2653,26 +2653,19 @@ static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args){
     // return nil
     return s7_nil(s7);
 }
-
-// cancel time listen 
+// cancel listen-ms callback 
 static s7_pointer s7_cancel_listen_ms(s7_scheme *s7, s7_pointer args){
-    post("s7_cancel_listen_ms()");
+    //post("s7_cancel_listen_ms()");
     t_s4m *x = get_max_obj(s7);
     clock_unset(x->clock_listen_ms);
     return s7_nil(s7);
 }
-
 // call back for the above
 void s4m_listen_ms_cb(t_s4m *x){
-    post("s4m_listen_ms_cb");
-   
+    //post("s4m_listen_ms_cb");
     // call into scheme to execute the scheme function registered under this handle
-    // pass current tick number of global transport as arg
-    s7_pointer *s7_args = s7_nil(x->s7);
-    s7_args = s7_cons(x->s7, s7_make_real(x->s7, curr_time), s7_args); 
-    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ms-callback"), s7_args);   
-        
-    // and schedule the next tick
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ms-callback"), s7_nil(x->s7) );   
+    // and schedule the next interation
     // NB: values for the below are only set during call to listen
     clock_fdelay(x->clock_listen_ms, x->clock_listen_ms_interval);
 }
@@ -2681,7 +2674,7 @@ void s4m_listen_ms_cb(t_s4m *x){
 // ask to start listening to an itm tick callback
 // used in (listen-ticks)
 static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
-    post("s7_itm_listen_ticks");
+    //post("s7_itm_listen_ticks");
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
 
@@ -2706,41 +2699,34 @@ static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
 
 // cancel tick listening 
 static s7_pointer s7_cancel_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
-    post("s7_itm_cancel_listen_ticks");
+    //post("s7_itm_cancel_listen_ticks");
     t_s4m *x = get_max_obj(s7);
     time_stop(x->time_listen_ticks);
     return s7_nil(s7);
 }
 
-// call back for the above
+// call back for the above, sends ticks as arg to scheme
 void s4m_itm_listen_ticks_cb(t_s4m *x){
-    post("s4m_itm_listen_ticks_cb");
-    
+    //post("s4m_itm_listen_ticks_cb");
     t_itm *itm = itm_getglobal();
     itm_reference(itm);
     double curr_ticks = itm_getticks(itm);
     itm_dereference(itm);
-
-    //post(" - itm_getticks: %5.8f", ticks);
-
     // call into scheme to execute the scheme function registered under this handle
     // pass current tick number of global transport as arg
     s7_pointer *s7_args = s7_nil(x->s7);
     s7_args = s7_cons(x->s7, s7_make_integer(x->s7, curr_ticks), s7_args); 
     s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ticks-callback"), s7_args);   
-        
     // and schedule next tick
     // NB: values for the ticker and quant are only set by calls to listen
     time_schedule(x->time_listen_ticks, x->time_listen_ticks_q);
 }
 
-// time (ms) versions of the above, allow setting a periodic callback by fractional ms (no quantize)
-// but is still attached to the transport (ie stops if transport stopped
+// (listen-ms-t) ms based timer but dependant on transport  
 static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
     // post("s7_itm_listen_ms");
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
-
     // get number of ms as a double
     s7_pointer *s7_time_ms = s7_car(args);
     if( ! s7_is_number(s7_time_ms) ){
@@ -2749,14 +2735,15 @@ static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
         return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
     }
     double time_ms = (double) s7_real( s7_time_ms );
-    // TODO: maybe check for greater than zero?
-
+    if( time_ms <= 0 ){
+        sprintf(err_msg, "itm-listen-ms : arg 1 must be greater than 0");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }
     // figure out how many ticks (fractional) the ms arg equal, because itm times are set in ticks
     t_itm *itm = itm_getglobal();
     itm_reference(itm);
     double time_ticks = itm_mstoticks(itm, time_ms);
     itm_dereference(itm);
-
     // schedule (using the fractional ticks arg)
     t_atom a;
     atom_setfloat(&a, time_ticks);
@@ -2765,35 +2752,20 @@ static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
     // return nil
     return s7_nil(s7);
 }
-
+// call back for the above
+void s4m_itm_listen_ms_cb(t_s4m *x){
+    //post("s4m_itm_listen_ms_cb");
+    // call into scheme to execute the scheme function registered under this handle
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-itm-listen-ms-callback"), s7_nil(x->s7));   
+    // and schedule next tick
+    time_schedule(x->time_listen_ms, NULL);
+}
 // cancel time listen 
 static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args){
     // post("s7_cancel_itm_listen_ms()");
     t_s4m *x = get_max_obj(s7);
     time_stop(x->time_listen_ms);
     return s7_nil(s7);
-}
-
-// call back for the above
-void s4m_itm_listen_ms_cb(t_s4m *x){
-    //post("s4m_itm_listen_ms_cb");
-   
-    // get the current itm time
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    double curr_time = itm_gettime(itm);
-    itm_dereference(itm);
-    //post(" - itm_gettime: %5.8f", curr_time);
-
-    // call into scheme to execute the scheme function registered under this handle
-    // pass current tick number of global transport as arg
-    s7_pointer *s7_args = s7_nil(x->s7);
-    s7_args = s7_cons(x->s7, s7_make_real(x->s7, curr_time), s7_args); 
-    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-itm-listen-ms-callback"), s7_args);   
-        
-    // and schedule next tick
-    // NB: values for the below are only set during call to listen
-    time_schedule(x->time_listen_ms, NULL);
 }
 
 // generic clock callback, this fires after being scheduled with clock_fdelay 
