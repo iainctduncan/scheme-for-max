@@ -2,8 +2,9 @@
 ;(max-post "Bootstrapping s4m.scm")
 
 
+
 ;; stuff.scm contains the scheme level s7 helper definitions and must be loaded for various
-;; s4m functions to work ok. this file is called "stuff.scm" in regular s7 sources
+;; s4m functions to work ok. it comes from S7 upstream 
 (load-from-max "stuff.scm")
 
 ;; S74 is a convenience layer over S7, with functions from various other lisps
