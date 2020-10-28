@@ -469,7 +469,7 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "s4m-itm-listen-ms", s7_itm_listen_ms, 1, 0, true, "(s4m-itm-listen_ms ms cb-handle)");
     s7_define_function(x->s7, "s4m-cancel-itm-listen-ms", s7_cancel_itm_listen_ms, 0, 0, true, "(s4m-cancel-itm-listen-ms)");
     s7_define_function(x->s7, "s4m-listen-ms", s7_listen_ms, 1, 0, true, "(s4m-listen_ms ms cb-handle)");
-    s7_define_function(x->s7, "s4m-cancel-listen-ms", s7_cancel_listen_ms, 0, 0, true, "(s4m-cancel--listen-ms)");
+    s7_define_function(x->s7, "s4m-cancel-listen-ms", s7_cancel_listen_ms, 0, 0, true, "(s4m-cancel-listen-ms)");
 
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
@@ -2666,18 +2666,13 @@ static s7_pointer s7_cancel_listen_ms(s7_scheme *s7, s7_pointer args){
 void s4m_listen_ms_cb(t_s4m *x){
     post("s4m_listen_ms_cb");
    
-    // get the current time
-    double curr_time; 
-    clock_getftime(&curr_time);
-    //post(" - itm_gettime: %5.8f", curr_time);
-
     // call into scheme to execute the scheme function registered under this handle
     // pass current tick number of global transport as arg
     s7_pointer *s7_args = s7_nil(x->s7);
     s7_args = s7_cons(x->s7, s7_make_real(x->s7, curr_time), s7_args); 
     s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ms-callback"), s7_args);   
         
-    // and schedule 
+    // and schedule the next tick
     // NB: values for the below are only set during call to listen
     clock_fdelay(x->clock_listen_ms, x->clock_listen_ms_interval);
 }

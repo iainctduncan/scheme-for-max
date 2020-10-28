@@ -2,3 +2,55 @@ Points for the docs around schedule:
 
 - it you reset a transports time, transports can get out of sync with the master clock
 - my quantize will stay with the master clock
+
+Scheduler/Transport related Functions:
+
+DT - transport-set-bpm         
+DT - transport-state   
+DT - transport-set-state 
+DT - transport-ticks
+DT - transport-seek
+DT - t-time-sig / transport-time-signature
+DT - t-time-sig! / transport-set-signature
+
+D - ticks->ms
+D - ticks->bbu
+D - ms->ticks
+D - ms->bbu
+D - bbu->ticks
+D - bbu->ms
+
+DT - delay
+DT - delay-eval
+DT - delay-t       
+DT - delay-tq
+DT - delay-t-eval
+DT - delay-tq-eval
+
+- listen-ticks
+- cancel-listen-ticks
+- listen-ms, cancel-listen-ms
+- listen-ms-t, cancel-listen-ms-t
+
+- transport-time - XXX: is not returning transport time, just plain time!!
+
+TODO:
+- reset needs to clear out the clock listeners properly
+
+IN REGRESSION SUITE
+- transport tests
+- delay tests
+
+
+TODO:
+- tests for listen functions 
+- write up delay docs
+
+- listen test:
+  
+(listen 100 (lambda (ticks) ticks))
+
+Testing listen-ticks
+- I think I don't have clean up of clocks and ticks working right yet
+  - closing a patcher that has registered listeners seems to crash the next
+  time the transport is activated

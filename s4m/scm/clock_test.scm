@@ -27,7 +27,7 @@
 ;(listen-ticks 10 cb-tick)
 
 (define (cb-ms time-ms) 
-  ;(post "(cb-ms) curr_time:" time-ms)
+  (post "(cb-ms) curr_time:" time-ms)
   ;; send out a bang
   ;(out 0 :bang)
   #f
