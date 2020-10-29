@@ -3,12 +3,18 @@ Plan for version 0.2
 - buffer i/o
 - scheduling with ms
 - scheduling with clock
-- clojure threading macros ??
-
-Could do a 0.2 release with just buffers/tables and schedule?
 
 Status:
 - table tests working (in patchers/table-io-tests-1.maxpat)
 - doing it now for buffers
 
+
+V0.2 need to do:
+- add the global control for turning off logging
+- add the table tests to the regression suite
+
+table-io-tests-1 is not working right (not all passing)
+
+buffer tests has an error
+- buffer test comparisons aren't working right
 

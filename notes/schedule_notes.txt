@@ -214,5 +214,18 @@ Testing listen-ticks
 - NEXT:
 - do listen-ms (non-itm) I don't think that is in there yet??
   
+- listen-ms works
 
-- listen-ms works, but not cancelling it
+- need tests for listen-ms
+
+- listen test:
+- turn on the listener
+- start transport
+- stop transport after X time
+- verify the output is correct and number of calls is correct
+
+- hmm, should the first listen ms callback fire right away at 0? like ticks does?
+  probably it should at least for listen-ms-t
+
+LEFTOFF 
+- the listen-ms-t doesn't get the right result when running as part of the regression suite
