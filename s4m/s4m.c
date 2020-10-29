@@ -2532,7 +2532,7 @@ static s7_pointer s7_itm_seek(s7_scheme *s7, s7_pointer args){
     t_s4m *x = get_max_obj(s7);
     long bars, beats;
     double units, ticks;
-   
+
     int argc = (int) s7_list_length(s7, args);
 
     // case ticks, called with 1 arg of float or int

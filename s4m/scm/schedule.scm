@@ -1,4 +1,4 @@
-(post "schedule.scm")
+;(post "schedule.scm")
 
 ;; internal registry of callbacks registered by gensyms
 (define s4m-callback-registry (hash-table))
@@ -180,5 +180,5 @@
   (set! s4m-listen-ms #f) 
 )
 
-(post "... schedule.scm loaded")
+;(post "... schedule.scm loaded")
 
