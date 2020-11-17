@@ -5,8 +5,9 @@ Plan for version 0.2
 - scheduling with clock
 
 Status:
-- table tests working (in patchers/table-io-tests-1.maxpat)
-- doing it now for buffers
+- regression test suite working for the schedule and transport tests
+- working on completing the regression test suite
+- 
 
 
 V0.2 need to do:
@@ -17,4 +18,13 @@ table-io-tests-1 is not working right (not all passing)
 
 buffer tests has an error
 - buffer test comparisons aren't working right
+  - it was float errors
+
+Regression Suite:
+- buffer tests:
+ - done except for channel specific versions of 
+
+
+- shit I need channel specific versions of all the buffer tests I guess?
+
 
