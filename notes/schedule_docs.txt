@@ -27,15 +27,13 @@ DT - delay-tq
 DT - delay-t-eval
 DT - delay-tq-eval
 
-- listen-ticks
-- cancel-listen-ticks
-- listen-ms, cancel-listen-ms
-- listen-ms-t, cancel-listen-ms-t
+DT - listen-ticks, cancel-listen-ticks
+DT - listen-ms, cancel-listen-ms
+DT - listen-ms-t, cancel-listen-ms-t
 
 - transport-time - XXX: is not returning transport time, just plain time!!
 
 TODO:
-- reset needs to clear out the clock listeners properly
 
 IN REGRESSION SUITE
 - transport tests
@@ -46,11 +44,4 @@ TODO:
 - tests for listen functions 
 - write up delay docs
 
-- listen test:
-  
-(listen 100 (lambda (ticks) ticks))
 
-Testing listen-ticks
-- I think I don't have clean up of clocks and ticks working right yet
-  - closing a patcher that has registered listeners seems to crash the next
-  time the transport is activated

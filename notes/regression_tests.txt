@@ -1,0 +1,24 @@
+Regression Tests catalog
+
+tests-buffer-io:
+(buffer?) : boolean 
+(buffer-size 'buf) : int size
+(buffer-ref 'buf channel index) : float value
+(buffer-ref 'buf index) : float value
+(buffer-set! 'buf index value) : sets index to value
+(buffer-set! 'buf chan index value) : sets chan/index to value
+(buffer->vector 'buf chan)  
+(buffer->vector 'buf chan index )  
+(buffer->vector 'buf chan index count)  
+(bufsv 'buf vec)
+(bufsv 'buf chan vec)
+(bufsv 'buf chan bi vec) 
+(bufsv 'buf chan bi vec vi) 
+(bufsv 'buf vec vi cnt) 
+
+TODO:
+- table tests - not all passing
+- need to do the localization stuff on this one
+
+
+
