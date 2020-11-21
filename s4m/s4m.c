@@ -390,7 +390,6 @@ void s4m_init_s7(t_s4m *x){
     // initialize interpreter
     x->s7 = s7_init();
 
-    // define functions that will be implemented in C and available from scheme
     s7_define_function(x->s7, "max-output", s7_max_output, 2, 0, false, "(max-output 1 99) sends value 99 out outlet 1");
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
     s7_define_function(x->s7, "load-from-max", s7_load_from_max, 1, 0, false, "load files from the max path");
@@ -417,8 +416,8 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "bufr", s7_buffer_ref, 2, 1, false, "alias for buffer-ref");
     s7_define_function(x->s7, "buffer-set!", s7_buffer_set, 3, 1, false, "(buffer-set! :foo 4 127) writes value 4 to index 127 of buffer :foo");
     s7_define_function(x->s7, "bufs", s7_buffer_set, 3, 1, false, "(buffer-set! :foo 4 127) writes value 4 to index 127 of buffer :foo");
-    s7_define_function(x->s7, "buffer->vector", s7_buffer_to_vector, 1, 2, false, "create new vector from buffer");
-    s7_define_function(x->s7, "b->v", s7_buffer_to_vector, 1, 2, false, "create new vector from buffer");
+    s7_define_function(x->s7, "buffer->vector", s7_buffer_to_vector, 1, 3, false, "create new vector from buffer");
+    s7_define_function(x->s7, "b->v", s7_buffer_to_vector, 1, 3, false, "create new vector from buffer");
 
     s7_define_function(x->s7, "buffer-set-from-vector!", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
     s7_define_function(x->s7, "bufsv", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
@@ -427,8 +426,6 @@ void s4m_init_s7(t_s4m *x){
     //s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
    
     s7_define_function(x->s7, "send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
-    
-    //s7_define_function(x->s7, "s4m-schedule-callback", s7_schedule_callback, 2, 0, true, "(s4m-schedule-callback {time} {cb-handle}");
     s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
 
     // transport fuctions, v0.2
@@ -492,9 +489,7 @@ void s4m_init_s7(t_s4m *x){
 // wipe the scheme interpreter and reset any state
 // XXX: not sure if this actually needs to run in the low prioirty thread!
 void s4m_reset(t_s4m *x){
-    post("s4m_reset()");
-    // should try surrounding with critical enter, may or may not work!
-    //critical_enter();
+    //post("s4m_reset()");
    
     // cancel all the member clocks and time objects
     time_stop(x->timeobj);  
@@ -512,8 +507,7 @@ void s4m_reset(t_s4m *x){
     hashtab_clear(x->clocks_quant); 
 
     s4m_init_s7(x);
-    //critical_exit(x);
-    post("...s4m_reset() complete");
+    //post("...s4m_reset() complete");
 }
 
 // test of making a thing via the patcher object triggered by "make" message
@@ -729,7 +723,7 @@ void s4m_cancel_clock_entry(t_hashtab_entry *e, void *arg){
 }
 
 void s4m_free(t_s4m *x){ 
-    post("s4m: calling free()");
+    //post("s4m: calling free()");
     hashtab_chuck(x->registry);
 
     // delete all the clock and time objects
@@ -2003,15 +1997,18 @@ static s7_pointer s7_buffer_set(s7_scheme *s7, s7_pointer args) {
 
 // return a scheme vector with entire contents of a bffer
 // in scheme: buffer->vector aka b->v
+// opt args for chan start count
 static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
     // post("s7_make_vector_from_buffer()");
     char *buffer_name = NULL;
     long buffer_size = NULL;
-    long target_index = 0;
+    long channel = 0;
+    long buffer_offset = 0;     // where in the buffer to start copying from
     long count = NULL;
     char err_msg[128];
     t_s4m *x = get_max_obj(s7);
 
+    int num_args = (int) s7_list_length(s7, args);
     // first args is the buffer name
     if( s7_is_symbol( s7_car(args) ) ){ 
         buffer_name = (char *) s7_symbol_name( s7_car(args) );
@@ -2021,6 +2018,35 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
             "buffer name is not a keyword, string, or symbol"));
     }
+
+    // get optional channel arg 
+    if( num_args >= 2 ){
+        if( ! s7_is_integer(s7_list_ref(s7, args, 1) ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "arg 2 must be an integer of channel number"));
+        }
+        channel = (long) s7_integer( s7_list_ref(s7, args, 1) );
+        //post("chan: %i", channel);
+    }
+    // get optional start index
+    if( num_args >= 3 ){
+        if( ! s7_is_integer(s7_list_ref(s7, args, 2) ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "arg 3 must be an integer of starting index"));
+        }
+        buffer_offset = (long) s7_integer( s7_list_ref(s7, args, 2) );
+        //post("buffer_offset: %i", channel);
+    }
+    // get optional count
+    if( num_args >= 4 ){
+        if( ! s7_is_integer(s7_list_ref(s7, args, 3) ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "arg 4 must be an integer count of points to copy"));
+        }
+        count = (long) s7_integer( s7_list_ref(s7, args, 3) );
+        //post("count: %i", channel);
+    }
+
     // get buffer from Max, also fetches buffer size
     t_buffer_ref *buffer_ref = buffer_ref_new((t_object *)x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
@@ -2032,11 +2058,19 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
     t_atom_long frames;
     frames = buffer_getframecount(buffer);
     float *buffer_data = buffer_locksamples(buffer);
-    
-    // create a new vector and copy from buffer
-    s7_pointer *new_vector = s7_make_vector(s7, frames); 
-    for(int i=0; i<frames; i++){
-        s7_vector_set(s7, new_vector, i, s7_make_real(s7, (buffer_data)[i] ) ); 
+    buffer_size = (long) frames;
+     
+    // if no count specified, count is from the index to the end of the buffer
+    if( count == 0 ) count = buffer_size - buffer_offset; 
+    if( count > buffer_size - buffer_offset) count = buffer_size - buffer_offset;
+
+    //post("channel: %i count: %i, offset: %i", channel, count, buffer_offset);
+ 
+    // create a new vector and copy from buffer (vector sizes itself dynamically)
+    s7_pointer *new_vector = s7_make_vector(s7, count); 
+    for(int i=0; i < count; i++){
+        int buff_index = ( (channel * (i + buffer_offset)) + (i + buffer_offset)); 
+        s7_vector_set(s7, new_vector, i, s7_make_real(s7, (buffer_data)[ buff_index ] ) ); 
     }
     buffer_unlocksamples(buffer);
     object_free(buffer_ref);
@@ -2073,8 +2107,7 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
 
     
     // buffer-set-from-vector! buffer-name {buffer-chan} {buffer-index}
-    // after the buffer name arg, there may be two optional integer ars
-    // if only one given, it is taken as index, and channel is assumed to be 0
+    // after the buffer name arg, there may be two optional integer args, channel and index
     
     int vector_arg_num;     // to store which arg has the vector name
     if( s7_is_integer(s7_list_ref(s7, args, 1)) && s7_is_integer(s7_list_ref(s7, args, 2))){
@@ -2082,18 +2115,18 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
         buffer_channel = s7_integer(s7_list_ref(s7, args, 1)); 
         buffer_offset = s7_integer(s7_list_ref(s7, args, 2)); 
         vector_arg_num = 3;
-        post("optional buffer chan and buffer offset detected: %i %i", buffer_channel, buffer_offset);
+        //post("optional buffer chan and buffer offset detected: %i %i", buffer_channel, buffer_offset);
     }else if( s7_is_integer(s7_list_ref(s7, args, 1)) && !s7_is_integer(s7_list_ref(s7, args, 2))){
-        buffer_channel = 0;
-        buffer_offset = s7_integer(s7_list_ref(s7, args, 1)); 
+        buffer_channel = s7_integer(s7_list_ref(s7, args, 1)); 
+        buffer_offset = 0;
         vector_arg_num = 2;
-        post("optional buffer offset detected: chan %i offset %i", buffer_channel, buffer_offset);
+        //post("optional buffer offset detected: chan %i offset %i", buffer_channel, buffer_offset);
     }else{
         // no optional channel arg used
         buffer_channel = 0;
         buffer_offset = 0;
         vector_arg_num = 1;
-        post("no optional buffer args: chan %i offset %i", buffer_channel, buffer_offset);
+        //post("no optional buffer args: chan %i offset %i", buffer_channel, buffer_offset);
     }
 
     // get the vector 
@@ -2117,8 +2150,8 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
     }
 
     // Note: at this point count may be 0, it will be overridden below 
-    post("dest-buff: %s chan: %i index: %i vector-offset: %i count: %i",
-        buffer_name, buffer_channel, buffer_offset, vector_offset, count);
+    //post("dest-buff: %s chan: %i index: %i vector-offset: %i count: %i",
+    //    buffer_name, buffer_channel, buffer_offset, vector_offset, count);
 
     // now have: buffer_name, buffer_channel, buffer_offset, vector_offset, count
  
@@ -2129,7 +2162,7 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
     t_buffer_ref *buffer_ref = buffer_ref_new((t_object *)x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
     if(buffer == NULL){
-        object_error((t_object *)x, "Unable to reference buffer named %s", buffer_name);                
+        //object_error((t_object *)x, "Unable to reference buffer named %s", buffer_name);                
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "Could not retrieve buffer"));
     }
@@ -2148,9 +2181,9 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
         return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, 
             "buffer-set-from-vector! : index out of range")); 
     }
-    // 2020-09-19 working here
-    post("argument calcs done: b-size: %i b-chan: %i b-offset: %i v-size: %i v-start: %i count: %i", 
-        buffer_size, buffer_channel, buffer_offset, vector_size, vector_offset, count);
+
+    //post("argument calcs done: b-size: %i b-chan: %i b-offset: %i v-size: %i v-start: %i count: %i", 
+    //    buffer_size, buffer_channel, buffer_offset, vector_size, vector_offset, count);
 
     // copy data, converting ints to floats, C style (truncate, not round)
     // in future we might allow disabling checks for speed
@@ -2168,10 +2201,9 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
             return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7,
                "buffer-set-from-vector! : value is not an int or float, aborting")); 
         }
-        // TODO: what should happens with number of channels here???
-        int dest_index = buffer_offset + i;
-        //post("writing value %.5f to index: %i", dest_index, value);
-        buffer_data[dest_index] = value;
+        int buff_index = ( (buffer_channel * (i + buffer_offset)) + (i + buffer_offset)); 
+        //post("writing value %.5f to index: %i", buff_index, value);
+        buffer_data[ buff_index ] = value;
     }
     // unlock buffers
     buffer_unlocksamples(buffer);
