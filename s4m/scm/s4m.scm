@@ -1,8 +1,6 @@
 ;; the scm4max scheme code to build the API
 ;(max-post "Bootstrapping s4m.scm")
 
-
-
 ;; stuff.scm contains the scheme level s7 helper definitions and must be loaded for various
 ;; s4m functions to work ok. it comes from S7 upstream 
 (load-from-max "stuff.scm")
@@ -120,4 +118,4 @@
 
 (define s4m-done-bootstrap #t)
 
-(post "s4m.scm BOOTSTRAP COMPLETE")
+;(post "s4m.scm BOOTSTRAP COMPLETE")
