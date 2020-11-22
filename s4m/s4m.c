@@ -1,9 +1,9 @@
 #include "ext.h"
 #include "ext_obex.h"						// required for new style Max object
+#include "ext_obex_util.h"						// required for new style Max object
 #include "math.h"
 #include "ext_common.h"
 #include "ext_buffer.h"
-#include "ext_obex.h"
 #include "ext_hashtab.h"    
 #include "ext_strings.h"
 #include "ext_dictobj.h"
@@ -63,6 +63,8 @@ typedef struct _s4m {
    t_object *m_editor;                  // text editor
     
    t_object *test_obj; 
+
+   bool initialized;                    // gets set to true after object initialization complete
 
 } t_s4m;
 
@@ -269,24 +271,32 @@ void ext_main(void *r){
     // NOTE: this will not receive "int 1" messages, even if not int listener above!
     class_addmethod(c, (method)s4m_msg, "anything", A_GIMME, 0);
 
+    // one time attrs for number of ins and outs and the thread
+    // invisible means it does not show up in inspector, and can't get set from a realtime message
+    // we use this to ensure this is only set with an @ arg in the patcher box
     CLASS_ATTR_LONG(c, "ins", 0, t_s4m, num_inlets);
     CLASS_ATTR_ACCESSORS(c, "ins", NULL, s4m_inlets_set);
+    CLASS_ATTR_INVISIBLE(c, "ins", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
     CLASS_ATTR_SAVE(c, "ins", 0);   // save with patcher
     CLASS_ATTR_LONG(c, "outs", 0, t_s4m, num_outlets);
     CLASS_ATTR_ACCESSORS(c, "outs", NULL, s4m_outlets_set);
+    CLASS_ATTR_INVISIBLE(c, "outs", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
     CLASS_ATTR_SAVE(c, "outs", 0);   // save with patcher
     
     // attribute for thread, can be 'h', 'l', or 'a'
-    CLASS_ATTR_SYM(c, "thread", 0, t_s4m, thread);
-    CLASS_ATTR_ACCESSORS(c, "thread", NULL, s4m_thread_set);
+    //CLASS_ATTR_SYM(c, "thread", 0, t_s4m, thread);
+    //CLASS_ATTR_ACCESSORS(c, "thread", NULL, s4m_thread_set);
+    //CLASS_ATTR_INVISIBLE(c, "thread", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
     //CLASS_ATTR_SAVE(c, "thread", 0);   // save with patcher
 
     // attrs for the internal time and quantize objects
-    // XXX:, are these even necessary now?
+    // we set them to not be settable from the patcher or to appear in the inspector
     class_time_addattr(c, "_delaytime", "Delay Time", TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK | TIME_FLAGS_TRANSPORT);
+    CLASS_ATTR_ADD_FLAGS(c, "_delaytime", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
     class_time_addattr(c, "_quantize", "Quantization", TIME_FLAGS_TICKSONLY);   
-
+    CLASS_ATTR_ADD_FLAGS(c, "_quantize", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
     class_time_addattr(c, "_listen_ticks", "Ticks per callback", TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK | TIME_FLAGS_TRANSPORT);
+    CLASS_ATTR_ADD_FLAGS(c, "_listen_ticks", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
 
     class_addmethod(c, (method)s4m_assist, "assist", A_CANT, 0);
     class_register(CLASS_BOX, c); 
@@ -295,7 +305,7 @@ void ext_main(void *r){
 }
 
 void *s4m_new(t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_new(), arg count: %i", argc);
+    post("s4m_new(), arg count: %i", argc);
     t_s4m *x = NULL;
 
     x = (t_s4m *)object_alloc(s4m_class);
@@ -377,8 +387,12 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
         } 
         //post("s4m_new() source file: %s", x->source_file->s_name);
     }
-    //post("init s7");
-    s4m_init_s7(x); 
+    post("init s7");
+    s4m_init_s7(x);
+
+    // set initialized flag, used to prevent some changes after object creation
+    x->initialized = true;
+ 
     return (x);
 }
 
@@ -507,7 +521,7 @@ void s4m_reset(t_s4m *x){
     hashtab_clear(x->clocks_quant); 
 
     s4m_init_s7(x);
-    //post("...s4m_reset() complete");
+    post("s4m re-initialized");
 }
 
 // test of making a thing via the patcher object triggered by "make" message
@@ -613,27 +627,33 @@ long s4m_scan_iterator(t_s4m *x, t_object *b){
 }
 
 t_max_err s4m_inlets_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
-    long num_inlets = atom_getlong(argv);
-    if( num_inlets < 1) num_inlets = 1;
-    // note, this sets max's idea of inlets, which is actually one more than what we see
-    // unfortunately, we can't say -1 because then the property inspector looks gimped
-    x->num_inlets = num_inlets;
-    // post("s4m->num_inlets now %i", x->num_inlets); 
+    //post("s4m_inlets_set()");
+    // check if object initialized to ignore run-time attribute messages
+    if( !x->initialized ){
+        long num_inlets = atom_getlong(argv);
+        if( num_inlets < 1) num_inlets = 1;
+        // note, this sets max's idea of inlets, which is actually one more than what we see
+        // unfortunately, we can't say -1 because then the property inspector looks gimped
+        x->num_inlets = num_inlets;
+        //post("s4m->num_inlets now %i", x->num_inlets); 
+    }
     return 0;
 }
 
 t_max_err s4m_outlets_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     //post("s4m_outlets_set()");
-    long num_outlets = atom_getlong(argv);
-    if( num_outlets < 1) num_outlets = 1;
-    x->num_outlets = num_outlets;
-    //post("s4m->num_outlets now %i", x->num_outlets); 
+    if( !x->initialized ){
+        long num_outlets = atom_getlong(argv);
+        if( num_outlets < 1) num_outlets = 1;
+        x->num_outlets = num_outlets;
+        //post("s4m->num_outlets now %i", x->num_outlets); 
+    }
     return 0;
 }
 
 
 t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
-    //post("s4m_threads_set()");
+    post("s4m_threads_set()");
     t_symbol *thread_attr = atom_getsym(argv);
     if( thread_attr == gensym("high") || thread_attr == gensym("h") ){
         x->thread = 'h';
@@ -645,8 +665,8 @@ t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
         // any other symbol, ignore and set to high
         x->thread = 'h';
     } 
-    post("s4m->thread: '%c'", x->thread); 
-    return 0;
+    post("s4m->thread set to: '%c'", x->thread); 
+    return MAX_ERR_NONE;
 }
 
 
