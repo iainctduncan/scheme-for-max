@@ -284,10 +284,10 @@ void ext_main(void *r){
     CLASS_ATTR_SAVE(c, "outs", 0);   // save with patcher
     
     // attribute for thread, can be 'h', 'l', or 'a'
-    //CLASS_ATTR_SYM(c, "thread", 0, t_s4m, thread);
-    //CLASS_ATTR_ACCESSORS(c, "thread", NULL, s4m_thread_set);
-    //CLASS_ATTR_INVISIBLE(c, "thread", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
-    //CLASS_ATTR_SAVE(c, "thread", 0);   // save with patcher
+    CLASS_ATTR_CHAR(c, "thread", 0, t_s4m, thread);
+    CLASS_ATTR_ACCESSORS(c, "thread", NULL, s4m_thread_set);
+    CLASS_ATTR_INVISIBLE(c, "thread", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
+    CLASS_ATTR_SAVE(c, "thread", 0);   // save with patcher
 
     // attrs for the internal time and quantize objects
     // we set them to not be settable from the patcher or to appear in the inspector
@@ -305,7 +305,7 @@ void ext_main(void *r){
 }
 
 void *s4m_new(t_symbol *s, long argc, t_atom *argv){
-    post("s4m_new(), arg count: %i", argc);
+    //post("s4m_new(), arg count: %i", argc);
     t_s4m *x = NULL;
 
     x = (t_s4m *)object_alloc(s4m_class);
@@ -387,7 +387,7 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
         } 
         //post("s4m_new() source file: %s", x->source_file->s_name);
     }
-    post("init s7");
+    //post("init s7");
     s4m_init_s7(x);
 
     // set initialized flag, used to prevent some changes after object creation
@@ -651,22 +651,24 @@ t_max_err s4m_outlets_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     return 0;
 }
 
-
+// setter for the object thread, only does anything at start up time
 t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
-    post("s4m_threads_set()");
-    t_symbol *thread_attr = atom_getsym(argv);
-    if( thread_attr == gensym("high") || thread_attr == gensym("h") ){
-        x->thread = 'h';
-    }else if( thread_attr == gensym("low") || thread_attr == gensym("l") ){
-        x->thread = 'l';
-    }else if( thread_attr == gensym("any") || thread_attr == gensym("a") ){
-        x->thread = 'a';
-    }else {
-        // any other symbol, ignore and set to high
-        x->thread = 'h';
-    } 
-    post("s4m->thread set to: '%c'", x->thread); 
-    return MAX_ERR_NONE;
+    //post("s4m_threads_set()");
+    if( !x->initialized ){
+        t_symbol *thread_attr = atom_getsym(argv);
+        if( thread_attr == gensym("high") || thread_attr == gensym("h") || thread_attr == gensym("hi") ){
+            x->thread = 'h';
+        }else if( thread_attr == gensym("low") || thread_attr == gensym("l") ){
+            x->thread = 'l';
+        }else if( thread_attr == gensym("any") || thread_attr == gensym("a") ){
+            x->thread = 'a';
+        }else {
+            // any other symbol, ignore and set to high
+            object_error((t_object *)x, "invalid value for attribute 'thread'");
+        } 
+        //post("s4m->thread set to: '%c'", x->thread); 
+    }
+    return 0;
 }
 
 
