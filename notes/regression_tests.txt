@@ -15,10 +15,15 @@ tests-buffer-io:
 (bufsv 'buf chan bi vec) 
 (bufsv 'buf chan bi vec vi) 
 (bufsv 'buf vec vi cnt) 
+- isr and thread
 
 TODO:
-- table tests - not all passing
-- need to do the localization stuff on this one
+- dict-get and set
+- the basics that already exist
+  - output, DONE
+  - input IN PROGRESS
+  
+- send message
 
-
-
+LEFT OFF 2020-12-01
+- fixed up deferal/promotion of float and int for inlets 1+, but still have to do this for the other types
