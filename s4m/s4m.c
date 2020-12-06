@@ -93,15 +93,31 @@ void s4m_s7_eval_string(t_s4m *x, char *string_to_eval);
 void s4m_s7_load(t_s4m *x, char *full_path);
 void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args);
 
+void s4m_reset(t_s4m *x);
 void s4m_dblclick(t_s4m *x);
 void s4m_edclose(t_s4m *x, char **ht, long size);
 void s4m_read(t_s4m *x, t_symbol *s);
-void s4m_int(t_s4m *x, long arg);
-void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
+void s4m_eval_string(t_s4m *x, t_symbol *s);
 
-void s4m_float(t_s4m *x, double arg);
+// functions for handling messages into the s4m object
 void s4m_bang(t_s4m *x);
+void s4m_callback_bang(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
+void s4m_handle_bang(t_s4m *x, int inlet_num);
+void s4m_int(t_s4m *x, long arg);
+void s4m_callback_int(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
+void s4m_handle_int(t_s4m *x, int inlet_num, long arg);
+void s4m_float(t_s4m *x, double arg);
+void s4m_callback_float(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
+void s4m_handle_float(t_s4m *x, int inlet_num, double arg);
+
+void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
+void s4m_callback_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
+void s4m_handle_list(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv);
+
 void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
+void s4m_callback_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
+void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv);
+
 
 void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file, bool skip_s7_load);
 void s4m_openfile(t_s4m *x, char *filename, short path);
@@ -109,7 +125,6 @@ void s4m_openfile(t_s4m *x, char *filename, short path);
 void s4m_dblclick(t_s4m *x);
 void s4m_edclose(t_s4m *x, char **ht, long size);
 long s4m_edsave(t_s4m *x, char **ht, long size);
-
 // IN PROG
 void s4m_make(t_s4m *x);
 
@@ -252,13 +267,11 @@ void ext_main(void *r){
     c = class_new("s4m", (method)s4m_new, (method)s4m_free,
          (long)sizeof(t_s4m), 0L /* leave NULL!! */, A_GIMME, 0);
 
+    
+	class_addmethod(c, (method)s4m_reset, "reset", NULL, 0);
+	class_addmethod(c, (method)s4m_eval_string, "eval-string", A_DEFSYM, 0);
 	class_addmethod(c, (method)s4m_read, "read", A_DEFSYM, 0);
     class_addmethod(c, (method)s4m_scan, "scan", NULL, 0);
-    class_addmethod(c, (method)s4m_bang, "bang", NULL, 0);
-    class_addmethod(c, (method)s4m_list, "list", A_GIMME, 0);
-    class_addmethod(c, (method)s4m_int, "int", A_LONG, 0);
-
-    class_addmethod(c, (method)s4m_float, "float", A_FLOAT, 0);
     class_addmethod(c, (method)s4m_dblclick, "dblclick", A_CANT, 0);
     class_addmethod(c, (method)s4m_edclose, "edclose", A_CANT, 0);
     class_addmethod(c, (method)s4m_edsave, "edsave", A_CANT, 0);
@@ -267,8 +280,11 @@ void ext_main(void *r){
     // test of making things with this patcher 
     //class_addmethod(c, (method)s4m_make, "make", NULL, 0);
 
-    // generic message handler for anything else
-    // NOTE: this will not receive "int 1" messages, even if not int listener above!
+    // generic message handlers  
+    class_addmethod(c, (method)s4m_bang, "bang", NULL, 0);
+    class_addmethod(c, (method)s4m_int, "int", A_LONG, 0);
+    class_addmethod(c, (method)s4m_float, "float", A_FLOAT, 0);
+    class_addmethod(c, (method)s4m_list, "list", A_GIMME, 0);
     class_addmethod(c, (method)s4m_msg, "anything", A_GIMME, 0);
 
     // one time attrs for number of ins and outs and the thread
@@ -501,10 +517,12 @@ void s4m_init_s7(t_s4m *x){
 }
 
 // wipe the scheme interpreter and reset any state
-// XXX: not sure if this actually needs to run in the low prioirty thread!
 void s4m_reset(t_s4m *x){
-    //post("s4m_reset()");
-   
+    // post("s4m_reset()");
+    // don't reset unless on inlet 0
+    if( proxy_getinlet((t_object *)x) != 0 ){
+        return;
+    }
     // cancel all the member clocks and time objects
     time_stop(x->timeobj);  
 	time_stop(x->timeobj_quant); 
@@ -520,6 +538,7 @@ void s4m_reset(t_s4m *x){
     hashtab_clear(x->clocks); 
     hashtab_clear(x->clocks_quant); 
 
+    // I think this can run in any thread as we wipe the interpreter anyway
     s4m_init_s7(x);
     post("s4m re-initialized");
 }
@@ -709,13 +728,8 @@ void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file, bool skip_s7_lo
     
     // we have a file and a path short, need to convert it to abs path for scheme load
     char full_path[1024]; 
-
     path_toabsolutesystempath(path_id, filename, full_path);
-    // on windows, nameconform changes / to \, but that doesnt seem to help the load
 
-    // XXX: seems like the below is not necessary anymore
-    //char conformed_path[1024]; 
-    //path_nameconform(full_path, conformed_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
     // save the full path for using with text editor opening
     x->source_file_path_id = path_id;
 
@@ -1044,24 +1058,35 @@ void s4m_s7_eval_string(t_s4m *x, char *string_to_eval){
 }
 
 
-// call bang is used to back to our float message in the case of a schedule or defer call
-void s4m_call_bang(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_call_bang()");
-    return s4m_bang(x);
+void s4m_callback_bang(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_callback_bang()");
+    long inlet_num = atom_getlong( argv );
+    long arg = atom_getlong( argv + 1 );
+    //post(" - inlet_num: %i arg: %i", inlet_num, arg);
+    sysmem_freeptr(argv); 
+    return s4m_handle_bang(x, inlet_num);
 }
+
 // for a bang message, the list of args to the s7 listener will be (:bang)
 void s4m_bang(t_s4m *x){
     bool in_isr = isr();
+    int inlet_num = proxy_getinlet((t_object *)x);
     //post("s4m_bang(): isr: %i", in_isr );
     // schedule/defer require an A_ANYTHING sig, so we need to call our wrapper s4m_call_bang
     if( !in_isr && x->thread == 'h' ){ 
-        return schedule(x, s4m_call_bang, 0, NULL, 0, NULL); 
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        atom_setlong(ap, inlet_num);
+        return schedule(x, s4m_callback_bang, 0, NULL, 1, ap); 
     }else if( in_isr && x->thread == 'l'){
-        return defer(x, s4m_call_bang, NULL, 0, NULL); 
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        atom_setlong(ap, inlet_num);
+        return defer(x, s4m_callback_bang, NULL, 1, ap); 
     }    
+    return s4m_handle_bang(x, inlet_num);
+}
 
-    int inlet_num = proxy_getinlet((t_object *)x);
-    // post("s4m_bang() message from inlet %i", inlet_num);
+void s4m_handle_bang(t_s4m *x, int inlet_num){
+    //post("s4m_bang() message from inlet %i", inlet_num);
     s7_pointer s7_args = s7_nil(x->s7); 
     // if on inlet 0, call to s7 should be (bang)
     if( inlet_num == 0 ){
@@ -1077,32 +1102,44 @@ void s4m_bang(t_s4m *x){
     }
 }
 
-// call float is used to back to our float message in the case of a schedule or defer call
-void s4m_call_int(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_call_int()");
-    long arg = atom_getlong( argv );
-    sysmem_freeptr(argv); 
-    return s4m_int(x, arg);
-}
-
 // handler for any messages to s4m as either single {number} or 'int {number}'
+// this gets called for any int message (either inlet, high or low thread)
+// and then dispatches or schedules accordingly
 void s4m_int(t_s4m *x, long arg){
     bool in_isr = isr();
-    //post("s4m_int(): arg: %i, isr: %i", arg, in_isr );
-    // schedule requires A_ANYTHING sig, so call wrapper s4m_call_int
-    if( !in_isr && x->thread == 'h' ){ 
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
-        atom_setlong(ap, arg);
-        return schedule(x, s4m_call_int, 0, NULL, 1, ap); 
-    }else if( in_isr && x->thread == 'l'){ 
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
-        atom_setlong(ap, arg);
-        return defer(x, s4m_call_int, NULL, 1, ap); 
-    }
-    
-
     int inlet_num = proxy_getinlet((t_object *)x);
-    //post("s4m_int() message from inlet %i, arg: %i", inlet_num, arg);
+    //post("s4m_int() message from inlet %i, arg: %i, isr: %i", inlet_num, arg, in_isr);
+
+    // if this message came in on the wrong thread for the interpreter, schedule it
+    // schedule requires A_ANYTHING sig, so call wrapper s4m_callback_int
+    if( !in_isr && x->thread == 'h' ){ 
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) * 2 );
+        atom_setlong(ap, inlet_num);
+        atom_setlong(ap+1, arg);
+        return schedule(x, s4m_callback_int, 0, NULL, 2, ap); 
+    }else if( in_isr && x->thread == 'l'){ 
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) * 2 );
+        atom_setlong(ap, inlet_num);
+        atom_setlong(ap+1, arg);
+        return defer(x, s4m_callback_int, NULL, 2, ap); 
+    }
+    // if no scheduling was necessary, just call the int handler
+    s4m_handle_int(x, inlet_num, arg);
+}
+
+// callback used when the call to int must be promoted or deferred
+// this is needed because we use the scheduler to promote to high thread on incoming low thread messages 
+void s4m_callback_int(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_callback_int()");
+    long inlet_num = atom_getlong( argv );
+    long arg = atom_getlong( argv + 1 );
+    //post(" - inlet_num: %i arg: %i", inlet_num, arg);
+    sysmem_freeptr(argv); 
+    return s4m_handle_int(x, inlet_num, arg);
+}
+
+// function that does the dispatching to scheme
+void s4m_handle_int(t_s4m *x, int inlet_num, long arg){
     s7_pointer s7_args = s7_nil(x->s7); 
     s7_args = s7_cons(x->s7, s7_make_integer(x->s7, arg), s7_args); 
     // if on inlet 0, call to s7 should be (int number)
@@ -1120,30 +1157,40 @@ void s4m_int(t_s4m *x, long arg){
     }
 }
 
-// call float is used to back to our float message in the case of a schedule or defer call
-void s4m_call_float(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_call_float()");
-    double arg = atom_getfloat( argv );
-    sysmem_freeptr(argv); 
-    return s4m_float(x, arg);
-}
-// handler for any messages to s4m as either single {number} or 'int {number}'
+
+// handler for any messages to s4m as either single {number} or 'float {number}'
 void s4m_float(t_s4m *x, double arg){
     bool in_isr = isr();
-    //post("s4m_float(): arg: %5.4f, isr: %i", arg, in_isr );
+    int inlet_num = proxy_getinlet((t_object *)x);
+    //post("s4m_float(): inlet_num: %i arg: %5.4f, isr: %i", inlet_num, arg, in_isr);
     if( !in_isr && x->thread == 'h' ){ 
         // schedule requires A_ANYTHING sig, so call wrapper s4m_call_float
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
-        atom_setfloat(ap, arg);
-        return schedule(x, s4m_call_float, 0, NULL, 1, ap); 
+        t_atom *ap = sysmem_newptr( sizeof(t_atom) * 2 );
+        atom_setlong(ap, inlet_num);
+        atom_setfloat(ap + 1, arg);
+        return schedule(x, s4m_callback_float, 0, NULL, 2, ap); 
     }else if( in_isr && x->thread == 'l'){ 
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
-        atom_setfloat(ap, arg);
-        return defer(x, s4m_call_float, NULL, 1, ap); 
+        t_atom *ap = sysmem_newptr( sizeof(t_atom) * 2 );
+        atom_setlong(ap, inlet_num);
+        atom_setfloat(ap + 1, arg);
+        return defer(x, s4m_callback_float, NULL, 2, ap); 
     } 
+    // if no scheduling was necessary, just call the int handler
+    s4m_handle_float(x, inlet_num, arg);
+}
 
-    int inlet_num = proxy_getinlet((t_object *)x);
-    //post("s4m_float() message from inlet %i, arg: %i", inlet_num, arg);
+// call float is used to back to our float message in the case of a schedule or defer call
+void s4m_callback_float(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_callback_float()");
+    long inlet_num = atom_getlong( argv );
+    double arg = atom_getfloat( argv + 1 );
+    sysmem_freeptr(argv); 
+    return s4m_handle_float(x, inlet_num, arg);
+}
+
+// function that does the dispatching to scheme
+void s4m_handle_float(t_s4m *x, int inlet_num, double arg){
+    //post("s4m_handle_float() message from inlet %i, arg: %5.2f", inlet_num, arg);
     s7_pointer s7_args = s7_nil(x->s7); 
     s7_args = s7_cons(x->s7, s7_make_real(x->s7, arg), s7_args); 
     // if on inlet 0, call to s7 should be (float number)
@@ -1161,33 +1208,53 @@ void s4m_float(t_s4m *x, double arg){
     }
 }
 
+
+void s4m_callback_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_callback_list()");
+    long inlet_num = atom_getlong( argv );
+    //post("inlet_num: %i", inlet_num);
+    s4m_handle_list(x, inlet_num, s, argc - 1, argv + 1);
+    sysmem_freeptr(argv);
+}
+
 // the list message handler, will handle any messages that are internally
 // the max message "list a b c", which includes "1 2 3" and "1 a b", but not "a b c"
 // Note: that's just how Max works, "1 2 3" becomes "list 1 2 3", but "a b c" does not
 void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     bool in_isr = isr();
-    //post("s4m_list(): selector is %s, isr: %i", s->s_name, in_isr );
-    // if this is a low-priority thread message, re-sched as high and exit and vice versa
-    if( !in_isr && x->thread == 'h' ){ 
-        return schedule(x, s4m_list, 0, s, argc, argv); 
-    }else if(  in_isr && x->thread == 'l' ){ 
-        return defer(x, s4m_list, s, argc, argv); 
-    } 
-
-
-    t_atom *ap;
     int inlet_num = proxy_getinlet((t_object *)x);
-    //post("s4m_list(): selector is %s",s->s_name);
-    //post("s4m_list(): there are %ld arguments",argc);
-    //post("message came from inlet %i", inlet_num);
+    //post("s4m_list(): selector is %s, isr: %i", s->s_name, in_isr );
+    
+    // need to make a new list with the same args, but with inlet_num at the head as new atom
+    if( (!in_isr && x->thread == 'h') || (in_isr && x->thread == 'l') ){
+        t_atom *ap = sysmem_newptr( sizeof(t_atom) * (argc + 1) );
+        atom_setlong(ap, inlet_num);
+        for(int i=0; i<argc; i++){
+            *(ap + i + 1) = *(argv + i);
+        }
+        // if this is a low-priority thread message, re-sched as high and exit and vice versa
+        // calling with our new list that encodes the inlet number
+        if( x->thread == 'h' ){ 
+            return schedule(x, s4m_callback_list, 0, s, argc+1, ap); 
+        }else if( x->thread == 'l' ){ 
+            return defer(x, s4m_callback_list, s, argc+1, ap); 
+        }
+    } 
+    // if we are in the right thread, just dispatch
+    // this is working fine (the no change version)
+    s4m_handle_list(x, inlet_num, s, argc, argv);
+}
+
+void s4m_handle_list(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_handle_list(): inlet_num: %i, selector is %s, argc: %i", inlet_num, s->s_name, argc);
     // turn all args into an s7 list
     s7_pointer s7_args = s7_nil(x->s7); 
     // loop through the args backwards to build the cons list 
+    t_atom *ap;
     for(int i = argc-1; i >= 0; i--) {
         ap = argv + i;
         s7_args = s7_cons(x->s7, max_atom_to_s7_obj(x->s7, ap), s7_args); 
     }
-    
     // add the first message to the arg list (it's always a symbol)
     // for inlet 0, it will be "flist" (so as not to collide with scheme reserved word "list")
     // for inlet 1+, it will be :list (for registered listeners)
@@ -1209,44 +1276,68 @@ void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     }
 }
 
+// evaluate a symbol passed in as a string of Scheme code
+void s4m_eval_string(t_s4m *x, t_symbol *s){
+    //post("new eval string handler");
+    int inlet_num = proxy_getinlet((t_object *)x);
+    if( inlet_num != 0 ){
+        error("s4m: eval-string only valid on inlet 0");
+        return;
+    }
+    // check if we need thread promotion or deferal 
+    // nothing fancy for preserving inlet numbers as inlet must be 0 already
+    bool in_isr = isr();
+    if( !in_isr && x->thread == 'h' ){ return schedule(x, s4m_eval_string, 0, s, 0, NULL); } 
+    if(  in_isr && x->thread == 'l' ){ return defer(x, s4m_eval_string, s, 0, NULL); } 
+    
+    char *sexp_input = s->s_name; 
+    //post("s7-in> %s", sexp_input);
+    s4m_s7_eval_string(x, sexp_input);
+    return; 
+}
+
+
 // the generic message hander, fires on any symbol messages, which includes lists of numbers or strings
 void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     bool in_isr = isr();
-    //post("s4m_msg(): selector is %s, isr: %i", s->s_name, in_isr );
-    // if this is a low-priority thread message, re-sched as high and exit and vice versa
-    if( !in_isr && x->thread == 'h' ){ return schedule(x, s4m_msg, 0, s, argc, argv); } 
-    if(  in_isr && x->thread == 'l' ){ return defer(x, s4m_msg, s, argc, argv); } 
-
-    //post("s4m_msg(): there are %ld arguments",argc);
-    t_atom *ap;
     int inlet_num = proxy_getinlet((t_object *)x);
-    //post("message came from inlet %i", inlet_num);
+    //post("s4m_msg(): selector is %s, isr: %i, inlet_num: %i", s->s_name, in_isr, inlet_num);
 
-    // for messages that come from inlets over 0, we interecept
-    // messages handled by max (set, load, reset) and pass
-    // on all others to s7 as sexps
-    // if the message does not have surrounding brackets, we add them
+    // for promotion/deferal, we need a new list with same args, but inlet_num at the head as new atom
+    if( (!in_isr && x->thread == 'h') || (in_isr && x->thread == 'l') ){
+        t_atom *ap = sysmem_newptr( sizeof(t_atom) * (argc + 1) );
+        atom_setlong(ap, inlet_num);
+        for(int i=0; i<argc; i++){
+            *(ap + i + 1) = *(argv + i);
+        }
+        // if this is a low-priority thread message, re-sched as high and exit and vice versa
+        // calling with our new list that encodes the inlet number
+        if( x->thread == 'h' ){ 
+            return schedule(x, s4m_callback_msg, 0, s, argc+1, ap); 
+        }else if( x->thread == 'l' ){ 
+            return defer(x, s4m_callback_msg, s, argc+1, ap); 
+        }
+    } 
+    // if we are in the right thread, just dispatch
+    s4m_handle_msg(x, inlet_num, s, argc, argv);
+}
+
+void s4m_callback_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_callback_msg()");
+    long inlet_num = atom_getlong( argv );
+    //post("inlet_num: %i", inlet_num);
+    s4m_handle_msg(x, inlet_num, s, argc - 1, argv + 1);
+    sysmem_freeptr(argv);
+}
+
+void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_handle_msg(): inlet_num: %i arguments: %ld isr: %i", inlet_num, argc, isr());
+    t_atom *ap;
+
+    // treat input to inlet 0 as a list of atoms that should be evaluated as a scheme expression
+    // as if the list were encloded in parens
+    // make an S7 list out of them, and send to S7 to eval (treat them as code list)
     if(inlet_num == 0){
-        // handle messages from the text editor other string input
-        if( gensym(s->s_name) == gensym("eval-string") ){
-            char *sexp_input = atom_getsym(argv)->s_name; 
-            //post("s7-in> %s", sexp_input);
-            s4m_s7_eval_string(x, sexp_input);
-            return; 
-        }
-        // reset message wipes the s7 env and reloads the source file if present
-        if( gensym("reset") == gensym(s->s_name) ){
-            s4m_reset(x);
-            return;
-        }
-        if( gensym("make") == gensym(s->s_name) ){
-            post("s4m: make");
-            s4m_make(x);
-            return;
-        }
-        // for all other input to inlet 0, we treat as list of atoms, so
-        // make an S7 list out of them, and send to S7 to eval (treat them as code list)
-        // this assumes the first word is a valid first word in an s7 form (ie not a number)
         s7_pointer s7_args = s7_nil(x->s7); 
         // loop through the args backwards to build the cons list 
         for(int i = argc-1; i >= 0; i--) {
@@ -1258,7 +1349,6 @@ void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
         // call the s7 eval function, sending in all args as an s7 list
         s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-eval"), s7_args);
     }
-
     // messages to non-zero inlets (handled by dispatch)
     else{ 
         // make an s7 list so it can be passed to a listener
@@ -1290,7 +1380,6 @@ void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
         // call the s7 dispatch function, sending in all args as an s7 list
         s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args);
     }
-
 }
 
 // execute a registered callback, this is called with scheduling and delaying
