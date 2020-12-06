@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ -247.0, -1001.0, 992.0, 927.0 ],
+		"rect" : [ -247.0, -1001.0, 1364.0, 915.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 1,
 		"default_fontsize" : 12.0,
@@ -466,10 +466,10 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 664.5, 995.0, 157.0, 35.0 ],
+					"patching_rect" : [ 664.5, 995.0, 160.0, 35.0 ],
 					"presentation" : 1,
 					"presentation_linecount" : 2,
-					"presentation_rect" : [ 589.5, 349.0, 137.0, 35.0 ],
+					"presentation_rect" : [ 589.5, 349.0, 139.0, 35.0 ],
 					"text" : "(begin (define l (list 'a :b #t)) (out 0 l))"
 				}
 
@@ -694,7 +694,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 444.5, 798.0, 173.0, 38.0 ],
+					"patching_rect" : [ 444.5, 798.0, 174.0, 38.0 ],
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 393.0, 309.0, 142.0, 38.0 ],
@@ -897,7 +897,7 @@
 					"patching_rect" : [ 231.5, 798.0, 173.0, 38.0 ],
 					"presentation" : 1,
 					"presentation_linecount" : 2,
-					"presentation_rect" : [ 202.5, 309.0, 141.0, 38.0 ],
+					"presentation_rect" : [ 202.5, 309.0, 142.0, 38.0 ],
 					"text" : "define and output kw as symbol"
 				}
 
@@ -1711,7 +1711,7 @@
 					"patching_rect" : [ 243.0, 313.0, 159.0, 38.0 ],
 					"presentation" : 1,
 					"presentation_linecount" : 2,
-					"presentation_rect" : [ 202.5, 156.0, 151.0, 38.0 ],
+					"presentation_rect" : [ 202.5, 156.0, 155.0, 38.0 ],
 					"text" : "define and output float, out 1"
 				}
 
