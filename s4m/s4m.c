@@ -452,8 +452,8 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "buffer-set-from-vector!", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
     s7_define_function(x->s7, "bufsv", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
 
-    //s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
-    //s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
+    s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
+    s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
    
     s7_define_function(x->s7, "send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
     s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
@@ -1397,6 +1397,52 @@ void s4m_execute_callback(t_s4m *x, t_symbol *s, short ac, t_atom *av){
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
     //post("max_atom_to_s7_obj()");
     s7_pointer s7_obj;
+
+    // case for arrays of atoms, which will be turned into S7 vectors
+    // pertinent docs: https://cycling74.com/sdk/max-sdk-8.0.3/html/group__atomarray.html
+    if( atomisatomarray(ap) ){
+        int length;
+        t_atom *inner_ap;
+        atomarray_getatoms( atom_getobj(ap), &length, &inner_ap);
+        // make and fill the vector recursively
+        s7_obj = s7_make_vector(s7, length);   
+        for(int i=0; i < length; i++){
+            s7_vector_set(s7, s7_obj, i, 
+                max_atom_to_s7_obj(s7, inner_ap + i )); 
+        }   
+        return s7_obj;
+    }
+    
+    // case for nested dicts, which get turned into hash-tables
+    if( atomisdictionary(ap) ){
+        t_symbol **keys = NULL;
+        long num_keys = 0;
+        dictionary_getkeys( atom_getobj(ap), &num_keys, &keys);
+        s7_obj = s7_make_hash_table(s7, num_keys);
+        for(int i=0; i < num_keys; i++){
+            t_symbol *key_sym = *(keys + i); 
+            t_atom *value = sysmem_newptr( sizeof( t_atom ) );
+            dictionary_getatom( atom_getobj(ap), key_sym, value);
+            s7_hash_table_set(s7, s7_obj, 
+                s7_make_symbol(s7, key_sym->s_name),    // key
+                max_atom_to_s7_obj(s7, value)           // val
+            );         
+            sysmem_freeptr(value); 
+        }
+        // free the keys
+        if(keys) 
+            dictionary_freekeys( atom_getobj(ap), num_keys, keys);
+        return s7_obj;
+    }
+
+    // case for string atoms, as can be the case if strings are mixed in arrays  
+    if( atomisstring(ap) ){
+        char *str = string_getptr( atom_getobj(ap) );
+        s7_obj = s7_make_string(s7, str);
+        return s7_obj;
+    }
+
+    // simple types
     switch (atom_gettype(ap)) {
         case A_LONG:
             //post("int %ld", atom_getlong(ap));
@@ -2324,9 +2370,6 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
 }
 
 
-
-
-
 // read a value from a named dict, scheme function dict-get
 // at present, only supports simple types for values and keywords or symbols for keys
 static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args) {
@@ -2361,6 +2404,7 @@ static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args) {
         object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
         return;
     }
+
     t_atom value;
     err = dictionary_getatom(dict, gensym(dict_key), &value);
     if(err){
