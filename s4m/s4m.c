@@ -514,24 +514,7 @@ void s4m_init_s7(t_s4m *x){
     if( x->source_file != _sym_nothing){
         s4m_doread(x, x->source_file, true, false);
     }
-    post("s4m_init_s7 complete");
-
-    // calling functions
-    //s7_pointer f_inc = s7_eval_c_string(x->s7, "(define (my-inc a)(+ 1 a))");
-    //s7_pointer arg = s7_make_integer(x->s7, 42);
-    ////s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "my-inc"), s7_list(x->s7, 1, s7_make_integer(x->s7, 99)));
-    //s7_pointer res = s7_call(x->s7, f_inc, s7_list(x->s7, 1, s7_make_integer(x->s7, 99)));
-    //post("res: %s", s7_object_to_c_string(x->s7, res) ); 
-
-    // define our keys function
-    s7_pointer f_hash_table_keys = s7_eval_c_string(x->s7, "(define (hash-table-keys my-inc a)(+ 1 a))");
-
-    s7_pointer h = s7_eval_c_string(x->s7, "(hash-table :a 1 :b 2 :c 3)");
-
-    s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "map"), 
-        s7_list(x->s7, 2, s7_name_to_value(x->s7, "values"), h));
-    post("res: %s", s7_object_to_c_string(x->s7, res) ); 
-
+    //post("s4m_init_s7 complete");
 }
 
 // wipe the scheme interpreter and reset any state
@@ -1566,7 +1549,6 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
         }
         atom_setobj(atom, (void *)dict);
     }
-
 
     // booleans are cast to ints 
     else if( s7_is_boolean(s7_obj) ){
