@@ -7,6 +7,7 @@
 #include "ext_hashtab.h"    
 #include "ext_strings.h"
 #include "ext_dictobj.h"
+#include "ext_atomarray.h"
 #include "ext_time.h"
 #include "ext_itm.h"
 #include "stdint.h"
@@ -513,7 +514,24 @@ void s4m_init_s7(t_s4m *x){
     if( x->source_file != _sym_nothing){
         s4m_doread(x, x->source_file, true, false);
     }
-    //post("s4m_init_s7 complete");
+    post("s4m_init_s7 complete");
+
+    // calling functions
+    //s7_pointer f_inc = s7_eval_c_string(x->s7, "(define (my-inc a)(+ 1 a))");
+    //s7_pointer arg = s7_make_integer(x->s7, 42);
+    ////s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "my-inc"), s7_list(x->s7, 1, s7_make_integer(x->s7, 99)));
+    //s7_pointer res = s7_call(x->s7, f_inc, s7_list(x->s7, 1, s7_make_integer(x->s7, 99)));
+    //post("res: %s", s7_object_to_c_string(x->s7, res) ); 
+
+    // define our keys function
+    s7_pointer f_hash_table_keys = s7_eval_c_string(x->s7, "(define (hash-table-keys my-inc a)(+ 1 a))");
+
+    s7_pointer h = s7_eval_c_string(x->s7, "(hash-table :a 1 :b 2 :c 3)");
+
+    s7_pointer res = s7_call(x->s7, s7_name_to_value(x->s7, "map"), 
+        s7_list(x->s7, 2, s7_name_to_value(x->s7, "values"), h));
+    post("res: %s", s7_object_to_c_string(x->s7, res) ); 
+
 }
 
 // wipe the scheme interpreter and reset any state
@@ -1486,10 +1504,72 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
     return s7_obj;
 }
 
+/*
+void master_anything(t_master *x, t_symbol *s, long ac, t_atom *av)
+{
+	t_atomarray *aa = NULL;
+	t_atom *argv = NULL;
+	long argc = 0;
+	char alloc;
+
+	if (atom_alloc_array(ac + 1, &argc, &argv, &alloc) == MAX_ERR_NONE) {
+		atom_setsym(argv, s);
+		sysmem_copyptr(av, argv + 1, sizeof(t_atom) * ac);
+		aa = atomarray_new(argc, argv);
+		if (aa) {
+			object_notify(x->conduit, gensym("sendmessage"), aa);
+			object_free(aa);
+		}
+		sysmem_freeptr(argv);
+	}
+}
+*/
+
+// todo, get this puppy working for arrays and dictionaries too
 t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
-    // post("s7_obj_to_max_atom");
+    //post("s7_obj_to_max_atom");
+
+    // s7 vectors get turned into atom arrays, with recursive calls
+    if( s7_is_vector(s7_obj) ){
+        // need to make a new atomarray and then set that on the atom
+        int vector_len = s7_vector_length(s7_obj);
+        // make a new empty atom array
+        t_atomarray *aa = NULL;
+		aa = atomarray_new(0, NULL);
+        for(int i=0; i < vector_len; i++){
+            t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+            s7_obj_to_max_atom(s7, s7_vector_ref(s7, s7_obj, i), ap);         
+            atomarray_appendatom(aa, ap); 
+        }
+        // attempt to set the atom be an atom array, not working. getting crashes
+        atom_setobj(atom, (void *)aa);
+    }
+
+    // s7 hashtables get turned into dictionaries
+    else if( s7_is_hash_table(s7_obj) ){
+        //post("hash table to dict"); 
+        // get a list of key/value cons pairs in the hash by calling (map values the-hash-table)
+        s7_pointer key_val_list = s7_call(s7, s7_name_to_value(s7, "map"), 
+            s7_list(s7, 2, s7_name_to_value(s7, "values"), s7_obj));
+        int num_pairs = s7_list_length(s7, key_val_list);
+        // make a new dictionary and populate it with keys and atoms
+        t_dictionary *dict = dictionary_new();
+        for(int i=0; i < num_pairs; i++){
+            t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+            s7_pointer kv_pair = s7_list_ref(s7, key_val_list, i);
+            s7_pointer key = s7_car( kv_pair ); 
+            s7_pointer val = s7_cdr( kv_pair );
+            char *key_str = s7_object_to_c_string(s7, key);
+            // set the value of the atom with a recursive call and append to dict
+            s7_obj_to_max_atom(s7, val, ap);
+            dictionary_appendatom(dict, gensym(key_str), ap);
+        }
+        atom_setobj(atom, (void *)dict);
+    }
+
+
     // booleans are cast to ints 
-    if( s7_is_boolean(s7_obj) ){
+    else if( s7_is_boolean(s7_obj) ){
         // post("creating int from s7 boolean");
         atom_setlong(atom, (int)s7_boolean(s7, s7_obj));  
     }
