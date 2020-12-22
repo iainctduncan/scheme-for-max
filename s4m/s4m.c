@@ -173,9 +173,14 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
+
 static s7_pointer s7_dict_find_lookup(s7_scheme *s7, t_atom *atom_container, s7_pointer key_list);
 static s7_pointer s7_dict_find(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
+
+static s7_pointer s7_dict_replace_lookup(s7_scheme *s7, t_atom *atom_container, s7_pointer key_list, t_atom *value);
+static s7_pointer s7_dict_replace(s7_scheme *s7, s7_pointer args);
+
 static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_hashtable_to_dict(s7_scheme *s7, s7_pointer args);
 
@@ -458,8 +463,9 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "bufsv", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
 
     s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get 'dict :bar ) returns value from dict :foo at key :bar");
-    s7_define_function(x->s7, "dict-find", s7_dict_find, 2, 0, false, "(dict-find dict '(a b c) )");
     s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
+    s7_define_function(x->s7, "dict-find", s7_dict_find, 2, 0, false, "(dict-find dict '(a b c) )");
+    s7_define_function(x->s7, "dict-replace", s7_dict_replace, 3, 0, false, "(dict-replace dict '(a b c) value)");
     s7_define_function(x->s7, "dict->hash-table", s7_dict_to_hashtable, 1, 0, false, "returns a hash-table from a Max dict");
     s7_define_function(x->s7, "d->h", s7_dict_to_hashtable, 1, 0, false, "returns a hash-table from a Max dict");
     s7_define_function(x->s7, "hash-table->dict", s7_hashtable_to_dict, 2, 0, false, "populates and optionall creates a max dict from a hash-table");
@@ -1402,7 +1408,6 @@ void s4m_execute_callback(t_s4m *x, t_symbol *s, short ac, t_atom *av){
 } 
 
 
-
 // convert a max atom to the appropriate type of s7 pointer
 // TODO: this might need GC protection in it, I'm not sure
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
@@ -1412,7 +1417,7 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
     // case for arrays of atoms, which will be turned into S7 vectors
     // pertinent docs: https://cycling74.com/sdk/max-sdk-8.0.3/html/group__atomarray.html
     if( atomisatomarray(ap) ){
-        int length;
+        long length;
         t_atom *inner_ap;
         atomarray_getatoms( atom_getobj(ap), &length, &inner_ap);
         // make and fill the vector recursively
@@ -1496,27 +1501,6 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
     }
     return s7_obj;
 }
-
-/*
-void master_anything(t_master *x, t_symbol *s, long ac, t_atom *av)
-{
-	t_atomarray *aa = NULL;
-	t_atom *argv = NULL;
-	long argc = 0;
-	char alloc;
-
-	if (atom_alloc_array(ac + 1, &argc, &argv, &alloc) == MAX_ERR_NONE) {
-		atom_setsym(argv, s);
-		sysmem_copyptr(av, argv + 1, sizeof(t_atom) * ac);
-		aa = atomarray_new(argc, argv);
-		if (aa) {
-			object_notify(x->conduit, gensym("sendmessage"), aa);
-			object_free(aa);
-		}
-		sysmem_freeptr(argv);
-	}
-}
-*/
 
 // todo, get this puppy working for arrays and dictionaries too
 t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
@@ -2624,6 +2608,140 @@ static s7_pointer s7_dict_find(s7_scheme *s7, s7_pointer args) {
     err = dictobj_release(dict);
     return s7_value;
 }
+
+// recursive function for looking up items in dict from key list
+static s7_pointer s7_dict_replace_lookup(s7_scheme *s7, t_atom *container_atom, s7_pointer key_list, t_atom *value){
+    //post("s7_dict_replace_lookup()");
+    t_max_err err;
+    s7_pointer *s7_value = NULL;
+    char err_msg[128];
+    char *key_str = NULL;
+    int key_int = NULL;
+
+    // if key_list length is 1 and container_atom[ key_list[0] ] is not a dict, return the value
+    s7_pointer key = s7_car(key_list);
+    s7_pointer rest_keys = s7_cdr(key_list);
+  
+    if( s7_is_symbol(key) ){
+        key_str = s7_symbol_name(key);
+    }else if( s7_is_string(key) ){
+        key_str = s7_string(key);
+    }else if( s7_is_integer(key) ){
+        key_int = s7_integer(key);
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "keys must be symbols or strings"));
+    }
+
+    // case: container is a dict
+    if( atomisdictionary( container_atom ) ){
+        // non string/symbol key is an error
+        if( !key_str ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "keys to dicts must be symbols or strings"));
+        }
+        // case string key and key list used up: set value and return
+        else if( s7_is_null(s7, rest_keys) ){
+            //post("...setting value");
+            // free old entry to avoid memory leaking
+            dictionary_deleteentry( atom_getobj(container_atom), gensym(key_str));
+            // set container[key] to value and return
+            dictionary_appendatom( atom_getobj(container_atom), gensym(key_str), value);
+            // should we return the value set??
+            return;
+        }
+        // case string key, but we have more keys to use up: recurse
+        else {
+            // get the next container and recurse
+            t_atom next_container_atom;
+            dictionary_getatom( atom_getobj(container_atom), gensym(key_str), &next_container_atom);
+            return s7_dict_replace_lookup(s7, &next_container_atom, rest_keys, value);
+        }   
+    }
+    // case: container is an array
+    else if (atomisatomarray( container_atom ) ){
+        if( !key_int ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "keys to arrays must be integers"));
+        }    
+        // case int key and key list used up: set value and return
+        else if( s7_is_null(s7, rest_keys) ){
+            // set container[key] to value and return
+            t_atom *inner_ap;
+            long num_atoms;
+            atomarray_getatoms( atom_getobj(container_atom), &num_atoms, &inner_ap);            
+            // free old atom and replace
+            sysmem_freeptr( (void *)(inner_ap + key_int) ); 
+            // replace with the new value
+            *(inner_ap + key_int) = *value; 
+            return;
+        }
+        // case int key and array container, more keys left: recurse
+        else {
+            // get the next container and recurse
+            t_atom next_container_atom;
+            atomarray_getindex( atom_getobj(container_atom), key_int, &next_container_atom);
+            return s7_dict_replace_lookup(s7, &next_container_atom, rest_keys, value);
+        }   
+    }
+    // case the container atom we are to look in doesn't actually have a container: error
+    else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "dict-put, attempt to set value in non-container"));
+    }
+
+}
+
+// set a value a value from a named dict, recursing through a list of keys
+static s7_pointer s7_dict_replace(s7_scheme *s7, s7_pointer args) {
+    //post("s7_dict_replace()");
+    // table names could come in from s7 as either strings or symbols, if using keyword table names
+    t_s4m *x = get_max_obj(s7);
+    char *dict_name;
+    char *dict_key;
+    s7_pointer *s7_value = NULL;
+    t_max_err err;
+
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        dict_name = s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        dict_name = s7_string( s7_car(args) );
+    }else{
+        post("s4m: ERROR in dict-find, dict name is not a keyword, string, or symbol");
+        return;
+    }   
+
+    // if arg 2 is not a list of keys, error
+    s7_pointer key_list_arg = s7_cadr(args);
+    if( !s7_is_list(s7, key_list_arg ) ){ 
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "dict-find arg 2 must be a list of keys"));
+    }
+
+    // arg three is the value
+    s7_pointer value_arg = s7_caddr(args);
+    // convert the value we want to set to a Max atom
+    t_atom *value_atom = sysmem_newptr( sizeof( t_atom ) );
+    s7_obj_to_max_atom(s7, value_arg, value_atom); 
+
+    t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
+    if( !dict ){
+        object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
+        return;
+    }
+    // make an atom to hold the dict for recursing
+    t_atom container;
+    atom_setobj(&container, (void *)dict);
+
+    // call the replace lookup which may recurse (returns value set on success, null error)
+    s7_value = s7_dict_replace_lookup(s7, &container, key_list_arg, value_atom);
+    
+    // when done with dicts, we must release the ref count
+    //err = dictobj_release(dict);
+    s7_value = s7_nil(s7);
+    return s7_value;
+}
+
 
 static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
     //post("s7_dict_set()");
