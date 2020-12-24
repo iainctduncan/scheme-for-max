@@ -1,0 +1,46 @@
+Dict notes:
+
+- dict-set {dict-name} {key} {value}
+  - working, need to add GC protection I think
+- dict-get {dict-name} {key} {value}
+
+- dict-get {dict-name} {key-list} 
+- dict-set {dict-name} {key-list} {value}
+
+- (dict->hash-table 'dict-name)
+- (hash-table->dict 'dict-name)
+
+- (dict-keys)
+- (hash-table-keys)
+
+- (dict-iter 'dict (lambda (k,v)() )
+
+For V0.2:
+- dict-get dict-set
+- dict->hash, hash->dict
+- ? dict-keys
+- ? dict-values
+
+- dict-find working now for recursing through dicts and arrays
+- dict-replace
+- dict-put, as with dict-find, does not make entries if key bad (returns null)
+
+
+IN PROGRESS:
+- figure out how they should be in the actual API
+- got a version making hierarchies ok! it's in the code right now as dict-put, 
+  but should be renamed to dict-replace
+
+LEFTOFF
+- need to re-route the functions so that:
+  - dict-set can take a list as first arg and uses what is currently in there as dict-replace
+  - dict-replace should use what is in there as dict-put
+- then I think we are code complete for V0.2. Phew!
+ 
+Final version
+- dict-set
+  - works with key as list or values
+
+- LEFT OFF:
+- bug in the refactor of dict-set for the list key case, crashing
+
