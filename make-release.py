@@ -6,7 +6,7 @@ import os
 # its job is to copy the package, including the binary assets and scm files, into the 
 # dist directory, ready for zipping up for release
 
-version = "0.1.7-beta-osx"     # appended to tarball name
+version = "0.2.1-beta"     # appended to tarball name
 dry_run = False
 
 externals_src = "../../externals"
@@ -23,6 +23,8 @@ scm_files = [
     ("stuff.scm", "stuff.scm"),
     ("cm/loop.scm", "loop.scm"),
     ("cm/utilities.scm", "utilities.scm")
+    ("loop.scm", "loop.scm"),
+    ("utilities.scm", "utilities.scm")
 ]
 # list of patchers aside from the external
 patcher_files = [

@@ -1,17 +1,26 @@
 ;; the scm4max scheme code to build the API
-(max-post "Bootstrapping s4m.scm")
+;(max-post "Bootstrapping s4m.scm")
 
 ;; stuff.scm contains the scheme level s7 helper definitions and must be loaded for various
 ;; s4m functions to work ok. it comes from S7 upstream 
 (load-from-max "stuff.scm")
 
+;; S74 is a convenience layer over S7, with functions from various other lisps
+;; (Racket, Clojure, etc)
+(load-from-max "s74.scm")
+
 ;; Uncomment the below to load the loop macro and various utilities from Common Music
 ;; They are not necessary for core Scheme-for-Max to run
 ;; NB: 2020-05-08 there is an issue with loop.scm on windows, we are working on it.
-;(load-from-max "loop.scm")
-;(load-from-max "utilities.scm")
+(load-from-max "loop.scm")
+(load-from-max "utilities.scm")
 
 ;; misc convenience functions we use
+
+;; catenated object to string reprs of things
+(define (str-repr . args) 
+ (let ((repr (lambda x (string-append (object->string x) " "))))
+   (apply string-append (map repr args))))
 
 ;; convert to a string for our post function
 (define (stringify item)
@@ -33,10 +42,11 @@
                   (cond 
                     ((null? lat) "")
                     (else (string-append (stringify (car lat)) " " (log-string (cdr lat))))))))
-    (max-post (log-string args))))
+    (max-post (log-string args))
+))
 
 ;; helper to set whether we see nulls logged to the console, defaults to false
-(define s4m-log-nulls #f)
+(define s4m-log-nulls #t)
 (define (s4m-filter-result res)
   ;; if we replace what would be returned by :no-log, s4m will not print to console
   (cond 
@@ -92,6 +102,9 @@
     (eval args (rootlet))))
 
 
+;; roll all this in later
+(load-from-max "schedule.scm")
+
 ;; convenience functions for output, sometimes you want a one arg function...
 (define (out outlet_num args) (max-output outlet_num args))
 (define (out-0 args) (max-output 0 args))
@@ -105,4 +118,4 @@
 
 (define s4m-done-bootstrap #t)
 
-(post "s4m.scm BOOTSTRAP COMPLETE")
+;(post "s4m.scm BOOTSTRAP COMPLETE")

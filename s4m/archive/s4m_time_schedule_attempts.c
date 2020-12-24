@@ -1,13 +1,12 @@
 #include "ext.h"
 #include "ext_obex.h"						// required for new style Max object
-#include "ext_obex_util.h"						// required for new style Max object
 #include "math.h"
 #include "ext_common.h"
 #include "ext_buffer.h"
+#include "ext_obex.h"
 #include "ext_hashtab.h"    
 #include "ext_strings.h"
 #include "ext_dictobj.h"
-#include "ext_atomarray.h"
 #include "ext_time.h"
 #include "ext_itm.h"
 #include "stdint.h"
@@ -28,8 +27,6 @@ typedef struct _s4m {
    t_object obj;
    s7_scheme *s7;
 
-   bool log_return_values;             // whether to post the return values of evaluating scheme functions
-
    t_symbol *source_file;              // main source file name (if one passed as object arg)
    short *source_file_path_id;         // path to source file
    t_filehandle source_file_handle;    // file handle for the source file
@@ -42,30 +39,20 @@ typedef struct _s4m {
    void *inlet_proxies[MAX_NUM_INLETS];
 
    long num_outlets;
-   void *outlets[MAX_NUM_OUTLETS];      
+   void *outlets[MAX_NUM_OUTLETS]; // should be a dynamic array, but I'm crashing too much
       
    t_object *patcher;   
-   t_hashtab *registry;                 // objects by scripting name
+   t_hashtab *registry;            // objects by scripting name
 
-   t_hashtab *clocks;                   // delay clocks by handle, for clocks and time objects
-   t_hashtab *clocks_quant;             // clocks by handle for quantization time objects only
+   t_hashtab *clocks;              // clocks by handle, for clocks and time objects
+   t_hashtab *clocks_quant;        // clocks by handle for quantization time objects only
  
-   t_object *timeobj;                   // timeobjs for calculating quantized delay calls
-   t_object *timeobj_quant;             // TODO rename
-
-   t_object *time_listen_ticks;         // time obj for the listen every X ticks callback
-   t_object *time_listen_ticks_q;       // quantize for the above
-
-   t_object *time_listen_ms;            // time obj used for listen-ms-t (uses transport)
-   t_object *clock_listen_ms;           // clock obj used for listen-ms (no attached transport)
-   double clock_listen_ms_interval;     // time in ms for the listen-ms clock  
-   double clock_listen_ms_t_interval;   // time in ms for the listen-ms-t clock  
-
-   t_object *m_editor;                  // text editor
+   t_object *timeobj;
+   t_object *timeobj_quant;
+     
+   t_object *m_editor;             // text editor
     
    t_object *test_obj; 
-
-   bool initialized;                    // gets set to true after object initialization complete
 
 } t_s4m;
 
@@ -94,31 +81,15 @@ void s4m_s7_eval_string(t_s4m *x, char *string_to_eval);
 void s4m_s7_load(t_s4m *x, char *full_path);
 void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args);
 
-void s4m_reset(t_s4m *x);
 void s4m_dblclick(t_s4m *x);
 void s4m_edclose(t_s4m *x, char **ht, long size);
 void s4m_read(t_s4m *x, t_symbol *s);
-void s4m_eval_string(t_s4m *x, t_symbol *s);
-
-// functions for handling messages into the s4m object
-void s4m_bang(t_s4m *x);
-void s4m_callback_bang(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
-void s4m_handle_bang(t_s4m *x, int inlet_num);
 void s4m_int(t_s4m *x, long arg);
-void s4m_callback_int(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
-void s4m_handle_int(t_s4m *x, int inlet_num, long arg);
-void s4m_float(t_s4m *x, double arg);
-void s4m_callback_float(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
-void s4m_handle_float(t_s4m *x, int inlet_num, double arg);
-
 void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
-void s4m_callback_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
-void s4m_handle_list(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv);
 
+void s4m_float(t_s4m *x, double arg);
+void s4m_bang(t_s4m *x);
 void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
-void s4m_callback_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
-void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv);
-
 
 void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file, bool skip_s7_load);
 void s4m_openfile(t_s4m *x, char *filename, short path);
@@ -126,6 +97,7 @@ void s4m_openfile(t_s4m *x, char *filename, short path);
 void s4m_dblclick(t_s4m *x);
 void s4m_edclose(t_s4m *x, char **ht, long size);
 long s4m_edsave(t_s4m *x, char **ht, long size);
+
 // IN PROG
 void s4m_make(t_s4m *x);
 
@@ -173,58 +145,18 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_dict_get_recurser(s7_scheme *s7, t_atom *atom_container, s7_pointer key_list);
 static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_dict_set_recurser(s7_scheme *s7, t_atom *atom_container, s7_pointer key_list, t_atom *value);
-static s7_pointer s7_dict_replace(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_dict_replace_recurser(s7_scheme *s7, t_atom *atom_container, s7_pointer key_list, t_atom *value);
-
-static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_hashtable_to_dict(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args);
 
-static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args);
-
-static s7_pointer s7_itm_get_state(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_set_state(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_set_tempo(s7_scheme *s7, s7_pointer args);
-
-static s7_pointer s7_itm_seek(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_seek_ticks(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_seek_bbu(s7_scheme *s7, s7_pointer args);
-
-static s7_pointer s7_itm_get_ticks(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_get_time(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_get_timesig(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_set_timesig(s7_scheme *s7, s7_pointer args);
-
-static s7_pointer s7_itm_ticks_to_ms(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_ticks_to_bbu(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_ms_to_ticks(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_ms_to_bbu(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_bbu_to_ticks(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_itm_bbu_to_ms(s7_scheme *s7, s7_pointer args);
-
-static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_cancel_itm_listen_ticks(s7_scheme *s7, s7_pointer args);
-void s4m_itm_listen_ticks_cb(t_s4m *x);
-
-static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args);
-void   s4m_itm_listen_ms_cb(t_s4m *x);
-
-static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_cancel_listen_ms(s7_scheme *s7, s7_pointer args);
-void   s4m_listen_ms_cb(t_s4m *x);
+static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_schedule_itm(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_isr(s7_scheme *s7, s7_pointer args);
 
-void s4m_cancel_clock_entry(t_hashtab_entry *e, void *arg);
 void s4m_clock_callback(void *arg);
-
+void s4m_time_callback(t_s4m *x);
 
 /********************************************************************************
 / some helpers */
@@ -275,11 +207,13 @@ void ext_main(void *r){
     c = class_new("s4m", (method)s4m_new, (method)s4m_free,
          (long)sizeof(t_s4m), 0L /* leave NULL!! */, A_GIMME, 0);
 
-    
-	class_addmethod(c, (method)s4m_reset, "reset", NULL, 0);
-	class_addmethod(c, (method)s4m_eval_string, "eval-string", A_DEFSYM, 0);
 	class_addmethod(c, (method)s4m_read, "read", A_DEFSYM, 0);
     class_addmethod(c, (method)s4m_scan, "scan", NULL, 0);
+    class_addmethod(c, (method)s4m_bang, "bang", NULL, 0);
+    class_addmethod(c, (method)s4m_list, "list", A_GIMME, 0);
+    class_addmethod(c, (method)s4m_int, "int", A_LONG, 0);
+
+    class_addmethod(c, (method)s4m_float, "float", A_FLOAT, 0);
     class_addmethod(c, (method)s4m_dblclick, "dblclick", A_CANT, 0);
     class_addmethod(c, (method)s4m_edclose, "edclose", A_CANT, 0);
     class_addmethod(c, (method)s4m_edsave, "edsave", A_CANT, 0);
@@ -288,40 +222,24 @@ void ext_main(void *r){
     // test of making things with this patcher 
     //class_addmethod(c, (method)s4m_make, "make", NULL, 0);
 
-    // generic message handlers  
-    class_addmethod(c, (method)s4m_bang, "bang", NULL, 0);
-    class_addmethod(c, (method)s4m_int, "int", A_LONG, 0);
-    class_addmethod(c, (method)s4m_float, "float", A_FLOAT, 0);
-    class_addmethod(c, (method)s4m_list, "list", A_GIMME, 0);
+    // generic message handler for anything else
+    // NOTE: this will not receive "int 1" messages, even if not int listener above!
     class_addmethod(c, (method)s4m_msg, "anything", A_GIMME, 0);
 
-    // one time attrs for number of ins and outs and the thread
-    // invisible means it does not show up in inspector, and can't get set from a realtime message
-    // we use this to ensure this is only set with an @ arg in the patcher box
     CLASS_ATTR_LONG(c, "ins", 0, t_s4m, num_inlets);
     CLASS_ATTR_ACCESSORS(c, "ins", NULL, s4m_inlets_set);
-    CLASS_ATTR_INVISIBLE(c, "ins", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
     CLASS_ATTR_SAVE(c, "ins", 0);   // save with patcher
     CLASS_ATTR_LONG(c, "outs", 0, t_s4m, num_outlets);
     CLASS_ATTR_ACCESSORS(c, "outs", NULL, s4m_outlets_set);
-    CLASS_ATTR_INVISIBLE(c, "outs", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
     CLASS_ATTR_SAVE(c, "outs", 0);   // save with patcher
-    
-    // attribute for thread, can be 'h', 'l', or 'a'
-    CLASS_ATTR_CHAR(c, "thread", 0, t_s4m, thread);
+    // attribute for thread
+    CLASS_ATTR_SYM(c, "thread", 0, t_s4m, thread);
     CLASS_ATTR_ACCESSORS(c, "thread", NULL, s4m_thread_set);
-    CLASS_ATTR_INVISIBLE(c, "thread", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
-    CLASS_ATTR_SAVE(c, "thread", 0);   // save with patcher
+    //CLASS_ATTR_SAVE(c, "thread", 0);   // save with patcher
 
-    // attrs for the internal time and quantize objects
-    // we set them to not be settable from the patcher or to appear in the inspector
-    class_time_addattr(c, "_delaytime", "Delay Time", TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK | TIME_FLAGS_TRANSPORT);
-    CLASS_ATTR_ADD_FLAGS(c, "_delaytime", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
-    class_time_addattr(c, "_quantize", "Quantization", TIME_FLAGS_TICKSONLY);   
-    CLASS_ATTR_ADD_FLAGS(c, "_quantize", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
-    class_time_addattr(c, "_listen_ticks", "Ticks per callback", TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK | TIME_FLAGS_TRANSPORT);
-    CLASS_ATTR_ADD_FLAGS(c, "_listen_ticks", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
-
+    class_time_addattr(c, "delaytime", "Delay Time", TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK | TIME_FLAGS_TRANSPORT);
+    class_time_addattr(c, "quantize", "Quantization", TIME_FLAGS_TICKSONLY);   
+ 
     class_addmethod(c, (method)s4m_assist, "assist", A_CANT, 0);
     class_register(CLASS_BOX, c); 
     s4m_class = c;
@@ -341,21 +259,10 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     x->source_text_handle = sysmem_newhandle(0);
     x->m_editor = NULL;
 
-    // by default we log return values
-    // todo, should this be an attribute??
-    x->log_return_values = true;
-
-    // init the singleton time and quant objects, note: they have no task set. 
-    x->timeobj = (t_object *) time_new((t_object *)x, gensym("_delaytime"), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-	x->timeobj_quant = (t_object *) time_new((t_object *)x, gensym("_quantize"), NULL, TIME_FLAGS_TICKSONLY);
-
-    // time object for the tick listen callback
-	x->time_listen_ticks = (t_object *) time_new((t_object *)x, gensym("_listen_ticks"), (method) s4m_itm_listen_ticks_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-	x->time_listen_ticks_q = (t_object *) time_new((t_object *)x, gensym("_listen_ticks_q"), NULL, TIME_FLAGS_TICKSONLY );
-    // time object for the itm_listen_ms function
-	x->time_listen_ms = (t_object *) time_new((t_object *)x, gensym("_listen_ms_t"), (method) s4m_itm_listen_ms_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-    // clock object used for the listen_ms no transport function
-	x->clock_listen_ms = (t_object *) clock_new((t_object *)x, (method) s4m_listen_ms_cb); 
+    //x->timeobj = (t_object *) time_new((t_object *)x, gensym("delaytime"), (method)delay2_tick, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    // init the singleton time and quant objects
+    x->timeobj = (t_object *) time_new((t_object *)x, gensym("delaytime"), (method)s4m_time_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+	x->timeobj_quant = (t_object *) time_new((t_object *)x, gensym("quantize"), NULL, TIME_FLAGS_TICKSONLY);
 
     // setup internal member defaults 
     x->num_inlets = 1;
@@ -412,14 +319,10 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
         //post("s4m_new() source file: %s", x->source_file->s_name);
     }
     //post("init s7");
-    s4m_init_s7(x);
-
-    // set initialized flag, used to prevent some changes after object creation
-    x->initialized = true;
- 
+    s4m_init_s7(x); 
     return (x);
 }
-
+//
 // init and set up the s7 interpreter, and load main source file if present
 void s4m_init_s7(t_s4m *x){
     //post("s4m: initializing s7 interpreter");
@@ -428,6 +331,7 @@ void s4m_init_s7(t_s4m *x){
     // initialize interpreter
     x->s7 = s7_init();
 
+    // define functions that will be implemented in C and available from scheme
     s7_define_function(x->s7, "max-output", s7_max_output, 2, 0, false, "(max-output 1 99) sends value 99 out outlet 1");
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
     s7_define_function(x->s7, "load-from-max", s7_load_from_max, 1, 0, false, "load files from the max path");
@@ -454,63 +358,23 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "bufr", s7_buffer_ref, 2, 1, false, "alias for buffer-ref");
     s7_define_function(x->s7, "buffer-set!", s7_buffer_set, 3, 1, false, "(buffer-set! :foo 4 127) writes value 4 to index 127 of buffer :foo");
     s7_define_function(x->s7, "bufs", s7_buffer_set, 3, 1, false, "(buffer-set! :foo 4 127) writes value 4 to index 127 of buffer :foo");
-    s7_define_function(x->s7, "buffer->vector", s7_buffer_to_vector, 1, 3, false, "create new vector from buffer");
-    s7_define_function(x->s7, "b->v", s7_buffer_to_vector, 1, 3, false, "create new vector from buffer");
+    s7_define_function(x->s7, "buffer->vector", s7_buffer_to_vector, 1, 2, false, "create new vector from buffer");
+    s7_define_function(x->s7, "b->v", s7_buffer_to_vector, 1, 2, false, "create new vector from buffer");
 
     s7_define_function(x->s7, "buffer-set-from-vector!", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
     s7_define_function(x->s7, "bufsv", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
 
-    s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get 'dict :bar ) returns value from dict :foo at key :bar");
-    s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
-    s7_define_function(x->s7, "dict-replace", s7_dict_replace, 3, 0, false, "(dict-replace dict '(a b c) value)");
-    s7_define_function(x->s7, "dict->hash-table", s7_dict_to_hashtable, 1, 0, false, "returns a hash-table from a Max dict");
-    s7_define_function(x->s7, "d->h", s7_dict_to_hashtable, 1, 0, false, "returns a hash-table from a Max dict");
-    s7_define_function(x->s7, "hash-table->dict", s7_hashtable_to_dict, 2, 0, false, "populates and optionall creates a max dict from a hash-table");
-    s7_define_function(x->s7, "h->d", s7_hashtable_to_dict, 2, 0, false, "populates and optionall creates a max dict from a hash-table");
+    //s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get :foo :bar ) returns value from dict :foo at key :bar");
+    //s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
    
+
     s7_define_function(x->s7, "send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
+    
+    s7_define_function(x->s7, "s4m-schedule-callback", s7_schedule_callback, 2, 0, true, "(s4m-schedule-callback {time} {cb-handle}");
+    s7_define_function(x->s7, "s4m-schedule-clock", s7_schedule_clock, 2, 0, true, "(s4m-schedule-clock {time} {cb-handle}");
+    s7_define_function(x->s7, "s4m-schedule-itm", s7_schedule_itm, 2, 1, true, "(s4m-schedule-itm {time} {opt quant} {cb-handle}");
+
     s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
-
-    // transport fuctions, v0.2
-    s7_define_function(x->s7, "transport-state", s7_itm_get_state, 0, 0, true, "");
-    s7_define_function(x->s7, "t-state", s7_itm_get_state, 0, 0, true, "");
-    s7_define_function(x->s7, "transport-set-state", s7_itm_set_state, 1, 0, true, "");
-    s7_define_function(x->s7, "t-state!", s7_itm_set_state, 1, 0, true, "");
-    s7_define_function(x->s7, "transport-set-bpm", s7_itm_set_tempo, 1, 0, true, "");
-    s7_define_function(x->s7, "t-bpm!", s7_itm_set_tempo, 1, 0, true, "");
-    s7_define_function(x->s7, "transport-ticks", s7_itm_get_ticks, 0, 0, true, "");
-    s7_define_function(x->s7, "t-ticks", s7_itm_get_ticks, 0, 0, true, "");
-    
-    s7_define_function(x->s7, "transport-time-sig", s7_itm_get_timesig, 0, 0, true, "");
-    s7_define_function(x->s7, "t-time-sig", s7_itm_get_timesig, 0, 0, true, "");
-    s7_define_function(x->s7, "transport-set-time-sig", s7_itm_set_timesig, 2, 0, true, "");
-    s7_define_function(x->s7, "t-time-sig!", s7_itm_set_timesig, 2, 0, true, "");
-
-    // t-seek is polymorphic version of ticks and bbu
-    s7_define_function(x->s7, "t-seek", s7_itm_seek, 1, 2, true, "");   
-    s7_define_function(x->s7, "transport-seek", s7_itm_seek, 1, 2, true, "");   
-
-    // renamed to from t-time to just time as the time does not actually reset from transport start
-    s7_define_function(x->s7, "time", s7_itm_get_time, 0, 0, true, "");
-
-    // transport related time conversion functions 
-    s7_define_function(x->s7, "ticks->ms", s7_itm_ticks_to_ms, 1, 0, true, "");
-    s7_define_function(x->s7, "ticks->bbu", s7_itm_ticks_to_bbu, 1, 0, true, "");
-    s7_define_function(x->s7, "ms->ticks", s7_itm_ms_to_ticks, 1, 0, true, "");
-    s7_define_function(x->s7, "ms->bbu", s7_itm_ms_to_bbu, 1, 0, true, "");
-    s7_define_function(x->s7, "bbu->ticks", s7_itm_bbu_to_ticks, 3, 0, true, "");
-    s7_define_function(x->s7, "bbu->ms", s7_itm_bbu_to_ms, 3, 0, true, "");
-    
-    s7_define_function(x->s7, "s4m-schedule-delay", s7_schedule_delay, 2, 0, true, "");
-    s7_define_function(x->s7, "s4m-schedule-delay-t", s7_schedule_delay_itm, 2, 0, true, "");
-    s7_define_function(x->s7, "s4m-schedule-delay-tq", s7_schedule_delay_itm_quant, 3, 0, true, "");
-
-    s7_define_function(x->s7, "s4m-itm-listen-ticks", s7_itm_listen_ticks, 1, 0, true, "(s4m-itm-listen_ticks ticks cb-handle)");
-    s7_define_function(x->s7, "s4m-cancel-itm-listen-ticks", s7_cancel_itm_listen_ticks, 0, 0, true, "(s4m-cancel-itm-listen-ticks)");
-    s7_define_function(x->s7, "s4m-itm-listen-ms", s7_itm_listen_ms, 1, 0, true, "(s4m-itm-listen_ms ms cb-handle)");
-    s7_define_function(x->s7, "s4m-cancel-itm-listen-ms", s7_cancel_itm_listen_ms, 0, 0, true, "(s4m-cancel-itm-listen-ms)");
-    s7_define_function(x->s7, "s4m-listen-ms", s7_listen_ms, 1, 0, true, "(s4m-listen_ms ms cb-handle)");
-    s7_define_function(x->s7, "s4m-cancel-listen-ms", s7_cancel_listen_ms, 0, 0, true, "(s4m-cancel-listen-ms)");
 
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
@@ -529,32 +393,6 @@ void s4m_init_s7(t_s4m *x){
     //post("s4m_init_s7 complete");
 }
 
-// wipe the scheme interpreter and reset any state
-void s4m_reset(t_s4m *x){
-    // post("s4m_reset()");
-    // don't reset unless on inlet 0
-    if( proxy_getinlet((t_object *)x) != 0 ){
-        return;
-    }
-    // cancel all the member clocks and time objects
-    time_stop(x->timeobj);  
-	time_stop(x->timeobj_quant); 
-	time_stop(x->time_listen_ticks); 
-	time_stop(x->time_listen_ticks_q); 
-	time_stop(x->time_listen_ms); 
-    // clock object used for the listen_ms no transport function
-	clock_unset(x->clock_listen_ms);
-
-    // cancel and free any clock in the clocks registry
-    hashtab_funall(x->clocks, (method) s4m_cancel_clock_entry, x);
-    hashtab_funall(x->clocks_quant, (method) s4m_cancel_clock_entry, x);
-    hashtab_clear(x->clocks); 
-    hashtab_clear(x->clocks_quant); 
-
-    // I think this can run in any thread as we wipe the interpreter anyway
-    s4m_init_s7(x);
-    post("s4m re-initialized");
-}
 
 // test of making a thing via the patcher object triggered by "make" message
 void s4m_make(t_s4m *x){
@@ -659,47 +497,38 @@ long s4m_scan_iterator(t_s4m *x, t_object *b){
 }
 
 t_max_err s4m_inlets_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
-    //post("s4m_inlets_set()");
-    // check if object initialized to ignore run-time attribute messages
-    if( !x->initialized ){
-        long num_inlets = atom_getlong(argv);
-        if( num_inlets < 1) num_inlets = 1;
-        // note, this sets max's idea of inlets, which is actually one more than what we see
-        // unfortunately, we can't say -1 because then the property inspector looks gimped
-        x->num_inlets = num_inlets;
-        //post("s4m->num_inlets now %i", x->num_inlets); 
-    }
+    long num_inlets = atom_getlong(argv);
+    if( num_inlets < 1) num_inlets = 1;
+    // note, this sets max's idea of inlets, which is actually one more than what we see
+    // unfortunately, we can't say -1 because then the property inspector looks gimped
+    x->num_inlets = num_inlets;
+    // post("s4m->num_inlets now %i", x->num_inlets); 
     return 0;
 }
 
 t_max_err s4m_outlets_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     //post("s4m_outlets_set()");
-    if( !x->initialized ){
-        long num_outlets = atom_getlong(argv);
-        if( num_outlets < 1) num_outlets = 1;
-        x->num_outlets = num_outlets;
-        //post("s4m->num_outlets now %i", x->num_outlets); 
-    }
+    long num_outlets = atom_getlong(argv);
+    if( num_outlets < 1) num_outlets = 1;
+    x->num_outlets = num_outlets;
+    //post("s4m->num_outlets now %i", x->num_outlets); 
     return 0;
 }
 
-// setter for the object thread, only does anything at start up time
 t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     //post("s4m_threads_set()");
-    if( !x->initialized ){
-        t_symbol *thread_attr = atom_getsym(argv);
-        if( thread_attr == gensym("high") || thread_attr == gensym("h") || thread_attr == gensym("hi") ){
-            x->thread = 'h';
-        }else if( thread_attr == gensym("low") || thread_attr == gensym("l") ){
-            x->thread = 'l';
-        }else if( thread_attr == gensym("any") || thread_attr == gensym("a") ){
-            x->thread = 'a';
-        }else {
-            // any other symbol, ignore and set to high
-            object_error((t_object *)x, "invalid value for attribute 'thread'");
-        } 
-        //post("s4m->thread set to: '%c'", x->thread); 
-    }
+    t_symbol *thread_attr = atom_getsym(argv);
+    if( thread_attr == gensym("high") || thread_attr == gensym("h") ){
+        x->thread = 'h';
+    }else if( thread_attr == gensym("low") || thread_attr == gensym("l") ){
+        x->thread = 'l';
+    }else if( thread_attr == gensym("any") || thread_attr == gensym("a") ){
+        x->thread = 'a';
+    }else {
+        // any other symbol, ignore and set to high
+        x->thread = 'h';
+    } 
+    post("s4m->thread: '%c'", x->thread); 
     return 0;
 }
 
@@ -741,8 +570,13 @@ void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file, bool skip_s7_lo
     
     // we have a file and a path short, need to convert it to abs path for scheme load
     char full_path[1024]; 
-    path_toabsolutesystempath(path_id, filename, full_path);
 
+    path_toabsolutesystempath(path_id, filename, full_path);
+    // on windows, nameconform changes / to \, but that doesnt seem to help the load
+
+    // XXX: seems like the below is not necessary anymore
+    //char conformed_path[1024]; 
+    //path_nameconform(full_path, conformed_path, PATH_STYLE_NATIVE, PATH_TYPE_PATH);
     // save the full path for using with text editor opening
     x->source_file_path_id = path_id;
 
@@ -762,34 +596,9 @@ void s4m_assist(t_s4m *x, void *b, long m, long a, char *s){
     }
 }
 
-// function to cancel a clock
-void s4m_cancel_clock_entry(t_hashtab_entry *e, void *arg){
-    // post("s4m_cancel_clock");
-    // post(" e->key: %s", e->key->s_name);
-    if (e->key && e->value) {
-        clock_unset(e->value);    
-    }
-}
-
 void s4m_free(t_s4m *x){ 
     //post("s4m: calling free()");
     hashtab_chuck(x->registry);
-
-    // delete all the clock and time objects
-    object_free(x->timeobj);                   
-    object_free(x->timeobj_quant);            
-    object_free(x->time_listen_ticks);       
-    object_free(x->time_listen_ticks_q);    
-    object_free(x->time_listen_ms);        
-    object_free(x->clock_listen_ms); 
-
-    // clocks must all be stopped AND deleted. 
-    // need to iterate through the hashtab to stop them 
-    hashtab_funall(x->clocks, (method) s4m_cancel_clock_entry, x);
-    hashtab_funall(x->clocks_quant, (method) s4m_cancel_clock_entry, x);
-    // this will free all the clocks
-    object_free(x->clocks); 
-    object_free(x->clocks_quant); 
 
     // XXX: the below were causing crashed, but pretty sure we're leaking memory now
     // free the handles that were created for reading in main source file contents
@@ -1012,7 +821,7 @@ void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args){
         object_error((t_object *)x, "s4m Error: %s", msg);
         free(msg);
     }else{
-        if(x->log_return_values) s4m_post_s7_res(x, res);
+        s4m_post_s7_res(x, res);
     }
 }
 
@@ -1066,40 +875,29 @@ void s4m_s7_eval_string(t_s4m *x, char *string_to_eval){
         object_error((t_object *)x, "s4m Error: %s", msg);
         free(msg);
     }else{
-        if(x->log_return_values) s4m_post_s7_res(x, res);
+        s4m_post_s7_res(x, res);
     }
 }
 
 
-void s4m_callback_bang(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_callback_bang()");
-    long inlet_num = atom_getlong( argv );
-    long arg = atom_getlong( argv + 1 );
-    //post(" - inlet_num: %i arg: %i", inlet_num, arg);
-    sysmem_freeptr(argv); 
-    return s4m_handle_bang(x, inlet_num);
+// call bang is used to back to our float message in the case of a schedule or defer call
+void s4m_call_bang(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_call_bang()");
+    return s4m_bang(x);
 }
-
 // for a bang message, the list of args to the s7 listener will be (:bang)
 void s4m_bang(t_s4m *x){
     bool in_isr = isr();
-    int inlet_num = proxy_getinlet((t_object *)x);
     //post("s4m_bang(): isr: %i", in_isr );
     // schedule/defer require an A_ANYTHING sig, so we need to call our wrapper s4m_call_bang
     if( !in_isr && x->thread == 'h' ){ 
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
-        atom_setlong(ap, inlet_num);
-        return schedule(x, s4m_callback_bang, 0, NULL, 1, ap); 
+        return schedule(x, s4m_call_bang, 0, NULL, 0, NULL); 
     }else if( in_isr && x->thread == 'l'){
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
-        atom_setlong(ap, inlet_num);
-        return defer(x, s4m_callback_bang, NULL, 1, ap); 
+        return defer(x, s4m_call_bang, NULL, 0, NULL); 
     }    
-    return s4m_handle_bang(x, inlet_num);
-}
 
-void s4m_handle_bang(t_s4m *x, int inlet_num){
-    //post("s4m_bang() message from inlet %i", inlet_num);
+    int inlet_num = proxy_getinlet((t_object *)x);
+    // post("s4m_bang() message from inlet %i", inlet_num);
     s7_pointer s7_args = s7_nil(x->s7); 
     // if on inlet 0, call to s7 should be (bang)
     if( inlet_num == 0 ){
@@ -1115,44 +913,32 @@ void s4m_handle_bang(t_s4m *x, int inlet_num){
     }
 }
 
+// call float is used to back to our float message in the case of a schedule or defer call
+void s4m_call_int(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_call_int()");
+    long arg = atom_getlong( argv );
+    sysmem_freeptr(argv); 
+    return s4m_int(x, arg);
+}
+
 // handler for any messages to s4m as either single {number} or 'int {number}'
-// this gets called for any int message (either inlet, high or low thread)
-// and then dispatches or schedules accordingly
 void s4m_int(t_s4m *x, long arg){
     bool in_isr = isr();
-    int inlet_num = proxy_getinlet((t_object *)x);
-    //post("s4m_int() message from inlet %i, arg: %i, isr: %i", inlet_num, arg, in_isr);
-
-    // if this message came in on the wrong thread for the interpreter, schedule it
-    // schedule requires A_ANYTHING sig, so call wrapper s4m_callback_int
+    //post("s4m_int(): arg: %i, isr: %i", arg, in_isr );
+    // schedule requires A_ANYTHING sig, so call wrapper s4m_call_int
     if( !in_isr && x->thread == 'h' ){ 
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) * 2 );
-        atom_setlong(ap, inlet_num);
-        atom_setlong(ap+1, arg);
-        return schedule(x, s4m_callback_int, 0, NULL, 2, ap); 
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        atom_setlong(ap, arg);
+        return schedule(x, s4m_call_int, 0, NULL, 1, ap); 
     }else if( in_isr && x->thread == 'l'){ 
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) * 2 );
-        atom_setlong(ap, inlet_num);
-        atom_setlong(ap+1, arg);
-        return defer(x, s4m_callback_int, NULL, 2, ap); 
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        atom_setlong(ap, arg);
+        return defer(x, s4m_call_int, NULL, 1, ap); 
     }
-    // if no scheduling was necessary, just call the int handler
-    s4m_handle_int(x, inlet_num, arg);
-}
+    
 
-// callback used when the call to int must be promoted or deferred
-// this is needed because we use the scheduler to promote to high thread on incoming low thread messages 
-void s4m_callback_int(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_callback_int()");
-    long inlet_num = atom_getlong( argv );
-    long arg = atom_getlong( argv + 1 );
-    //post(" - inlet_num: %i arg: %i", inlet_num, arg);
-    sysmem_freeptr(argv); 
-    return s4m_handle_int(x, inlet_num, arg);
-}
-
-// function that does the dispatching to scheme
-void s4m_handle_int(t_s4m *x, int inlet_num, long arg){
+    int inlet_num = proxy_getinlet((t_object *)x);
+    //post("s4m_int() message from inlet %i, arg: %i", inlet_num, arg);
     s7_pointer s7_args = s7_nil(x->s7); 
     s7_args = s7_cons(x->s7, s7_make_integer(x->s7, arg), s7_args); 
     // if on inlet 0, call to s7 should be (int number)
@@ -1170,40 +956,30 @@ void s4m_handle_int(t_s4m *x, int inlet_num, long arg){
     }
 }
 
-
-// handler for any messages to s4m as either single {number} or 'float {number}'
+// call float is used to back to our float message in the case of a schedule or defer call
+void s4m_call_float(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_call_float()");
+    double arg = atom_getfloat( argv );
+    sysmem_freeptr(argv); 
+    return s4m_float(x, arg);
+}
+// handler for any messages to s4m as either single {number} or 'int {number}'
 void s4m_float(t_s4m *x, double arg){
     bool in_isr = isr();
-    int inlet_num = proxy_getinlet((t_object *)x);
-    //post("s4m_float(): inlet_num: %i arg: %5.4f, isr: %i", inlet_num, arg, in_isr);
+    //post("s4m_float(): arg: %5.4f, isr: %i", arg, in_isr );
     if( !in_isr && x->thread == 'h' ){ 
         // schedule requires A_ANYTHING sig, so call wrapper s4m_call_float
-        t_atom *ap = sysmem_newptr( sizeof(t_atom) * 2 );
-        atom_setlong(ap, inlet_num);
-        atom_setfloat(ap + 1, arg);
-        return schedule(x, s4m_callback_float, 0, NULL, 2, ap); 
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        atom_setfloat(ap, arg);
+        return schedule(x, s4m_call_float, 0, NULL, 1, ap); 
     }else if( in_isr && x->thread == 'l'){ 
-        t_atom *ap = sysmem_newptr( sizeof(t_atom) * 2 );
-        atom_setlong(ap, inlet_num);
-        atom_setfloat(ap + 1, arg);
-        return defer(x, s4m_callback_float, NULL, 2, ap); 
+        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        atom_setfloat(ap, arg);
+        return defer(x, s4m_call_float, NULL, 1, ap); 
     } 
-    // if no scheduling was necessary, just call the int handler
-    s4m_handle_float(x, inlet_num, arg);
-}
 
-// call float is used to back to our float message in the case of a schedule or defer call
-void s4m_callback_float(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_callback_float()");
-    long inlet_num = atom_getlong( argv );
-    double arg = atom_getfloat( argv + 1 );
-    sysmem_freeptr(argv); 
-    return s4m_handle_float(x, inlet_num, arg);
-}
-
-// function that does the dispatching to scheme
-void s4m_handle_float(t_s4m *x, int inlet_num, double arg){
-    //post("s4m_handle_float() message from inlet %i, arg: %5.2f", inlet_num, arg);
+    int inlet_num = proxy_getinlet((t_object *)x);
+    //post("s4m_float() message from inlet %i, arg: %i", inlet_num, arg);
     s7_pointer s7_args = s7_nil(x->s7); 
     s7_args = s7_cons(x->s7, s7_make_real(x->s7, arg), s7_args); 
     // if on inlet 0, call to s7 should be (float number)
@@ -1221,53 +997,33 @@ void s4m_handle_float(t_s4m *x, int inlet_num, double arg){
     }
 }
 
-
-void s4m_callback_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_callback_list()");
-    long inlet_num = atom_getlong( argv );
-    //post("inlet_num: %i", inlet_num);
-    s4m_handle_list(x, inlet_num, s, argc - 1, argv + 1);
-    sysmem_freeptr(argv);
-}
-
 // the list message handler, will handle any messages that are internally
 // the max message "list a b c", which includes "1 2 3" and "1 a b", but not "a b c"
 // Note: that's just how Max works, "1 2 3" becomes "list 1 2 3", but "a b c" does not
 void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     bool in_isr = isr();
-    int inlet_num = proxy_getinlet((t_object *)x);
     //post("s4m_list(): selector is %s, isr: %i", s->s_name, in_isr );
-    
-    // need to make a new list with the same args, but with inlet_num at the head as new atom
-    if( (!in_isr && x->thread == 'h') || (in_isr && x->thread == 'l') ){
-        t_atom *ap = sysmem_newptr( sizeof(t_atom) * (argc + 1) );
-        atom_setlong(ap, inlet_num);
-        for(int i=0; i<argc; i++){
-            *(ap + i + 1) = *(argv + i);
-        }
-        // if this is a low-priority thread message, re-sched as high and exit and vice versa
-        // calling with our new list that encodes the inlet number
-        if( x->thread == 'h' ){ 
-            return schedule(x, s4m_callback_list, 0, s, argc+1, ap); 
-        }else if( x->thread == 'l' ){ 
-            return defer(x, s4m_callback_list, s, argc+1, ap); 
-        }
+    // if this is a low-priority thread message, re-sched as high and exit and vice versa
+    if( !in_isr && x->thread == 'h' ){ 
+        return schedule(x, s4m_list, 0, s, argc, argv); 
+    }else if(  in_isr && x->thread == 'l' ){ 
+        return defer(x, s4m_list, s, argc, argv); 
     } 
-    // if we are in the right thread, just dispatch
-    // this is working fine (the no change version)
-    s4m_handle_list(x, inlet_num, s, argc, argv);
-}
 
-void s4m_handle_list(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_handle_list(): inlet_num: %i, selector is %s, argc: %i", inlet_num, s->s_name, argc);
+
+    t_atom *ap;
+    int inlet_num = proxy_getinlet((t_object *)x);
+    //post("s4m_list(): selector is %s",s->s_name);
+    //post("s4m_list(): there are %ld arguments",argc);
+    //post("message came from inlet %i", inlet_num);
     // turn all args into an s7 list
     s7_pointer s7_args = s7_nil(x->s7); 
     // loop through the args backwards to build the cons list 
-    t_atom *ap;
     for(int i = argc-1; i >= 0; i--) {
         ap = argv + i;
         s7_args = s7_cons(x->s7, max_atom_to_s7_obj(x->s7, ap), s7_args); 
     }
+    
     // add the first message to the arg list (it's always a symbol)
     // for inlet 0, it will be "flist" (so as not to collide with scheme reserved word "list")
     // for inlet 1+, it will be :list (for registered listeners)
@@ -1289,68 +1045,48 @@ void s4m_handle_list(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *ar
     }
 }
 
-// evaluate a symbol passed in as a string of Scheme code
-void s4m_eval_string(t_s4m *x, t_symbol *s){
-    //post("new eval string handler");
-    int inlet_num = proxy_getinlet((t_object *)x);
-    if( inlet_num != 0 ){
-        error("s4m: eval-string only valid on inlet 0");
-        return;
-    }
-    // check if we need thread promotion or deferal 
-    // nothing fancy for preserving inlet numbers as inlet must be 0 already
-    bool in_isr = isr();
-    if( !in_isr && x->thread == 'h' ){ return schedule(x, s4m_eval_string, 0, s, 0, NULL); } 
-    if(  in_isr && x->thread == 'l' ){ return defer(x, s4m_eval_string, s, 0, NULL); } 
-    
-    char *sexp_input = s->s_name; 
-    //post("s7-in> %s", sexp_input);
-    s4m_s7_eval_string(x, sexp_input);
-    return; 
-}
-
-
 // the generic message hander, fires on any symbol messages, which includes lists of numbers or strings
 void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     bool in_isr = isr();
-    int inlet_num = proxy_getinlet((t_object *)x);
-    //post("s4m_msg(): selector is %s, isr: %i, inlet_num: %i", s->s_name, in_isr, inlet_num);
+    //post("s4m_msg(): selector is %s, isr: %i", s->s_name, in_isr );
+    // if this is a low-priority thread message, re-sched as high and exit and vice versa
+    if( !in_isr && x->thread == 'h' ){ return schedule(x, s4m_msg, 0, s, argc, argv); } 
+    if(  in_isr && x->thread == 'l' ){ return defer(x, s4m_msg, s, argc, argv); } 
 
-    // for promotion/deferal, we need a new list with same args, but inlet_num at the head as new atom
-    if( (!in_isr && x->thread == 'h') || (in_isr && x->thread == 'l') ){
-        t_atom *ap = sysmem_newptr( sizeof(t_atom) * (argc + 1) );
-        atom_setlong(ap, inlet_num);
-        for(int i=0; i<argc; i++){
-            *(ap + i + 1) = *(argv + i);
-        }
-        // if this is a low-priority thread message, re-sched as high and exit and vice versa
-        // calling with our new list that encodes the inlet number
-        if( x->thread == 'h' ){ 
-            return schedule(x, s4m_callback_msg, 0, s, argc+1, ap); 
-        }else if( x->thread == 'l' ){ 
-            return defer(x, s4m_callback_msg, s, argc+1, ap); 
-        }
-    } 
-    // if we are in the right thread, just dispatch
-    s4m_handle_msg(x, inlet_num, s, argc, argv);
-}
 
-void s4m_callback_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_callback_msg()");
-    long inlet_num = atom_getlong( argv );
-    //post("inlet_num: %i", inlet_num);
-    s4m_handle_msg(x, inlet_num, s, argc - 1, argv + 1);
-    sysmem_freeptr(argv);
-}
-
-void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_handle_msg(): inlet_num: %i arguments: %ld isr: %i", inlet_num, argc, isr());
+    //post("s4m_msg(): there are %ld arguments",argc);
     t_atom *ap;
+    int inlet_num = proxy_getinlet((t_object *)x);
+    //post("message came from inlet %i", inlet_num);
 
-    // treat input to inlet 0 as a list of atoms that should be evaluated as a scheme expression
-    // as if the list were encloded in parens
-    // make an S7 list out of them, and send to S7 to eval (treat them as code list)
+    // for messages that come from inlets over 0, we interecept
+    // messages handled by max (set, load, reset) and pass
+    // on all others to s7 as sexps
+    // if the message does not have surrounding brackets, we add them
     if(inlet_num == 0){
+        // handle messages from the text editor other string input
+        if( gensym(s->s_name) == gensym("eval-string") ){
+            char *sexp_input = atom_getsym(argv)->s_name; 
+            //post("s7-in> %s", sexp_input);
+            s4m_s7_eval_string(x, sexp_input);
+            return; 
+        }
+        // reset message wipes the s7 env and reloads the source file if present
+        if( gensym("reset") == gensym(s->s_name) ){
+            free(x->s7);
+            post("s4m: RESET: scheme interpreter reload");
+            s4m_init_s7(x);
+            return;
+        }
+        // reset message wipes the s7 env and reloads the source file if present
+        if( gensym("make") == gensym(s->s_name) ){
+            post("s4m: make");
+            s4m_make(x);
+            return;
+        }
+        // for all other input to inlet 0, we treat as list of atoms, so
+        // make an S7 list out of them, and send to S7 to eval (treat them as code list)
+        // this assumes the first word is a valid first word in an s7 form (ie not a number)
         s7_pointer s7_args = s7_nil(x->s7); 
         // loop through the args backwards to build the cons list 
         for(int i = argc-1; i >= 0; i--) {
@@ -1362,6 +1098,7 @@ void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *arg
         // call the s7 eval function, sending in all args as an s7 list
         s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-eval"), s7_args);
     }
+
     // messages to non-zero inlets (handled by dispatch)
     else{ 
         // make an s7 list so it can be passed to a listener
@@ -1393,6 +1130,7 @@ void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *arg
         // call the s7 dispatch function, sending in all args as an s7 list
         s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-dispatch"), s7_args);
     }
+
 }
 
 // execute a registered callback, this is called with scheduling and delaying
@@ -1405,57 +1143,11 @@ void s4m_execute_callback(t_s4m *x, t_symbol *s, short ac, t_atom *av){
 } 
 
 
+
 // convert a max atom to the appropriate type of s7 pointer
-// TODO: this might need GC protection in it, I'm not sure
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
     //post("max_atom_to_s7_obj()");
     s7_pointer s7_obj;
-    
-    // case for arrays of atoms, which will be turned into S7 vectors
-    // pertinent docs: https://cycling74.com/sdk/max-sdk-8.0.3/html/group__atomarray.html
-    if( atomisatomarray(ap) ){
-        long length;
-        t_atom *inner_ap;
-        atomarray_getatoms( atom_getobj(ap), &length, &inner_ap);
-        // make and fill the vector recursively
-        s7_obj = s7_make_vector(s7, length);   
-        for(int i=0; i < length; i++){
-            s7_vector_set(s7, s7_obj, i, 
-                max_atom_to_s7_obj(s7, inner_ap + i )); 
-        }   
-        return s7_obj;
-    }
-    
-    // case for nested dicts, which get turned into hash-tables
-    if( atomisdictionary(ap) ){
-        t_symbol **keys = NULL;
-        long num_keys = 0;
-        dictionary_getkeys( atom_getobj(ap), &num_keys, &keys);
-        s7_obj = s7_make_hash_table(s7, num_keys);
-        for(int i=0; i < num_keys; i++){
-            t_symbol *key_sym = *(keys + i); 
-            t_atom *value = sysmem_newptr( sizeof( t_atom ) );
-            dictionary_getatom( atom_getobj(ap), key_sym, value);
-            s7_hash_table_set(s7, s7_obj, 
-                s7_make_symbol(s7, key_sym->s_name),    // key
-                max_atom_to_s7_obj(s7, value)           // val
-            );         
-            sysmem_freeptr(value); 
-        }
-        // free the keys
-        if(keys) 
-            dictionary_freekeys( atom_getobj(ap), num_keys, keys);
-        return s7_obj;
-    }
-
-    // case for string atoms, as can be the case if strings are mixed in arrays  
-    if( atomisstring(ap) ){
-        char *str = string_getptr( atom_getobj(ap) );
-        s7_obj = s7_make_string(s7, str);
-        return s7_obj;
-    }
-
-    // simple types
     switch (atom_gettype(ap)) {
         case A_LONG:
             //post("int %ld", atom_getlong(ap));
@@ -1499,50 +1191,10 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
     return s7_obj;
 }
 
-// todo, get this puppy working for arrays and dictionaries too
 t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
-    //post("s7_obj_to_max_atom");
-
-    // s7 vectors get turned into atom arrays, with recursive calls
-    if( s7_is_vector(s7_obj) ){
-        // need to make a new atomarray and then set that on the atom
-        int vector_len = s7_vector_length(s7_obj);
-        // make a new empty atom array
-        t_atomarray *aa = NULL;
-		aa = atomarray_new(0, NULL);
-        for(int i=0; i < vector_len; i++){
-            t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
-            s7_obj_to_max_atom(s7, s7_vector_ref(s7, s7_obj, i), ap);         
-            atomarray_appendatom(aa, ap); 
-        }
-        // attempt to set the atom be an atom array, not working. getting crashes
-        atom_setobj(atom, (void *)aa);
-    }
-
-    // s7 hashtables get turned into dictionaries
-    else if( s7_is_hash_table(s7_obj) ){
-        //post("hash table to dict"); 
-        // get a list of key/value cons pairs in the hash by calling (map values the-hash-table)
-        s7_pointer key_val_list = s7_call(s7, s7_name_to_value(s7, "map"), 
-            s7_list(s7, 2, s7_name_to_value(s7, "values"), s7_obj));
-        int num_pairs = s7_list_length(s7, key_val_list);
-        // make a new dictionary and populate it with keys and atoms
-        t_dictionary *dict = dictionary_new();
-        for(int i=0; i < num_pairs; i++){
-            t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
-            s7_pointer kv_pair = s7_list_ref(s7, key_val_list, i);
-            s7_pointer key = s7_car( kv_pair ); 
-            s7_pointer val = s7_cdr( kv_pair );
-            char *key_str = s7_object_to_c_string(s7, key);
-            // set the value of the atom with a recursive call and append to dict
-            s7_obj_to_max_atom(s7, val, ap);
-            dictionary_appendatom(dict, gensym(key_str), ap);
-        }
-        atom_setobj(atom, (void *)dict);
-    }
-
+    // post("s7_obj_to_max_atom");
     // booleans are cast to ints 
-    else if( s7_is_boolean(s7_obj) ){
+    if( s7_is_boolean(s7_obj) ){
         // post("creating int from s7 boolean");
         atom_setlong(atom, (int)s7_boolean(s7, s7_obj));  
     }
@@ -2207,18 +1859,15 @@ static s7_pointer s7_buffer_set(s7_scheme *s7, s7_pointer args) {
 
 // return a scheme vector with entire contents of a bffer
 // in scheme: buffer->vector aka b->v
-// opt args for chan start count
 static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
     // post("s7_make_vector_from_buffer()");
     char *buffer_name = NULL;
     long buffer_size = NULL;
-    long channel = 0;
-    long buffer_offset = 0;     // where in the buffer to start copying from
+    long target_index = 0;
     long count = NULL;
     char err_msg[128];
     t_s4m *x = get_max_obj(s7);
 
-    int num_args = (int) s7_list_length(s7, args);
     // first args is the buffer name
     if( s7_is_symbol( s7_car(args) ) ){ 
         buffer_name = (char *) s7_symbol_name( s7_car(args) );
@@ -2228,35 +1877,6 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
             "buffer name is not a keyword, string, or symbol"));
     }
-
-    // get optional channel arg 
-    if( num_args >= 2 ){
-        if( ! s7_is_integer(s7_list_ref(s7, args, 1) ) ){
-            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-                "arg 2 must be an integer of channel number"));
-        }
-        channel = (long) s7_integer( s7_list_ref(s7, args, 1) );
-        //post("chan: %i", channel);
-    }
-    // get optional start index
-    if( num_args >= 3 ){
-        if( ! s7_is_integer(s7_list_ref(s7, args, 2) ) ){
-            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-                "arg 3 must be an integer of starting index"));
-        }
-        buffer_offset = (long) s7_integer( s7_list_ref(s7, args, 2) );
-        //post("buffer_offset: %i", channel);
-    }
-    // get optional count
-    if( num_args >= 4 ){
-        if( ! s7_is_integer(s7_list_ref(s7, args, 3) ) ){
-            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-                "arg 4 must be an integer count of points to copy"));
-        }
-        count = (long) s7_integer( s7_list_ref(s7, args, 3) );
-        //post("count: %i", channel);
-    }
-
     // get buffer from Max, also fetches buffer size
     t_buffer_ref *buffer_ref = buffer_ref_new((t_object *)x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
@@ -2268,19 +1888,11 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
     t_atom_long frames;
     frames = buffer_getframecount(buffer);
     float *buffer_data = buffer_locksamples(buffer);
-    buffer_size = (long) frames;
-     
-    // if no count specified, count is from the index to the end of the buffer
-    if( count == 0 ) count = buffer_size - buffer_offset; 
-    if( count > buffer_size - buffer_offset) count = buffer_size - buffer_offset;
-
-    //post("channel: %i count: %i, offset: %i", channel, count, buffer_offset);
- 
-    // create a new vector and copy from buffer (vector sizes itself dynamically)
-    s7_pointer *new_vector = s7_make_vector(s7, count); 
-    for(int i=0; i < count; i++){
-        int buff_index = ( (channel * (i + buffer_offset)) + (i + buffer_offset)); 
-        s7_vector_set(s7, new_vector, i, s7_make_real(s7, (buffer_data)[ buff_index ] ) ); 
+    
+    // create a new vector and copy from buffer
+    s7_pointer *new_vector = s7_make_vector(s7, frames); 
+    for(int i=0; i<frames; i++){
+        s7_vector_set(s7, new_vector, i, s7_make_real(s7, (buffer_data)[i] ) ); 
     }
     buffer_unlocksamples(buffer);
     object_free(buffer_ref);
@@ -2317,7 +1929,8 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
 
     
     // buffer-set-from-vector! buffer-name {buffer-chan} {buffer-index}
-    // after the buffer name arg, there may be two optional integer args, channel and index
+    // after the buffer name arg, there may be two optional integer ars
+    // if only one given, it is taken as index, and channel is assumed to be 0
     
     int vector_arg_num;     // to store which arg has the vector name
     if( s7_is_integer(s7_list_ref(s7, args, 1)) && s7_is_integer(s7_list_ref(s7, args, 2))){
@@ -2325,18 +1938,18 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
         buffer_channel = s7_integer(s7_list_ref(s7, args, 1)); 
         buffer_offset = s7_integer(s7_list_ref(s7, args, 2)); 
         vector_arg_num = 3;
-        //post("optional buffer chan and buffer offset detected: %i %i", buffer_channel, buffer_offset);
+        post("optional buffer chan and buffer offset detected: %i %i", buffer_channel, buffer_offset);
     }else if( s7_is_integer(s7_list_ref(s7, args, 1)) && !s7_is_integer(s7_list_ref(s7, args, 2))){
-        buffer_channel = s7_integer(s7_list_ref(s7, args, 1)); 
-        buffer_offset = 0;
+        buffer_channel = 0;
+        buffer_offset = s7_integer(s7_list_ref(s7, args, 1)); 
         vector_arg_num = 2;
-        //post("optional buffer offset detected: chan %i offset %i", buffer_channel, buffer_offset);
+        post("optional buffer offset detected: chan %i offset %i", buffer_channel, buffer_offset);
     }else{
         // no optional channel arg used
         buffer_channel = 0;
         buffer_offset = 0;
         vector_arg_num = 1;
-        //post("no optional buffer args: chan %i offset %i", buffer_channel, buffer_offset);
+        post("no optional buffer args: chan %i offset %i", buffer_channel, buffer_offset);
     }
 
     // get the vector 
@@ -2360,8 +1973,8 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
     }
 
     // Note: at this point count may be 0, it will be overridden below 
-    //post("dest-buff: %s chan: %i index: %i vector-offset: %i count: %i",
-    //    buffer_name, buffer_channel, buffer_offset, vector_offset, count);
+    post("dest-buff: %s chan: %i index: %i vector-offset: %i count: %i",
+        buffer_name, buffer_channel, buffer_offset, vector_offset, count);
 
     // now have: buffer_name, buffer_channel, buffer_offset, vector_offset, count
  
@@ -2372,7 +1985,7 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
     t_buffer_ref *buffer_ref = buffer_ref_new((t_object *)x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
     if(buffer == NULL){
-        //object_error((t_object *)x, "Unable to reference buffer named %s", buffer_name);                
+        object_error((t_object *)x, "Unable to reference buffer named %s", buffer_name);                
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "Could not retrieve buffer"));
     }
@@ -2391,9 +2004,9 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
         return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, 
             "buffer-set-from-vector! : index out of range")); 
     }
-
-    //post("argument calcs done: b-size: %i b-chan: %i b-offset: %i v-size: %i v-start: %i count: %i", 
-    //    buffer_size, buffer_channel, buffer_offset, vector_size, vector_offset, count);
+    // 2020-09-19 working here
+    post("argument calcs done: b-size: %i b-chan: %i b-offset: %i v-size: %i v-start: %i count: %i", 
+        buffer_size, buffer_channel, buffer_offset, vector_size, vector_offset, count);
 
     // copy data, converting ints to floats, C style (truncate, not round)
     // in future we might allow disabling checks for speed
@@ -2411,9 +2024,10 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
             return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7,
                "buffer-set-from-vector! : value is not an int or float, aborting")); 
         }
-        int buff_index = ( (buffer_channel * (i + buffer_offset)) + (i + buffer_offset)); 
-        //post("writing value %.5f to index: %i", buff_index, value);
-        buffer_data[ buff_index ] = value;
+        // TODO: what should happens with number of channels here???
+        int dest_index = buffer_offset + i;
+        //post("writing value %.5f to index: %i", dest_index, value);
+        buffer_data[dest_index] = value;
     }
     // unlock buffers
     buffer_unlocksamples(buffer);
@@ -2423,17 +2037,19 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
 }
 
 
+
+
+
 // read a value from a named dict, scheme function dict-get
-// at present, only supports keywords or symbols for keys
+// at present, only supports simple types for values and keywords or symbols for keys
 static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args) {
     //post("s7_dict_get()");
     // table names could come in from s7 as either strings or symbols, if using keyword table names
     t_s4m *x = get_max_obj(s7);
     char *dict_name;
-    char *dict_key = NULL;
+    char *dict_key;
     s7_pointer *s7_value = NULL;
     t_max_err err;
-    bool list_key = false;
 
     if( s7_is_symbol( s7_car(args) ) ){ 
         dict_name = s7_symbol_name( s7_car(args) );
@@ -2444,138 +2060,31 @@ static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args) {
         return;
     }   
 
+    // TODO later: support integer keys as strings as max does
+    if( s7_is_symbol( s7_cadr(args) ) ){ 
+        dict_key = s7_symbol_name( s7_cadr(args) );
+    }else if( s7_is_string( s7_cadr(args) ) ){
+        dict_key = s7_string( s7_cadr(args) );
+    }else{
+        object_error((t_object *)x, "dict-get: Only symbol or string dict keys supported.");                
+    }
+
     t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
     if( !dict ){
         object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
-        return s7_nil(s7);
+        return;
     }
-    
-    // get the key, which could be a list
-    s7_pointer key_arg = s7_cadr(args);
-    if( s7_is_symbol( key_arg ) ){ 
-        dict_key = s7_symbol_name( key_arg );
-    }else if( s7_is_string( key_arg ) ){
-        dict_key = s7_string( key_arg );
-    }else if( s7_is_list(s7, key_arg ) ){
-        list_key = true; 
-    }else{
-        object_error((t_object *)x, "dict-get: Only symbol/string dict keys or lists of symbol/strings supported.");                
-        return s7_nil(s7);
-    }
-
-    // case regular key, simple lookup, convert, return
     t_atom value;
-    if( !list_key ){
-        err = dictionary_getatom(dict, gensym(dict_key), &value);
-        if(err){
-            object_error((t_object *)x, "No key %s in dict %s, returning Nil", dict_key, dict_name);                
-            s7_value = s7_nil(s7);
-        }else{    
-            s7_value = max_atom_to_s7_obj(s7, &value); 
-        }
-    }
-    // case list key, setup and use the recursive finder function
-    else{
-        atom_setobj(&value, (void *)dict);
-        s7_value = s7_dict_get_recurser(s7, &value, key_arg);
+    err = dictionary_getatom(dict, gensym(dict_key), &value);
+    if(err){
+        object_error((t_object *)x, "No key %s in dict %s, returning Nil", dict_key, dict_name);                
+        s7_value = s7_nil(s7);
+    }else{    
+        s7_value = max_atom_to_s7_obj(s7, &value); 
     }
     // when done with dicts, we must release the ref count
     err = dictobj_release(dict);
     return s7_value;
-}
-
-
-// recursive function for looking up items in dict from key list
-static s7_pointer s7_dict_get_recurser(s7_scheme *s7, t_atom *container_atom, s7_pointer key_list){
-    //post("s7_dict_get_recurser()");
-    t_max_err err;
-    s7_pointer *s7_value = NULL;
-    char err_msg[128];
-    char *key_str = NULL;
-    int key_int = NULL;
-    // make an atom to use to look up head of key list in dict
-    t_atom value; 
-
-    // if key_list length is 1 and container_atom[ key_list[0] ] is not a dict, return the value
-    s7_pointer key = s7_car(key_list);
-    s7_pointer rest_keys = s7_cdr(key_list);
-  
-    if( s7_is_symbol(key) ){
-        key_str = s7_symbol_name(key);
-        //post("key: '%s'", key_str); 
-    }else if( s7_is_string(key) ){
-        key_str = s7_string(key);
-        //post("key: '%s'", key_str); 
-    }else if( s7_is_integer(key) ){
-        key_int = s7_integer(key);
-        //post("key: '%i'", key_int); 
-    }else{
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "keys must be symbols or strings"));
-    }
-
-    // case string/symbol key for dictionary lookup
-    if( key_str ){
-        if( !atomisdictionary( container_atom ) ){
-            sprintf(err_msg, "no dict found for key '%s'", key_str);
-            return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg) );
-        }
-        err = dictionary_getatom( atom_getobj(container_atom), gensym(key_str), &value);
-        // case: key not in dict
-        if(err){
-            //post("key '%s' not found in dict, returning null", key_str);
-            s7_value = s7_nil(s7);
-            return s7_value;
-        }
-        // case: found value - have used up keys 
-        if( s7_is_null(s7, rest_keys) ){
-            //post("key '%s' found and keys used up, returning value", key_str);
-            s7_value = max_atom_to_s7_obj(s7, &value); 
-            return s7_value;
-        }
-        // below only executes if there are still keys to use up
-        // case: found non-container value but have not used up keys, return nil
-        if( !atomisdictionary(&value) && !atomisatomarray(&value) ){
-            //post("container found at key '%s' but key list not used up, returning nil", key_str);
-            s7_value = s7_nil(s7);
-            return s7_value;
-        }else{
-            //post("container found at key '%s', still have keys, recursing", key_str);
-            // it's a container, so we can recurse
-            return s7_dict_get_recurser(s7, &value, rest_keys);
-        } 
-    }
-    // case int key for array lookup 
-    else{
-        if( !atomisatomarray( container_atom ) ){
-            sprintf(err_msg, "no array found for key '%i'", key_int);
-            return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg) );
-        }
-        err = atomarray_getindex( atom_getobj(container_atom), key_int, &value);
-        // case: index not valid 
-        if(err){
-            //post("key %i not in array, returning null", key_int);
-            s7_value = s7_nil(s7);
-            return s7_value;
-        }
-        // case: found value - have used up keys 
-        if( s7_is_null(s7, rest_keys) ){
-            //post("key %i found and keys used up, returning value", key_int);
-            s7_value = max_atom_to_s7_obj(s7, &value); 
-            return s7_value;
-        }
-        // below only executes if there are still keys to use up
-        // case: found non-container value but have not used up keys, return nil
-        if( !atomisdictionary(&value) && !atomisatomarray(&value) ){
-            //post("atomic value found at key %i but key list not used up, returning nil", key_int);
-            s7_value = s7_nil(s7);
-            return s7_value;
-        }else{
-            //post("container found at key '%s', still have keys, recursing", key_str);
-            // it's a container, so we can recurse
-            return s7_dict_get_recurser(s7, &value, rest_keys);
-        } 
-    } 
 }
 
 
@@ -2585,379 +2094,6 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
     t_s4m *x = get_max_obj(s7);
     char *dict_name;
     char *dict_key;
-    t_max_err err;
-    bool is_list_key = false;
-
-    if( s7_is_symbol( s7_car(args) ) ){ 
-        dict_name = s7_symbol_name( s7_car(args) );
-    } else if( s7_is_string( s7_car(args) ) ){
-        dict_name = s7_string( s7_car(args) );
-    }else{
-        post("s4m: ERROR in dict-set, dict name is not a keyword, string, or symbol");
-        return;
-    }   
-
-    t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
-    if( !dict ){
-        object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
-        return;
-    }
-
-    // get the key, which could be a list
-    s7_pointer key_arg = s7_cadr(args);
-    if( s7_is_symbol( key_arg ) ){ 
-        dict_key = s7_symbol_name( key_arg );
-    }else if( s7_is_string( key_arg ) ){
-        dict_key = s7_string( key_arg );
-    }else if( s7_is_list(s7, key_arg ) ){
-        is_list_key = true; 
-    }else{
-        object_error((t_object *)x, "dict-set: Only symbol/string dict keys or lists of symbol/strings supported.");                
-        return s7_nil(s7);
-    }
-
-    // get the value we are setting
-    s7_pointer *s7_value = s7_list_ref(s7, args, 2);
-    // an atom to store it in
-    t_atom value;
-
-    // case simple key, convert and store
-    if( !is_list_key ){
-        err = s7_obj_to_max_atom(s7, s7_value, &value);
-        if(err){
-            object_error((t_object *)x, "unhandled type for dict storage");                
-            err = dictobj_release(dict);
-            return;
-        }
-        // clear the previous value in the dictionary and free it
-        dictionary_deleteentry(dict, gensym(dict_key));
-        
-        // set the value in the dictionary now
-        err = dictionary_appendatom(dict, gensym(dict_key), &value);
-        if(err){
-            object_error((t_object *)x, "error setting value to %s %s", dict_name, dict_key);
-            err = dictobj_release(dict);
-            return;
-        } 
-    }
-    // case list key, need to use the recruser 
-    else{
-        //post("dict-set has list key, using recurser");
-        // convert the value we want to set to a Max atom
-        t_atom *value_atom = sysmem_newptr( sizeof( t_atom ) );
-    
-        s7_pointer value_arg = s7_list_ref(s7, args, 2);
-        s7_obj_to_max_atom(s7, value_arg, value_atom); 
-
-        // make an atom to hold the dict for recursing
-        t_atom container;
-        atom_setobj(&container, (void *)dict);
-
-        // call the recursive setter
-        //s7_value = s7_dict_set_recurser(s7, &container, key_arg, value_atom);
-        s7_dict_set_recurser(s7, &container, key_arg, value_atom);
-    }
-    
-    // all done, dict key has been set, now return s7_value
-    err = dictobj_release(dict);
-    return s7_value;
-}
-
-// recursive function for looking up items in dict from key list
-static s7_pointer s7_dict_set_recurser(s7_scheme *s7, t_atom *container_atom, s7_pointer key_list, t_atom *value){
-    //post("s7_dict_set_recurser()");
-    t_max_err err;
-    s7_pointer *s7_value = NULL;
-    char err_msg[128];
-    char *key_str = NULL;
-    int key_int = NULL;
-
-    // if key_list length is 1 and container_atom[ key_list[0] ] is not a dict, return the value
-    s7_pointer key = s7_car(key_list);
-    s7_pointer rest_keys = s7_cdr(key_list);
-  
-    if( s7_is_symbol(key) ){
-        key_str = s7_symbol_name(key);
-    }else if( s7_is_string(key) ){
-        key_str = s7_string(key);
-    }else if( s7_is_integer(key) ){
-        key_int = s7_integer(key);
-    }else{
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "dict-set: keys must be symbols, strings, or list"));
-    }
-
-    // case: container is a dict
-    if( atomisdictionary( container_atom ) ){
-        // non string/symbol key is an error
-        if( !key_str ){
-            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-                "dict-set: keys to dicts must be symbols or strings"));
-        }
-        // case string key and key list used up: set value and return
-        else if( s7_is_null(s7, rest_keys) ){
-            //post("...setting value");
-            // free old entry to avoid memory leaking
-            dictionary_deleteentry( atom_getobj(container_atom), gensym(key_str));
-            // set container[key] to value and return
-            dictionary_appendatom( atom_getobj(container_atom), gensym(key_str), value);
-            // should we return the value set??
-            return;
-        }
-        // case string key, but we have more keys to use up: recurse
-        else {
-            // get the next container and recurse
-            t_atom next_container_atom;
-            dictionary_getatom( atom_getobj(container_atom), gensym(key_str), &next_container_atom);
-            return s7_dict_set_recurser(s7, &next_container_atom, rest_keys, value);
-        }   
-    }
-    // case: container is an array
-    else if (atomisatomarray( container_atom ) ){
-        if( !key_int ){
-            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-                "keys to arrays must be integers"));
-        }    
-        // case int key and key list used up: set value and return
-        else if( s7_is_null(s7, rest_keys) ){
-            // set container[key] to value and return
-            t_atom *inner_ap;
-            long num_atoms;
-            atomarray_getatoms( atom_getobj(container_atom), &num_atoms, &inner_ap);            
-            // free old atom and replace
-            //sysmem_freeptr( (void *)*(inner_ap + key_int) ); 
-            // replace with the new value
-            *(inner_ap + key_int) = *value; 
-            return;
-        }
-        // case int key and array container, more keys left: recurse
-        else {
-            // get the next container and recurse
-            t_atom next_container_atom;
-            atomarray_getindex( atom_getobj(container_atom), key_int, &next_container_atom);
-            return s7_dict_set_recurser(s7, &next_container_atom, rest_keys, value);
-        }   
-    }
-    // case the container atom we are to look in doesn't actually have a container: error
-    else{
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "dict-set, attempt to set value in non-container"));
-    }
-
-}
-
-// set a value a value from a named dict, recursing through a list of keys
-static s7_pointer s7_dict_replace(s7_scheme *s7, s7_pointer args) {
-    //post("s7_dict_replace()");
-    // table names could come in from s7 as either strings or symbols, if using keyword table names
-    t_s4m *x = get_max_obj(s7);
-    char *dict_name;
-    char *dict_key;
-    s7_pointer *s7_value = NULL;
-    t_max_err err;
-
-    if( s7_is_symbol( s7_car(args) ) ){ 
-        dict_name = s7_symbol_name( s7_car(args) );
-    } else if( s7_is_string( s7_car(args) ) ){
-        dict_name = s7_string( s7_car(args) );
-    }else{
-        post("s4m: ERROR in dict-replace, dict name is not a keyword, string, or symbol");
-        return;
-    }   
-
-    // if arg 2 is not a list of keys, error
-    s7_pointer key_list_arg = s7_cadr(args);
-    if( !s7_is_list(s7, key_list_arg ) ){ 
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "dict-replace arg 2 must be a list of keys"));
-    }
-
-    // arg three is the value
-    s7_pointer value_arg = s7_caddr(args);
-    // convert the value we want to set to a Max atom
-    t_atom *value_atom = sysmem_newptr( sizeof( t_atom ) );
-    s7_obj_to_max_atom(s7, value_arg, value_atom); 
-
-    t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
-    if( !dict ){
-        object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
-        return;
-    }
-    // make an atom to hold the dict for recursing
-    t_atom container;
-    atom_setobj(&container, (void *)dict);
-
-    // call the replace lookup which may recurse (returns value set on success, null error)
-    s7_value = s7_dict_replace_recurser(s7, &container, key_list_arg, value_atom);
-    
-    // when done with dicts, we must release the ref count
-    //err = dictobj_release(dict);
-    s7_value = s7_nil(s7);
-    return s7_value;
-}
-
-// recursive function for looking up items in dict from key list
-// this one is the one that makes hierarchies if they aren't there yet, should be hooked up to dict-replace
-static s7_pointer s7_dict_replace_recurser(s7_scheme *s7, t_atom *container_atom, s7_pointer key_list, t_atom *value){
-    //post("s7_dict_put_lookup()");
-    t_max_err err;
-    s7_pointer *s7_value = NULL;
-    char err_msg[128];
-    char *key_str = NULL;
-    int key_int = NULL;
-
-    // if key_list length is 1 and container_atom[ key_list[0] ] is not a dict, return the value
-    s7_pointer key = s7_car(key_list);
-    s7_pointer rest_keys = s7_cdr(key_list);
-  
-    if( s7_is_symbol(key) ){
-        key_str = s7_symbol_name(key);
-        //post("key: %s", key_str);
-    }else if( s7_is_string(key) ){
-        key_str = s7_string(key);
-        //post("key: %s", key_str);
-    }else if( s7_is_integer(key) ){
-        key_int = s7_integer(key);
-        //post("key: %i", key_int);
-    }else{
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "keys must be symbols or strings"));
-    }
-
-    // case: container is a dict
-    if( atomisdictionary( container_atom ) ){
-        // non string/symbol key is an error
-        if( !key_str ){
-            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-                "keys to dicts must be symbols or strings"));
-        }
-        // case string key and key list used up: set value and return
-        else if( s7_is_null(s7, rest_keys) ){
-            //post("...setting value");
-            // free old entry to avoid memory leaking
-            dictionary_deleteentry( atom_getobj(container_atom), gensym(key_str));
-            // set container[key] to value and return
-            dictionary_appendatom( atom_getobj(container_atom), gensym(key_str), value);
-            // should we return the value set??
-            return;
-        }
-        // case string key, but we have more keys to use up: recurse
-        else {
-            // case key has no entry, we need to make it
-            if( !dictionary_hasentry( atom_getobj(container_atom), gensym(key_str) ) ){
-                // post("entry missing, need to make it, key: %s", key_str);
-                // make a new dict and atom, set as next_container, and recurse
-                t_dictionary *dict = dictionary_new();
-                t_atom *new_next_container_atom = sysmem_newptr( sizeof( t_atom ) );
-                atom_setobj(new_next_container_atom, (void *)dict);
-                // set dictionary entry
-                dictionary_appendatom( atom_getobj(container_atom), gensym(key_str), new_next_container_atom);
-                // recurse: note, next_container_atom is already a pointer in the case
-                return s7_dict_replace_recurser(s7, new_next_container_atom, rest_keys, value);
-            }else{
-                // get the next container and recurse
-                // post("recursing..");
-                t_atom next_container_atom;
-                dictionary_getatom( atom_getobj(container_atom), gensym(key_str), &next_container_atom);
-                return s7_dict_replace_recurser(s7, &next_container_atom, rest_keys, value);
-            }
-        }   
-    }
-    // case: container is an array
-    else if (atomisatomarray( container_atom ) ){
-        if( !key_int ){
-            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-                "keys to arrays must be integers"));
-        }    
-        // case int key and key list used up: set value and return
-        else if( s7_is_null(s7, rest_keys) ){
-            // set container[key] to value and return
-            t_atom *inner_ap;
-            long num_atoms;
-            atomarray_getatoms( atom_getobj(container_atom), &num_atoms, &inner_ap);            
-            // free old atom and replace
-            // XXX: figure out why this is an error
-            //sysmem_freeptr( (void *)*(inner_ap + key_int) ); 
-            // replace with the new value
-            *(inner_ap + key_int) = *value; 
-            return;
-        }
-        // case int key and array container, more keys left: recurse
-        else {
-            //post("recursing..");
-            // get the next container and recurse
-            t_atom next_container_atom;
-            atomarray_getindex( atom_getobj(container_atom), key_int, &next_container_atom);
-            return s7_dict_replace_recurser(s7, &next_container_atom, rest_keys, value);
-        }   
-    }
-    // case the container atom we are to look in doesn't actually have a container
-    // if the key is a string, we can make the nested dict
-    else{
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "dict-replace, attempt to set value in non-container"));
-    }
-
-}
-
-// set a value a value from a named dict, recursing through a list of keys
-static s7_pointer s7_dict_put(s7_scheme *s7, s7_pointer args) {
-    //post("s7_dict_put()");
-    // table names could come in from s7 as either strings or symbols, if using keyword table names
-    t_s4m *x = get_max_obj(s7);
-    char *dict_name;
-    char *dict_key;
-    s7_pointer *s7_value = NULL;
-    t_max_err err;
-
-    if( s7_is_symbol( s7_car(args) ) ){ 
-        dict_name = s7_symbol_name( s7_car(args) );
-    } else if( s7_is_string( s7_car(args) ) ){
-        dict_name = s7_string( s7_car(args) );
-    }else{
-        post("s4m: ERROR in dict-find, dict name is not a keyword, string, or symbol");
-        return;
-    }   
-
-    // if arg 2 is not a list of keys, error
-    s7_pointer key_list_arg = s7_cadr(args);
-    if( !s7_is_list(s7, key_list_arg ) ){ 
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "dict-find arg 2 must be a list of keys"));
-    }
-
-    // arg three is the value
-    s7_pointer value_arg = s7_caddr(args);
-    // convert the value we want to set to a Max atom
-    t_atom *value_atom = sysmem_newptr( sizeof( t_atom ) );
-    s7_obj_to_max_atom(s7, value_arg, value_atom); 
-
-    t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
-    if( !dict ){
-        object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
-        return;
-    }
-    // make an atom to hold the dict for recursing
-    t_atom container;
-    atom_setobj(&container, (void *)dict);
-
-    // call the replace lookup which may recurse (returns value set on success, null error)
-    s7_value = s7_dict_put_lookup(s7, &container, key_list_arg, value_atom);
-    
-    // when done with dicts, we must release the ref count
-    //err = dictobj_release(dict);
-    s7_value = s7_nil(s7);
-    return s7_value;
-}
-
-
-
-static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args){
-    // post("s7_dict_to_hashtable");
-    // table names could come in from s7 as either strings or symbols, if using keyword table names
-    t_s4m *x = get_max_obj(s7);
-    char *dict_name;
-    char *dict_key;
     s7_pointer *s7_value = NULL;
     t_max_err err;
 
@@ -2970,597 +2106,87 @@ static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args){
         return;
     }   
 
+    // TODO later: support integer keys as strings as max does
+    if( s7_is_symbol( s7_cadr(args) ) ){ 
+        dict_key = s7_symbol_name( s7_cadr(args) );
+    }else if( s7_is_string( s7_cadr(args) ) ){
+        dict_key = s7_string( s7_cadr(args) );
+    }else{
+        object_error((t_object *)x, "dict-get: Only symbol or string dict keys supported.");                
+    }
+
+    s7_value = s7_list_ref(s7, args, 2);
+    //post("dict %s key %s", dict_name, dict_key);
+
     t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
     if( !dict ){
         object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
         return;
     }
-    // wrap the dict in an atom so we can pass to max_atom_to_s7_obj
-    t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
-    atom_setobj(ap, (void *)dict);
-
-    // turn off the GC in case the object tree we are making is very big
-    s7_gc_on(s7, false);
-    // max_atom_to_s7_obj will recurse for nested dicts and arrays
-    s7_value = max_atom_to_s7_obj(s7, ap); 
-    s7_gc_on(s7, true);
-
-    sysmem_freeptr(ap);
-    // when done with dicts, we must release the ref count
+    t_atom value;
+    err = s7_obj_to_max_atom(s7, s7_value, &value);
+    if(err){
+        object_error((t_object *)x, "dict-set only handles basic types (no dicts or arrays yet)");                
+        err = dictobj_release(dict);
+        return;
+    }
+    // set the value in the dictionary now
+    err = dictionary_appendatom(dict, gensym(dict_key), &value);
+    if(err){
+        object_error((t_object *)x, "error setting value to %s %s", dict_name, dict_key);
+        err = dictobj_release(dict);
+        return;
+    } 
+    // all good, dict key has been set, now return s7_value
     err = dictobj_release(dict);
     return s7_value;
 }
 
-static s7_pointer s7_hashtable_to_dict(s7_scheme *s7, s7_pointer args){
-    //post("s7_hashtable_to_dict");
-    t_s4m *x = get_max_obj(s7);
-    char *dict_name;
-    s7_pointer *s7_hash = NULL;
-    s7_pointer *s7_dict_arg = NULL;
-    t_max_err err;
-    bool created_new = false;
-
-    s7_hash = s7_car(args);
-    if(! s7_is_hash_table(s7_hash) ){
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "first arg should be a hash-table"));
-    }
-
-    s7_dict_arg = s7_cadr(args);
-    if( s7_is_symbol( s7_dict_arg ) ){ 
-        dict_name = s7_symbol_name( s7_dict_arg );
-    } else if( s7_is_string( s7_dict_arg ) ){
-        dict_name = s7_string( s7_dict_arg );
-    }else{
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "second arg should be a string, symbol, or keyword of a dict name"));
-    }   
-    
-    // look for dict with this name, if found, clear it, if not, make it
-    t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
-    if( dict ){
-        dictionary_clear(dict);
-    }else{
-        // make and register new dict
-        dict = dictionary_new();
-        t_symbol *dict_name_p = gensym(dict_name);
-        dictobj_register(dict, &dict_name_p);
-        created_new = true;
-    }
-    
-    s7_pointer key_val_list = s7_call(s7, s7_name_to_value(s7, "map"), 
-        s7_list(s7, 2, s7_name_to_value(s7, "values"), s7_hash));
-    int num_pairs = s7_list_length(s7, key_val_list);
-    for(int i=0; i < num_pairs; i++){
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
-        s7_pointer kv_pair = s7_list_ref(s7, key_val_list, i);
-        s7_pointer key = s7_car( kv_pair ); 
-        s7_pointer val = s7_cdr( kv_pair );
-        char *key_str = s7_object_to_c_string(s7, key);
-        // set the value of the atom with a recursive call and append to dict
-        s7_obj_to_max_atom(s7, val, ap);
-        dictionary_appendatom(dict, gensym(key_str), ap);
-    }
-
-    if( !created_new ){
-        err = dictobj_release(dict);
-    }
-    return s7_hash;
-
-    
-}
-
-/*******************************************************************************
-* SECTION TRANSPORT getting and setting info from the global transport
-*/
-
-// get the status of the global transport
-static s7_pointer s7_itm_get_state(s7_scheme *s7, s7_pointer args){
-    //post("itm_get_state");
-    t_itm *itm = itm_getglobal();
-    //t_symbol *itm_name = itm_getname(itm);
-    //post("got itm: %s", itm_name->s_name); 
-    itm_reference(itm);
-    bool state = (bool) itm_getstate(itm);
-    itm_dereference(itm);
-    return s7_make_boolean(s7, state);
-}
-
-// set state of global transport, can be called with either #t/#f or 1/0
-static s7_pointer s7_itm_set_state(s7_scheme *s7, s7_pointer args){
-    //post("s7_itm_set_state");
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    s7_pointer arg = s7_car(args);
-    if( (s7_is_boolean(arg) && s7_boolean(s7, arg) ) ||
-        (s7_is_integer(arg) && s7_integer(arg) ) ){
-        itm_resume(itm);
-    }else if( (s7_is_boolean(arg) && s7_boolean(s7, arg) == false ) ||
-        (s7_is_integer(arg) && s7_integer(arg) == 0 ) ){
-        itm_pause(itm);
-    }else{
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "state arg should be boolean integer"));
-    }    
-    itm_dereference(itm);
-    return arg;
-}
-
-// get current time in ticks from transport
-static s7_pointer s7_itm_get_ticks(s7_scheme *s7, s7_pointer args){
-    //post("itm_get_ticks");
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    double ticks = itm_getticks(itm);
-    itm_dereference(itm);
-    return s7_make_real(s7, ticks);
-}
-
-// get current time in ms from transport
-static s7_pointer s7_itm_get_time(s7_scheme *s7, s7_pointer args){
-    //post("itm_get_time");
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    double time = itm_gettime(itm);
-    itm_dereference(itm);
-    return s7_make_real(s7, time);
-}
-
-// for transport aware (ticks->ms) 
-static s7_pointer s7_itm_ticks_to_ms(s7_scheme *s7, s7_pointer args){
-    s7_pointer arg = s7_car(args);
-    if( ! s7_is_number(arg) ){
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "ticks->ms arg must be a number"));
-    }
-    double ticks = (double) s7_real(arg);
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    double ms = (double) itm_tickstoms(itm, ticks);
-    itm_dereference(itm);
-    return s7_make_real(s7, ms); 
-}
-
-// for transport aware (ticks->bbu) 
-static s7_pointer s7_itm_ticks_to_bbu(s7_scheme *s7, s7_pointer args){
-    s7_pointer arg = s7_car(args);
-    if( ! s7_is_number(arg) ){
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "ticks->bbu arg must be a number"));
-    }
-    double ticks = (double) s7_real(arg);
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    long bars, beats;
-    double units;
-    itm_tickstobarbeatunits(itm, ticks, &bars, &beats, &units, TIME_FLAGS_LOCATION);
-    itm_dereference(itm);
-    // return a list of bars, beats, units
-    s7_pointer s7_bbu_list = s7_nil(s7); 
-    s7_bbu_list = s7_cons(s7, s7_make_real(s7, units), s7_bbu_list); 
-    s7_bbu_list = s7_cons(s7, s7_make_integer(s7, beats), s7_bbu_list); 
-    s7_bbu_list = s7_cons(s7, s7_make_integer(s7, bars), s7_bbu_list); 
-    return s7_bbu_list;
-}
-
-// for transport aware (ms->ticks) 
-static s7_pointer s7_itm_ms_to_ticks(s7_scheme *s7, s7_pointer args){
-    s7_pointer arg = s7_car(args);
-    if( ! s7_is_number(arg) ){
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "ms->ticks arg must be a number"));
-    }
-    double ms = (double) s7_real(arg);
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    double ticks = (double) itm_mstoticks(itm, ms);
-    itm_dereference(itm);
-    return s7_make_real(s7, ticks); 
-}
-
-// for transport aware (ms->bbu) 
-static s7_pointer s7_itm_ms_to_bbu(s7_scheme *s7, s7_pointer args){
-    s7_pointer arg = s7_car(args);
-    if( ! s7_is_number(arg) ){
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "ms->bby arg must be a number"));
-    }
-    double ms = (double) s7_real(arg);
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    double ticks = (double) itm_mstoticks(itm, ms);
-    long bars, beats;
-    double units;
-    itm_tickstobarbeatunits(itm, ticks, &bars, &beats, &units, TIME_FLAGS_LOCATION);
-    itm_dereference(itm);
-    // return a list of bars, beats, units
-    s7_pointer s7_bbu_list = s7_nil(s7); 
-    s7_bbu_list = s7_cons(s7, s7_make_real(s7, units), s7_bbu_list); 
-    s7_bbu_list = s7_cons(s7, s7_make_integer(s7, beats), s7_bbu_list); 
-    s7_bbu_list = s7_cons(s7, s7_make_integer(s7, bars), s7_bbu_list); 
-    return s7_bbu_list;
-}
-
-
-// for transport aware (bbu->ticks) 
-static s7_pointer s7_itm_bbu_to_ticks(s7_scheme *s7, s7_pointer args){
-    s7_pointer *arg_1 = s7_car(args);
-    s7_pointer *arg_2 = s7_cadr(args);
-    s7_pointer *arg_3 = s7_caddr(args);
-    if( ! (s7_is_integer(arg_1) && s7_is_integer(arg_2) && s7_is_number(arg_3)) ){
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "bbu->ticks args must be int, int, number "));
-    }
-    long bars = (long) s7_integer(arg_1);
-    long beats = (long) s7_integer(arg_2);
-    double units = (double) s7_real(arg_3);
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    double ticks;
-    itm_barbeatunitstoticks(itm, bars, beats, units, &ticks, TIME_FLAGS_LOCATION);
-    itm_dereference(itm);
-    return s7_make_real(s7, ticks); 
-}
-
-// for transport aware (bbu->ms) 
-static s7_pointer s7_itm_bbu_to_ms(s7_scheme *s7, s7_pointer args){
-    s7_pointer *arg_1 = s7_car(args);
-    s7_pointer *arg_2 = s7_cadr(args);
-    s7_pointer *arg_3 = s7_caddr(args);
-    if( ! (s7_is_integer(arg_1) && s7_is_integer(arg_2) && s7_is_number(arg_3)) ){
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "bbu->ticks args must be int, int, number "));
-    }
-    double bars = (double) s7_integer(arg_1);
-    double beats = (double) s7_integer(arg_2);
-    long units = (long) s7_real(arg_3);
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    double ticks;
-    itm_barbeatunitstoticks(itm, bars, beats, units, &ticks, TIME_FLAGS_LOCATION);
-    long ms = itm_tickstoms(itm, ticks);
-    itm_dereference(itm);
-    // return ms
-    return s7_make_real(s7, ms);
-}
-
-// message to set the transports tempo 
-static s7_pointer s7_itm_set_tempo(s7_scheme *s7, s7_pointer args){
-    //post("s7_itm_set_tempo");
+// the non-clock version of schedule
+// TODO remove this later, should be replaced by the clock version only
+static s7_pointer s7_schedule_callback(s7_scheme *s7, s7_pointer args){
+    // post("s7_schedule_callback()");
+    char *cb_handle_str;
     t_s4m *x = get_max_obj(s7);
 
-    s7_pointer arg_1 = s7_car(args);
-    if( ! s7_is_number( arg_1 ) ){
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "tempo arg should be a number"));
-    }
-    double tempo = (double) s7_real(arg_1);
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    // attempt to send tempo message, no idea if it works
-    t_atom a;
-    atom_setfloat(&a, tempo);
-    // send the message to the itm object
-    t_max_err err = NULL; 
-    err = object_method_typed(itm, gensym("tempo"), 1, &a, NULL);
-    if(err){
-        object_error((t_object *)x, "s4m: error sending tempo message");
-    }
-    itm_dereference(itm);
-    return arg_1;
-}
+    // TODO error handling for bad args on arg 1 and 2
 
-
-// get the time signature
-static s7_pointer s7_itm_get_timesig(s7_scheme *s7, s7_pointer args){
-    //post("itm_get_timesig");
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    long numerator, denominator;
-    itm_gettimesignature(itm, &numerator, &denominator);
-    itm_dereference(itm);
-    s7_pointer s7_timesig_list = s7_nil(s7); 
-    s7_timesig_list = s7_cons(s7, s7_make_integer(s7, denominator), s7_timesig_list); 
-    s7_timesig_list = s7_cons(s7, s7_make_integer(s7, numerator), s7_timesig_list); 
-    return s7_timesig_list;
-}
-
-// set timesig of the global transport
-static s7_pointer s7_itm_set_timesig(s7_scheme *s7, s7_pointer args){
-    //post("s7_itm_set_timesig");
-    s7_pointer *arg_1 = s7_car(args);
-    s7_pointer *arg_2 = s7_cadr(args);
-    if(! (s7_is_integer(arg_1) && s7_is_integer(arg_2) ) ){
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "time sig must be two integers"));
-    }
-    long numerator = (long) s7_integer(arg_1); 
-    long denominator = (long) s7_integer(arg_2); 
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    itm_settimesignature(itm, numerator, denominator, 0);   
-    itm_dereference(itm);
-    // return the time sig list
-    s7_pointer s7_timesig_list = s7_nil(s7); 
-    s7_timesig_list = s7_cons(s7, arg_2, s7_timesig_list); 
-    s7_timesig_list = s7_cons(s7, arg_1, s7_timesig_list); 
-    return s7_timesig_list;
-}
-
-
-// polymorphic version of seek: 1 arg for ticks, 3 args for bbu
-static s7_pointer s7_itm_seek(s7_scheme *s7, s7_pointer args){
-    //post("s7_itm_seek");
-    t_s4m *x = get_max_obj(s7);
-    long bars, beats;
-    double units, ticks;
-
-    int argc = (int) s7_list_length(s7, args);
-
-    // case ticks, called with 1 arg of float or int
-    if (argc == 1){
-        s7_pointer *arg_1 = s7_car(args);
-        if( ! s7_is_number( arg_1 ) ){
-            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-                "position in ticks should be a number"));
-        }
-        t_itm *itm = itm_getglobal();
-        itm_reference(itm);
-        double old_ticks = itm_getticks(itm); 
-        double new_ticks = (double) s7_real(arg_1);
-        // from ext_itm.h, but not in documentation
-        // void itm_seek(t_itm *x, double oldticks, double newticks, long chase);
-        itm_seek(itm, old_ticks, new_ticks, 0);     
-        itm_dereference(itm);
-        return arg_1;
-    }
-    // 3 args is Bars-Beats-Units
-    else if(argc == 3){ 
-        s7_pointer *arg_1 = s7_car(args);
-        s7_pointer *arg_2 = s7_cadr(args);
-        s7_pointer *arg_3 = s7_caddr(args);
-        if( ! s7_is_integer( arg_1 ) || ! s7_is_integer( arg_2) ){
-            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-                "bars and beats should be integers"));
-        }else{
-            bars = (long) s7_integer(arg_1);
-            beats = (long) s7_integer(arg_2);
-        }
-        if( ! s7_is_number( arg_3 ) ){
-            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-                "units should be an integer or float"));
-        }else{
-            units = (double) s7_real(arg_3);
-        }
-
-        t_itm *itm = itm_getglobal();
-        itm_reference(itm);
-        double old_ticks = itm_getticks(itm); 
-        double new_ticks;
-        itm_barbeatunitstoticks(itm, bars, beats, units, &new_ticks, TIME_FLAGS_LOCATION);
-        // from ext_itm.h, but not in documentation
-        // void itm_seek(t_itm *x, double oldticks, double newticks, long chase);
-        itm_seek(itm, old_ticks, new_ticks, 0);     
-        itm_dereference(itm);
-        return s7_make_real(s7, new_ticks);
-    }else{
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-                "seek reqires either 1 number (ticks) or 3 (bbu)"));
-    }
-
-}
-
-// attempt  to set the transport position with the list message
-// NOT WORKING, no idea why, keeping here in case I find issues with the undocumented itm_seek
-/*
-static s7_pointer s7_itm_set_ticks(s7_scheme *s7, s7_pointer args){
-    post("s7_itm_set_position");
-    t_s4m *x = get_max_obj(s7);
-
-    s7_pointer arg_1 = s7_car(args);
-    if( ! s7_is_number( arg_1 ) ){
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "tempo arg should be a number"));
-    }
+    // first arg is integer of time in ms (should it be a float actually?) 
+    long delay_time = s7_integer( s7_car(args) );
+    // second arg is the symbol from gensym
+    s7_pointer *s7_cb_handle = s7_cadr(args);
+    cb_handle_str = s7_symbol_name(s7_cb_handle);
+    //post("s7_schedule_callback() time: %i handle: %s", delay_time, cb_handle_str);
    
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    double old_ticks = itm_getticks(itm); 
-    double new_ticks = (double) s7_real(arg_1);
-
-    // below is my attempt to do this by sending a max list message to the itm object, which does not work for some reason
-    // even though it DOES work in the GUI
-    long bars, beats;
-    double units;
-    itm_tickstobarbeatunits(itm, ticks, &bars, &beats, &units, TIME_FLAGS_LOCATION);
-    post("  - bars: %i beats: %i units: %5.2f", bars, beats, units); 
-
-    t_atom atoms[3];
-    atom_setlong( &atoms[0], bars);
-    atom_setlong( &atoms[1], beats);
-    atom_setfloat( &atoms[2], units);
-    // send the message to the itm object
-    t_max_err err = NULL; 
-    // weird, the below is giving us back an itm: doesn't understand 'list' error
-    err = object_method_typed(itm, gensym("list"), 3, atoms, NULL);
-    //object_method_parse(itm, gensym("list"), "1 2 0", NULL);
-
-    itm_dereference(itm);
-    return arg_1;
-}
-*/
-
-
-
-/*******************************************************************************
-* SECTION SCHEDULE Schedule, delay, and tempo related functions
-*/
-
-// functions for (listen-ms) - run a callback every MS seconds
-// non-itm: runs regardless of transport, can be used to run once a scheduler pass
-static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args){
-    //post("s7_listen_ms");
-    t_s4m *x = get_max_obj(s7);
-    char err_msg[128]; 
-
-    // get number of ms as a double
-    s7_pointer *s7_time_ms = s7_car(args);
-    if( ! s7_is_number(s7_time_ms) ){
-        // bad arg 1
-        sprintf(err_msg, "listen-ms : arg 1 must be number of ms");
-        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
-    }
-    double time_ms = (double) s7_real( s7_time_ms );
-    x->clock_listen_ms_interval = time_ms;
-    clock_fdelay(x->clock_listen_ms, x->clock_listen_ms_interval);
-    // return nil
-    return s7_nil(s7);
-}
-// cancel listen-ms callback 
-static s7_pointer s7_cancel_listen_ms(s7_scheme *s7, s7_pointer args){
-    //post("s7_cancel_listen_ms()");
-    t_s4m *x = get_max_obj(s7);
-    clock_unset(x->clock_listen_ms);
-    return s7_nil(s7);
-}
-// call back for the above
-void s4m_listen_ms_cb(t_s4m *x){
-    //post("s4m_listen_ms_cb");
-    // call into scheme to execute the scheme function registered under this handle
-    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ms-callback"), s7_nil(x->s7) );   
-    // and schedule the next interation
-    // NB: values for the below are only set during call to listen
-    clock_fdelay(x->clock_listen_ms, x->clock_listen_ms_interval);
+    // now we schedule the execute callback function
+    schedule_delay(x, s4m_execute_callback, delay_time, gensym(cb_handle_str), 0, NULL);
+ 
+    // return the handle on success
+    return s7_make_symbol(s7, cb_handle_str);
 }
 
-
-// ask to start listening to an itm tick callback
-// used in (listen-ticks)
-static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
-    //post("s7_itm_listen_ticks");
-    t_s4m *x = get_max_obj(s7);
-    char err_msg[128]; 
-
-    // get number of ticks from arg 1
-    s7_pointer *s7_num_ticks = s7_car(args);
-    if( ! s7_is_integer(s7_num_ticks) ){
-        // bad arg 1
-        sprintf(err_msg, "itm-listen-ticks : arg 1 must be an integer of ticks");
-        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
-    }
-    int num_ticks = (int) s7_integer( s7_num_ticks );
-
-    // set up both time and quant to be X ticks and schedule
-    t_atom a;
-    atom_setfloat(&a, num_ticks);
-    time_setvalue(x->time_listen_ticks, NULL, 1, &a);
-    time_setvalue(x->time_listen_ticks_q, NULL, 1, &a);
-    time_schedule(x->time_listen_ticks, x->time_listen_ticks_q);
-    // return nil
-    return s7_nil(s7);
-}
-
-// cancel tick listening 
-static s7_pointer s7_cancel_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
-    //post("s7_itm_cancel_listen_ticks");
-    t_s4m *x = get_max_obj(s7);
-    time_stop(x->time_listen_ticks);
-    return s7_nil(s7);
-}
-
-// call back for the above, sends ticks as arg to scheme
-void s4m_itm_listen_ticks_cb(t_s4m *x){
-    //post("s4m_itm_listen_ticks_cb");
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    double curr_ticks = itm_getticks(itm);
-    itm_dereference(itm);
-    // call into scheme to execute the scheme function registered under this handle
-    // pass current tick number of global transport as arg
-    s7_pointer *s7_args = s7_nil(x->s7);
-    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, curr_ticks), s7_args); 
-    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ticks-callback"), s7_args);   
-    // and schedule next tick
-    // NB: values for the ticker and quant are only set by calls to listen
-    time_schedule(x->time_listen_ticks, x->time_listen_ticks_q);
-}
-
-// (listen-ms-t) ms based timer but dependant on transport  
-// has some special logic to set the first callback to go at time zero
-// because presumably when you hit play, you want the first one firing 
-static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
-    // post("s7_itm_listen_ms");
-    t_s4m *x = get_max_obj(s7);
-    char err_msg[128]; 
-    // get number of ms as a double
-    s7_pointer *s7_time_ms = s7_car(args);
-    if( ! s7_is_number(s7_time_ms) ){
-        // bad arg 1
-        sprintf(err_msg, "itm-listen-ms : arg 1 must be number of ms");
-        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
-    }
-    double time_ms = (double) s7_real( s7_time_ms );
-    if( time_ms <= 0 ){
-        sprintf(err_msg, "itm-listen-ms : arg 1 must be greater than 0");
-        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
-    }
-    // figure out how many ticks (fractional) the ms arg equal, because itm times are set in ticks
-    t_itm *itm = itm_getglobal();
-    itm_reference(itm);
-    double time_ticks = itm_mstoticks(itm, time_ms);
-    itm_dereference(itm);
-    // schedule (using the fractional ticks arg)
-    t_atom a;
-    atom_setfloat(&a, time_ticks);
-    time_setvalue(x->time_listen_ms, NULL, 1, &a);
-    // Note: we are quatizing by the ms value below too, so that if the user
-    // stops transport, runs listen, and hits play, the first event is on time 0
-    time_schedule(x->time_listen_ms, x->time_listen_ms);
-    // return nil
-    return s7_nil(s7);
-}
-// call back for the above
-void s4m_itm_listen_ms_cb(t_s4m *x){
-    //post("s4m_itm_listen_ms_cb");
-    // call into scheme to execute the scheme function registered under this handle
-    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-itm-listen-ms-callback"), s7_nil(x->s7));   
-    // and schedule next tick
-    time_schedule(x->time_listen_ms, NULL);
-}
-// cancel time listen 
-static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args){
-    // post("s7_cancel_itm_listen_ms()");
-    t_s4m *x = get_max_obj(s7);
-    time_stop(x->time_listen_ms);
-    return s7_nil(s7);
-}
-
-// generic clock callback, this fires after being scheduled with clock_fdelay 
-// gets access to the handle and s4m obj through the clock_callback struct that it 
-// as a a void pointer to a struct with the the s4m object and the cb handle 
+// the generic clock callback, fires at the right time, with
+// access to the handle we will use to get the function from the scheme registry
+// arg is a void pointer to a struct with the the s4m object and the cb handle 
 void s4m_clock_callback(void *arg){
     //post("clock_callback()");
     t_s4m_clock_callback *ccb = (t_s4m_clock_callback *) arg;
     t_s4m *x = &(ccb->obj);
     t_symbol handle = *ccb->handle; 
     //post(" - handle %s", handle);
-    // call into scheme with the handle, where scheme will call the registered delayed function
     s7_pointer *s7_args = s7_nil(x->s7);
     s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, handle.s_name), s7_args); 
     s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-callback"), s7_args);   
-    // clean up the clock_callback info struct that was dynamically allocated when this was scheduled:
     // remove the clock(s) from the clock (and quant) registry and free the cb struct
     hashtab_delete(x->clocks, &handle);
     hashtab_delete(x->clocks_quant, &handle);
-    // free the memory for the clock callback struct 
+    // free the memory for the struct we used to get at callback info
     sysmem_freeptr(arg);
 }
 
-// delay a function using Max clock objects for floating point precision delays
-// called from scheme as (delay)
-static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
-    //post("s7_schedule_delay()");
-    //post("isr: %i", isr());
+// the newer clock version of schedule, allows float of ms delay
+static s7_pointer s7_schedule_clock(s7_scheme *s7, s7_pointer args){
+    post("s7_schedule_clock()");
     char *cb_handle_str;
     t_s4m *x = get_max_obj(s7);
 
@@ -3569,48 +2195,115 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     // second arg is the symbol from gensym
     s7_pointer *s7_cb_handle = s7_cadr(args);
     cb_handle_str = s7_symbol_name(s7_cb_handle);
-    //post("s7_schedule_delay() time: %5.2f handle: '%s'", delay_time, cb_handle_str);
+    //post("s7_schedule_clock() time: %5.2f handle: '%s'", delay_time, cb_handle_str);
+   
+    // allocate memory for our struct that holds the symbol and the ref to the s4m obj
+    t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
+    clock_cb->obj = *x;
+    clock_cb->handle = gensym(cb_handle_str);
+    // make a clock, setting our callback struct as owner, as void pointer
+    // when the callback method fires, it will retrieve the s4m and handle refs from the struct
+    void *clock = clock_new( (void *)clock_cb, (method)s4m_clock_callback);
 
-    // NB: the Max SDK docs say one should not be creating clocks outside of the main thread
-    // Even under load testing this seems to be OK. But I could be wrong....
-    // (btw, surrounding the clock_new code in a critical region crashes it)
-    // FUTURE: make a clock pool and allocate from that
-    
-    // dynmamically allocate memory for our struct that holds the symbol and the ref to the s4m obj
-    // NB: this gets cleaned up by the receiver in the clock callback above
-    t_s4m_clock_callback *clock_cb_info = sysmem_newptr(sizeof(t_s4m_clock_callback));
-    clock_cb_info->obj = *x;
-    clock_cb_info->handle = gensym(cb_handle_str);
-    // make a clock, setting our callback info struct as the owner, as void pointer
-    // when the callback method fires, it will retrieve this pointer as an arg 
-    // and use it to get the handle for calling into scheme  
-    void *clock = clock_new( (void *)clock_cb_info, (method)s4m_clock_callback);
-    // store the clock ref in the s4m clocks hashtab (used to get at them for cancelling) 
+    // store the clock ref in the clocks hashtab (used to get at them for cancelling) 
     hashtab_store(x->clocks, gensym(cb_handle_str), clock);            
     // schedule it, this is what actually kicks off the timer
     clock_fdelay(clock, delay_time);
-    // return the handle on success so that scheme code can save it for possibly cancelling later
+ 
+    // return the handle on success
     return s7_make_symbol(s7, cb_handle_str);
 }
 
-
-// tempo aware version of delay
-// this one uses one main time object for calculation, but then does the actual delaying with clock objects
-// itm version of schedule, allows sending time as either ticks (int/float), notation (sym) or bbu (sym)
-static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
-    post("s7_schedule_delay_itm()");
-
-    double ms, tix;
+/*
+// test version with no quantization (in case quant is the crash cause
+static s7_pointer s7_schedule_itm(s7_scheme *s7, s7_pointer args){
+    post("s7_schedule_itm()");
     char *cb_handle_str;
     t_s4m *x = get_max_obj(s7);
 
     // first arg is the delay time, int/float for ticks, symbol for note-length notation or bbu
     s7_pointer time_arg = s7_car(args);
-    // 2nd arg is the callback handle symbol from gensym
+    
+    // third arg is the callback handle symbol from gensym
     s7_pointer *s7_cb_handle = s7_cadr(args);
     cb_handle_str = s7_symbol_name(s7_cb_handle);
-     
-    // lock while we create clock objects and store (docs imply clock_new not thread safe from high thread)
+    post("s7_schedule_itm() handle: '%s'", cb_handle_str);
+  
+    // allocate memory for our struct that holds the symbol and the ref to the s4m obj
+    // note, same kind of struct is fine for clock or time based scheduling 
+    t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
+    clock_cb->obj = *x;
+    clock_cb->handle = gensym(cb_handle_str);
+
+    // now we make the time object, note that the owner is our clock callback struct as void pointer
+    // from which the callback method will get the s4m obj and the callback handle
+    //t_object *timeobj =  (t_object *) time_new((void *)clock_cb, gensym("_unused_time"), (method)s4m_clock_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+   
+    // Testing what causes the crash when 
+    // this will crash 
+    //t_object *timeobj =  (t_object *) time_new( (void *)clock_cb, gensym(""), (method)s4m_clock_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    // does this crash? YES
+    //t_object *timeobj =  (t_object *) time_new( (void *)clock_cb, gensym(""), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    // does this crash? YES
+    //t_object *timeobj =  (t_object *) time_new( (void *)clock_cb, gensym(""), NULL, TIME_FLAGS_TICKSONLY );
+    // does this crash? YES
+    //t_object *timeobj =  (t_object *) time_new( (t_object *)clock_cb, gensym(""), NULL, TIME_FLAGS_TICKSONLY );
+    // does this crash? YES
+    //critical_enter(0);
+    //t_object *timeobj =  (t_object *) time_new( (t_object *)x, gensym(""), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK );
+    //critical_exit(0);
+    // does this crash? YES  - adding a valid attr, also added in init
+    // t_object *timeobj =  (t_object *) time_new( (t_object *)x, gensym("delaytime"), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK );
+
+    // store the timeobj ref in the time_clocks hashtab (used to get at them for cancelling) 
+    // it's not this
+    hashtab_store(x->clocks, gensym(cb_handle_str), (void *)timeobj);            
+
+    // set value for the delay time object 
+    // it's not this
+    if( s7_is_real(time_arg) || s7_is_integer(time_arg) ){
+        double delay_time_ticks = s7_real( time_arg );
+        t_atom a;
+        atom_setfloat(&a, delay_time_ticks);
+        time_setvalue( timeobj, NULL, 1, &a);
+    }else if( s7_is_symbol(time_arg) ){
+        time_setvalue( timeobj, gensym( s7_symbol_name(time_arg) ), NULL, NULL);
+    }
+	//time_schedule(timeobj, NULL);
+  
+    // return the handle on success
+    return s7_make_symbol(s7, cb_handle_str);
+}
+*/
+
+// noop callback because time_schedule needs one
+void s4m_time_callback(t_s4m *x){
+    post("s4m_time_callback()"); 
+}
+
+// attempt at hybrid version that does not make lots of time objects 
+// this one uses one main time object for calculation, but then does the actual delaying with clock objects
+// itm version of schedule, allows sending time as either ticks (int/float), notation (sym) or bbu (sym)
+static s7_pointer s7_schedule_itm(s7_scheme *s7, s7_pointer args){
+    post("s7_schedule_itm()");
+
+    double ms, tix, ms_q, tix_q;
+
+    char *cb_handle_str;
+    t_s4m *x = get_max_obj(s7);
+
+    // first arg is the delay time, int/float for ticks, symbol for note-length notation or bbu
+    s7_pointer time_arg = s7_car(args);
+    // second arg is quantize: #f if none, int/float for ticks, symbol for note-length notation or bbu
+    s7_pointer quant_arg = s7_cadr(args);
+    bool quantizing = ( (s7_is_boolean(quant_arg) && s7_boolean(s7, quant_arg) == false ) ? false : true);
+    post("quantizing: %s", ( quantizing ? "true" : "false")); 
+    
+    // third arg is the callback handle symbol from gensym
+    s7_pointer *s7_cb_handle = s7_caddr(args);
+    cb_handle_str = s7_symbol_name(s7_cb_handle);
+    post("s7_schedule_itm() handle: '%s'", cb_handle_str);
+  
     // allocate memory for our struct that holds the symbol and the ref to the s4m obj
     // note, same kind of struct is fine for clock or time based scheduling 
     t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
@@ -3626,135 +2319,131 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     // set value for the time object, used only for itm time calculating purproses 
     if( s7_is_real(time_arg) || s7_is_integer(time_arg) ){
         double delay_time_ticks = s7_real( time_arg );
-        //post("delaying by: 5.2%f ticks", delay_time_ticks);
         t_atom a;
         atom_setfloat(&a, delay_time_ticks);
         time_setvalue(x->timeobj, NULL, 1, &a);
     }else if( s7_is_symbol(time_arg) ){
-        //post("delaying by: %s", s7_symbol_name(time_arg) );
         time_setvalue(x->timeobj, gensym( s7_symbol_name(time_arg) ), NULL, NULL);
     }
+    
     // get the itm obj (for now it's always going to be the global itm)
     t_itm *itm = time_getitm( x->timeobj );
-	double actual_delay_ticks = time_getticks( x->timeobj );
-    //post(" - actual_delay_ticks: %5.2f", actual_delay_ticks);
+    //post("itm dump 1:"); itm_dump(itm);
+
+    double actual_delay_ticks; 
+    // now we must branch depending on if we are quantixing or not 
+    if( ! quantizing ){
+        post("scheduling, with no quant");
+	    actual_delay_ticks = time_getticks( x->timeobj );
+        post(" - actual_delay_ticks: %5.2f", actual_delay_ticks);
+    }else{ 
+        // set value for the time object used to calculate quantize values 
+        if( s7_is_real(quant_arg) || s7_is_integer(quant_arg) ){
+            double quant_time_ticks = s7_real( quant_arg );
+            t_atom q;
+            atom_setfloat(&q, quant_time_ticks);
+            time_setvalue(x->timeobj_quant, NULL, 1, &q);
+        }else if( s7_is_symbol(quant_arg) ){
+            //post("setting quant to: %s", s7_symbol_name(quant_arg));
+            time_setvalue(x->timeobj_quant, gensym( s7_symbol_name(quant_arg) ), NULL, NULL);
+        }
+        // get the tix and ms, determined from the associated itm, which is the global one by default
+        // does *not* need a call to schedule to have appeared to work
+	    double delay_ticks = time_getticks(x->timeobj);
+	    double quant_ticks = time_getticks(x->timeobj_quant);
+        post("delay_ticks: %5.2f quant_tick: %5.2f", delay_ticks, quant_ticks);
+        // this gives us the time and quant values in ms, but not after the quantize calculation        
+        
+        // get the current time in tix (will be zero if transport stopped and rewound)
+        double now_ticks = itm_getticks( itm );
+        post("now_ticks: %5.2f", now_ticks);
+
+        // we want the event on the next quantize boundary after the delay time
+        // I think the correct formula is:
+        // ( floor( (now + delay) / quant ) + 1 ) * quant    
+        double boundary_ticks = ( floor( (now_ticks + delay_ticks) / quant_ticks ) + 1 ) * quant_ticks; 
+        post("boundary_ticks: %5.2f", boundary_ticks);
+
+        actual_delay_ticks = boundary_ticks - now_ticks;
+        post("actual_delay_ticks: %5.2f", actual_delay_ticks);      
+    } 
     // turn into ms
     double delay_ms = itm_tickstoms( itm, actual_delay_ticks );
     post("delay_ms: %5.2f", delay_ms);
     // and schedule our clock, this is what actually kicks off the timer
     clock_fdelay(clock, delay_ms);
+ 
     // return the handle on success
     return s7_make_symbol(s7, cb_handle_str);
 }
 
-// tempo aware version of delay with quantization
-// this one uses one main time object for calculation, but then does the actual delaying with clock objects
+/*
+// original version of mine, which is not working because of issues in time_new that makes it crash if one makes many time objects
 // itm version of schedule, allows sending time as either ticks (int/float), notation (sym) or bbu (sym)
-static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args){
-    //post("s7_schedule_delay_itm_quant()");
-    double ms, tix, ms_q, tix_q;
+static s7_pointer s7_schedule_itm(s7_scheme *s7, s7_pointer args){
+    post("s7_schedule_itm()");
     char *cb_handle_str;
     t_s4m *x = get_max_obj(s7);
 
     // first arg is the delay time, int/float for ticks, symbol for note-length notation or bbu
     s7_pointer time_arg = s7_car(args);
-    // second arg is quantize: int/float for ticks, symbol for note-length notation or bbu
+    // second arg is quantize: #f if none, int/float for ticks, symbol for note-length notation or bbu
     s7_pointer quant_arg = s7_cadr(args);
+    bool quantizing = ( (s7_is_boolean(quant_arg) && s7_boolean(s7, quant_arg) == false ) ? false : true);
+    post("quantizing: %s", ( quantizing ? "true" : "false")); 
+    
     // third arg is the callback handle symbol from gensym
     s7_pointer *s7_cb_handle = s7_caddr(args);
     cb_handle_str = s7_symbol_name(s7_cb_handle);
-    //post("s7_schedule_delay_itm() handle: '%s'", cb_handle_str);
-     
+    post("s7_schedule_itm() handle: '%s'", cb_handle_str);
+  
     // allocate memory for our struct that holds the symbol and the ref to the s4m obj
     // note, same kind of struct is fine for clock or time based scheduling 
     t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
     clock_cb->obj = *x;
     clock_cb->handle = gensym(cb_handle_str);
-    // make a clock, setting our callback struct as owner, as void pointer
-    // when the callback method fires, it will retrieve the s4m and handle refs from the struct
-    void *clock = clock_new( (void *)clock_cb, (method)s4m_clock_callback);
-    // store the clock ref in the clocks hashtab (used to get at them for cancelling) 
-    hashtab_store(x->clocks, gensym(cb_handle_str), clock);  
-    // clock will get scheduled after we figure out all the timing below
 
-    // set value for the time object, used only for itm time calculating purproses 
+    // now we make the time object, note that the owner is our clock callback struct as void pointer
+    // from which the callback method will get the s4m obj and the callback handle
+    t_object *timeobj =  (t_object *) time_new((void *)clock_cb, gensym("_unused_time"), (method)s4m_clock_callback, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    // store the timeobj ref in the time_clocks hashtab (used to get at them for cancelling) 
+    hashtab_store(x->clocks, gensym(cb_handle_str), timeobj);            
+
+    // set value for the delay time object 
     if( s7_is_real(time_arg) || s7_is_integer(time_arg) ){
         double delay_time_ticks = s7_real( time_arg );
-        //post("delaying by: 5.2%f ticks", delay_time_ticks);
         t_atom a;
         atom_setfloat(&a, delay_time_ticks);
-        time_setvalue(x->timeobj, NULL, 1, &a);
+        time_setvalue(timeobj, NULL, 1, &a);
     }else if( s7_is_symbol(time_arg) ){
-        //post("delaying by: %s", s7_symbol_name(time_arg) );
-        time_setvalue(x->timeobj, gensym( s7_symbol_name(time_arg) ), NULL, NULL);
+        time_setvalue(timeobj, gensym( s7_symbol_name(time_arg) ), NULL, NULL);
     }
+  
+    if( ! quantizing ){
+	    time_schedule(timeobj, NULL);
+    }else{ 
+        t_object *timeobj_quant = (t_object *) time_new( (void *) clock_cb, gensym("_unused_quant"), NULL, TIME_FLAGS_TICKSONLY);
+        // store the quant clock reg, by same handle
+        hashtab_store(x->clocks_quant, gensym(cb_handle_str), timeobj_quant);            
     
-    // get the itm obj (for now it's always going to be the global itm)
-    t_itm *itm = time_getitm( x->timeobj );
-    itm_reference(itm);
-    //post("itm dump 1:"); itm_dump(itm);
-
-    double actual_delay_ticks; 
-    // set value for the time object used to calculate quantize values 
-    if( s7_is_real(quant_arg) || s7_is_integer(quant_arg) ){
-        double quant_time_ticks = s7_real( quant_arg );
-        t_atom q;
-        atom_setfloat(&q, quant_time_ticks);
-        time_setvalue(x->timeobj_quant, NULL, 1, &q);
-    }else if( s7_is_symbol(quant_arg) ){
-        //post("setting quant to: %s", s7_symbol_name(quant_arg));
-        time_setvalue(x->timeobj_quant, gensym( s7_symbol_name(quant_arg) ), NULL, NULL);
-    }
-    // get the tix and ms, determined from the associated itm, which is the global one by default
-    // does *not* need a call to schedule to have appeared to work
-	double delay_ticks = time_getticks(x->timeobj);
-	double quant_ticks = time_getticks(x->timeobj_quant);
-    //post("delay_ticks: %5.2f quant_tick: %5.2f", delay_ticks, quant_ticks);
-    // this gives us the time and quant values in ms, but not after the quantize calculation        
+        // set value for quantize time object 
+        if( s7_is_real(quant_arg) || s7_is_integer(quant_arg) ){
+            double quant_time_ticks = s7_real( quant_arg );
+            t_atom q;
+            atom_setfloat(&q, quant_time_ticks);
+            time_setvalue(timeobj_quant, NULL, 1, &q);
+        }else if( s7_is_symbol(quant_arg) ){
+            //post("setting quant to: %s", s7_symbol_name(quant_arg));
+            time_setvalue(timeobj_quant, gensym( s7_symbol_name(quant_arg) ), NULL, NULL);
+        }
+        // schedule with quant
+	    time_schedule(timeobj, timeobj_quant);
+    } 
     
-    // get the current time in tix (will be zero if transport stopped and rewound)
-    double now_ticks = itm_getticks( itm );
-    //post("now_ticks: %5.2f", now_ticks);
-
-    // quantizing can either be to the *next* applicable boundary, or the *closest* applicable boundary
-    // we want the event on the next quantize boundary after the delay time
-    double next_boundary_ticks = ( floor( (now_ticks + delay_ticks) / quant_ticks ) + 1 ) * quant_ticks; 
-    //post("next_boundary_ticks: %5.2f", next_boundary_ticks);
-
-    // I might make the quantization algo selectable later, but for now, locked to closest
-    // or perhaps it will become delay-tqn
-    bool quantize_closest = true;
-    if( quantize_closest ){
-        // check if the previous boundary tick is a) closer and b) still in the future
-        double prev_boundary_ticks = next_boundary_ticks - quant_ticks;
-        // one would think the below should be > 0, but that can result in cascades of events
-        if( (prev_boundary_ticks - now_ticks > 1) &&
-            (prev_boundary_ticks - now_ticks < next_boundary_ticks - now_ticks) ){
-            actual_delay_ticks = prev_boundary_ticks - now_ticks;
-        }else{
-            actual_delay_ticks = next_boundary_ticks - now_ticks;
-        }     
-    }else{
-        // in next-boundary quantize mode, we always wait for the subsequent boundary
-        actual_delay_ticks = next_boundary_ticks - now_ticks;
-    }
-    //post("actual_delay_ticks: %5.2f", actual_delay_ticks);      
-    
-    // turn into ms
-    double delay_ms = itm_tickstoms( itm, actual_delay_ticks );
-    //post("delay_ms: %5.2f", delay_ms);
-    // and schedule our clock, this is what actually kicks off the timer
-    clock_fdelay(clock, delay_ms);
     // return the handle on success
     return s7_make_symbol(s7, cb_handle_str);
 }
-
-
-
-
-
-/* End of schedule/itm related functions 
-********************************************************************************/
+*/
 
 // s7 function for sending a generic message to a max object
 // assumes the max object has a scripting name and has been found by a call to 'scan' to the s4m object

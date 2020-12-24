@@ -1,0 +1,47 @@
+Notes on table and buffer io
+
+DONE & TESTED
+- table? 
+- table-length              (tabl)  (table-length table)   
+- table-ref                 (tabr)
+- table-set!                (tabs)
+- table->vector             (t->v)
+- vector-set-from-table!    (vecst)  (vector-set-from-table! vector {vec-index} 'table {index} {count})
+- table-set-from-vector!    (tabsv)  (table-set-from-vector! table {table-index} 'vector {index} {count})
+- buffer? 
+- buffer-size? 
+- buffer-ref {name} {chan} {index} 
+- buffer-set! {name} {chan} {index}
+- buffer->vector {name}
+
+TODO
+- buffer-channels
+- buffer->vector 
+- vector-set-from-buffer!
+
+
+LATER:
+(buffer->vector* {buff} {start} {count}) 
+  - returns multi-dimensional vector from all channels in the buffer
+
+- returns a vector from a buffer
+(vector-set-from-buffer! vector {vstart} {buffer} {chan} {bstart-opt} {count-opt}
+
+- later add multi-dimensional versions to work with multi-dimensional vectors
+
+
+ALSO NEED
+- buffer-channels
+
+BUFF tests:
+
+IN PROGRESS:
+- working on buffer-set-from-vector! 
+
+(buffer-set-from-vector! buffer {opt-chan} {opt-buff-index} vector {opt-start} {opt-count}) 
+
+- buffer-set-from-vector! is now working for single channel buffers
+
+- LEFT OFF 2020-09-19
+  - need to figure out other buffer channels
+  - needs tests written for it, should be able to copy all the tests from the table tests patcher

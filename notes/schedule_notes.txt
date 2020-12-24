@@ -1,0 +1,231 @@
+
+Scheduling notes:
+
+********************************************************************************
+Current Implementation of delay: (working) (2020-09-23)
+- in scheme there is a callback registry hashtable: 
+  sm4-callback-registry
+- registering a callback is done with 
+  (s4m-register-callback cb-function)
+  creates a gensym as a handle, stores the function with this key and returns the gensym handle
+
+- we can retrieve the callback, a onetime op, with (s4m-get-callback key)
+  which retrieves the callback and then deletes the key by storing #4 in the registry
+
+- callbacks are executed when they are called from C, using 
+  (s4m-execute-callback key)
+
+- in C, the way this works is that s4m_schedule-callback calls s7_schedule_callback in C
+  which gets the time and the handle, and schedules a one arg function in the future, where
+  the function is s4m_execute_callback, with the key as the arg.
+  schedule_delay(x, s4m_execute_callback, delay_time, gensym(cb_handle_str), 0, NULL);
+ 
+- the public function is: 
+  (delay time-ms arg)
+  - which registers arg as a callback (getting a handle) and then
+    schedules it with 
+    (s4m-schedule-callback time cb-handle)
+
+- there is also the convenience function
+  (delay-eval time list-arg)
+  which makes a function out of list-arg and delays that
+  i.e. can be used as (delay-eval 1000 '(my-fun a b c))
+
+- NB: we do not have C method in place to *cancel* a callback, we instead change
+  the registered callback to #f so when C calls the function, it's a noop
+
+- potential issue:
+  the gensym is logged to the console each time, bit annoying
+
+
+********************************************************************************
+Notes from the docs
+
+- the high thread is also called the Scheduler or interrupt thread
+- the low thread is also called the main threa
+
+- isr() function returns whether we are in Max's scheduler thread
+  - what does the scheduler thread mean? does that mean high-priority?
+- defer() defers to the front of the low priority thread
+- defer_low() defers the back of the low priority thread
+
+- I think that schedule_delay always puts things into the timer level (ie high thread)
+  - could check with isr call
+
+- I *think* that my current implementation is out of date, in that I should reimplement schedule_delay
+  using clocks to get fpoint accuracy (instead of ms accuracy)
+
+
+TODO:
+- implement defer and defer low
+- make a wrapper for isr to allow calling from scheme
+
+QUESTIONS:
+- does my delay call as it is stay in whatever thread it triggered in?
+  - should be able find this out with a clicking test
+
+********************************************************************************
+ITM notes
+
+- I believe an itm corresponds to a named transport
+
+- itm_barbeatunitstoticks() - convert bbu to ticks
+- itm_getglobal() - get the global itm object
+- itm_getname() - get the name of an itm object
+- itm_getnamed() - gets a named itm object, optionally creates it if it doesn't exist
+- itm_getticks() gets current time of the itm in ticks
+  - does this stay at zero if global tempo is not moving??
+  TODO implement - get-ticks
+- itm_gettime() - returns current internal time for an itm
+  - is the same as calling clock_getftime()
+  TODO implement get-time
+- itm_gettimesignature() - get numerator and denominator of current time
+  - TODO implement get-time-sig
+- itm_mstosamps()
+- itm_pause() - sets transport to stoped
+- 
+- itm-schedule 
+
+- t_timeobject - A high-level time object for tempo-based scheduling.
+
+- look at c74support/max-includes/ext_itm.h
+- sort of an example in Packages/max-sdk-8.0.3/source/basics/delay2
+
+- time_getitm() - returns the itm associated with a time object
+  - so I guess a time
+
+
+
+********************************************************************************
+Useful pages with examples
+https://cycling74.com/forums/setting-tempo-of-globalinternal-itm
+- exmaple of getting, pausing, starting an ITM transport
+
+Notes from the delay example:
+
+- clock_fdelay is still used for the actual delaying
+
+  	time_schedule(x->d_timeobj, x->d_quantize);
+	tix = time_getticks(x->d_timeobj);
+	ms = itm_tickstoms(time_getitm(x->d_timeobj), tix);
+	clock_fdelay(x->d_clock, ms);
+
+- a time object can be converted to ticks, so it must be a way to store an *amount* of time
+
+********************************************************************************
+Clock notes
+
+- a clock needs a task function, with a single argument
+- when we make a clock with clock_new, we pass in the arg that will be the first arg in the task, 
+  and the task function
+  x->m_clock = clock_new((t_object *)x, (method)myobject_task);
+
+- scheduling the clock is done with clock_fdelay, passing the reference to the clock
+  clock_fdelay(x->m_clock, 100.);
+- The schedule() function is to clocks as defer() is to qelems. Schedule creates a clock for a task
+   function you specify and calls clock_fdelay() on it to make the task execute at a desired time.
+
+
+********************************************************************************
+Don't forget:
+- to ensure we can call the clock function with either floats or ints
+
+
+********************************************************************************
+- got simple delay with clocks working
+  - a clock gets created in the hashtab and is deleted after it runs
+- next we need to add the ability to use itm
+
+ITM
+- what is the deliverable??
+  - work with tempo based args
+  - work with a quantize value 
+  - accept name of itm transports
+
+
+- can't find a function for setting itm to a certain point, strangely
+  - will just have to send messages
+- looks like one might be able to implement a tick based listener directly, 
+  see time_listen
+  - looks like one makes an attribute in the owning object of a time object that
+    will get updated on ticks
+  - can that be callable?? 
+    I think so: https://cycling74.com/sdk/max-sdk-8.0.3/html/chapter_msgattached.html
+  - question is how frequently this would get called
+
+********************************************************************************
+ISSUES:
+- the docs say clock_new cannot be called from other than the main thread, but
+  this doesn't seem to be a problem so far??
+  - perhaps it does need to be surrounded with a critical enter and exit function??
+
+
+
+********************************************************************************
+TODO delay and scheduling
+- start, stop, and set a transport
+- looping a transport??
+- add cleanup of all the clock stuff, see itm page
+https://cycling74.com/sdk/max-sdk-8.0.3/html/chapter_itm.html#chapter_itm_permanent
+- try making a once-per-vector click using itm_sampstoms
+
+ITM functions done
+- itm-state, itm-set-state
+- itm-ticks and itm-time (return current time)
+- functions to stop, start - DONE
+- add functions to cancel all callback
+- cancel a delay callback with cancellation to max
+- done listen-ticks, cancel-listen-ticks
+- done itm-listen-ms, cancel-itm-listen-ms
+
+- not sure yet whether to have explicit cancel functions or use (itm-listen-ticks #f) to cancel
+
+NEXT:
+- would be good to have combo of listen and delay, where re-scheduling is not necessary
+  and total time is passed in as arg, but we can have as many listeners as we want
+  to allow making pseudo k-rate processes
+  - check what CM does too to make it portable
+  - perhaps these should be called "clocks", and might be a high level scheme object
+    (my-clock 'start) (my-clock 'stop) (my-clock 'time) (my-clock 
+
+- (add-ms-listener 10 fun)
+  - makes a new clock, and unless cancelled, it will keep running
+
+Need to take notes on where we are for the delay functions and figure out a reasonable
+stopping place
+- I could add a listen-ms that is non-itm and then stop there
+
+How to set position? using itm_seek for now, seems to be working fine (from ext_itm.h)
+
+- haven't done get tempo, or get and set time signature
+- t-get-time-sig t-set-time-sig
+- strangely, there is no itm-get tempo function, so will have to use raw max messages again I guess??
+  - do later
+ 
+- DONE listen-ms and cancel-listen-ms
+
+
+ISSUES:
+- for some reason delaying by '1:1:0 notation is not working, just call it not working for now
+  - put in docs that it is *not* supported for now
+
+LEFT OFF:
+Testing listen-ticks
+- NEXT:
+- do listen-ms (non-itm) I don't think that is in there yet??
+  
+- listen-ms works
+
+- need tests for listen-ms
+
+- listen test:
+- turn on the listener
+- start transport
+- stop transport after X time
+- verify the output is correct and number of calls is correct
+
+- hmm, should the first listen ms callback fire right away at 0? like ticks does?
+  probably it should at least for listen-ms-t
+
+LEFTOFF 
+- the listen-ms-t doesn't get the right result when running as part of the regression suite

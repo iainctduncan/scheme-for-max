@@ -1,0 +1,5 @@
+Notes on attribute system
+
+"When an attribute is declared and is made user-settable, a user can send a message to
+ your object consisting of the attribute name and arguments that represent the new value of the attribute."
+- ??? how do we make it NOT user settable??

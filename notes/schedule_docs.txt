@@ -1,0 +1,47 @@
+Points for the docs around schedule:
+
+- it you reset a transports time, transports can get out of sync with the master clock
+- my quantize will stay with the master clock
+
+Scheduler/Transport related Functions:
+
+DT - transport-set-bpm         
+DT - transport-state   
+DT - transport-set-state 
+DT - transport-ticks
+DT - transport-seek
+DT - t-time-sig / transport-time-signature
+DT - t-time-sig! / transport-set-signature
+
+D - ticks->ms
+D - ticks->bbu
+D - ms->ticks
+D - ms->bbu
+D - bbu->ticks
+D - bbu->ms
+
+DT - delay
+DT - delay-eval
+DT - delay-t       
+DT - delay-tq
+DT - delay-t-eval
+DT - delay-tq-eval
+
+DT - listen-ticks, cancel-listen-ticks
+DT - listen-ms, cancel-listen-ms
+DT - listen-ms-t, cancel-listen-ms-t
+
+- transport-time - XXX: is not returning transport time, just plain time!!
+
+TODO:
+
+IN REGRESSION SUITE
+- transport tests
+- delay tests
+
+
+TODO:
+- tests for listen functions 
+- write up delay docs
+
+

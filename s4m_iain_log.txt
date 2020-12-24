@@ -1,0 +1,16 @@
+Log of what I'm working on
+
+2020-08-08
+- working on buffer i/o
+- setting up tests for buffer io
+
+2020-08-10
+- working on buffer automated tests
+- left off on buffer-set-from-vector
+
+2020-08-20
+- working on buffer-set-from-vector
+- issues on bsfv - buffer channel? oops
+
+2020-09-24/25
+- working on itm and clocks

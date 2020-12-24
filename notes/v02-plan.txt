@@ -1,0 +1,28 @@
+Plan for version 0.2
+- table i/o
+- buffer i/o
+- scheduling with ms
+- scheduling with clock
+
+Status:
+- regression test suite working for the schedule and transport tests
+- working on completing the regression test suite
+- 
+
+
+V0.2 need to do:
+- add the global control for turning off logging
+- add the table tests to the regression suite
+
+table-io-tests-1 is not working right (not all passing)
+
+
+Regression Suite:
+- buffer tests:
+ - done except for channel specific versions of stuff 
+ - could return to those later
+
+
+Buffer thoughts:
+- leave bufsv polymorphic and later make bufsv*, an optimized non-polymorphic version that requires all args
+  and thus has do less argument checking per call

@@ -1,0 +1,7 @@
+- to add to docs:
+- vectors of ints and reals supported, not other values
+- numbers of ints and reals supported only (no rational or complex)
+
+- need a disclaimer that "ins", "outs", and "thread" are attributes
+  and so won't get passed to scheme automatically (ie don't name functions
+  ins, outs, thread, or reset
