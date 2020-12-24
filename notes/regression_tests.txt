@@ -16,14 +16,19 @@ tests-buffer-io:
 (bufsv 'buf chan bi vec vi) 
 (bufsv 'buf vec vi cnt) 
 - isr and thread
+- input and output
 
 TODO:
 - dict-get and set
 - the basics that already exist
-  - output, DONE
-  - input IN PROGRESS
-  
 - send message
+- reading files
 
-LEFT OFF 2020-12-01
-- fixed up deferal/promotion of float and int for inlets 1+, but still have to do this for the other types
+{
+	"a" : 	{
+		"a1" : 1,
+		"a2" : 2
+	}
+
+}
+
