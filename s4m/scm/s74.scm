@@ -48,3 +48,23 @@
       '()
       (cons (car list)
             (list-copy (cdr list)))))
+
+;; hash-table helpers
+(define (hash-table-keys ht)
+  (map (lambda (pair) (car pair)) ht))
+
+(define (hash-table-values ht)
+  (map (lambda (pair) (cdr pair)) ht))
+
+
+;; test code for the dict getter
+;; leaving for reference
+;(define (hash-table-get ht . keys)
+;  (define (getter container keylist)
+;    (cond 
+;      ((or (null? (cdr keylist)) (eq? #f (container (car keylist))))
+;        (container (car keylist)))
+;      (else (getter (container (car keylist)) (cdr keylist)))))
+;  (getter ht keys))
+
+

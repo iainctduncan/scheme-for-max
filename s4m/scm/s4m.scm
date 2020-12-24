@@ -119,4 +119,4 @@
 
 (define s4m-done-bootstrap #t)
 
-;(post "s4m.scm BOOTSTRAP COMPLETE")
+(post "s4m.scm BOOTSTRAP COMPLETE")
