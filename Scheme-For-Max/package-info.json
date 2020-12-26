@@ -19,6 +19,6 @@
         "copyright" : "Copyright (c) 2020 Iain Duncan. (Bill Schottstaedt, S7)"
     },
     "tags" : [ "scheme", "lisp", "S7", "live coding", "scripting"],
-    "version" : "0.1",
+    "version" : "0.2",
     "website" : "https://github.com/iainctduncan/scheme-for-max"
 }
