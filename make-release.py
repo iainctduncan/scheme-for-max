@@ -20,15 +20,16 @@ patcher_dest = "dist/Scheme-For-Max/patchers"
 # tuple of source/dest
 scm_files = [
     ("s4m.scm", "s4m.scm"),
+    ("s74.scm", "s74.scm"),
     ("stuff.scm", "stuff.scm"),
-    ("cm/loop.scm", "loop.scm"),
-    ("cm/utilities.scm", "utilities.scm")
     ("loop.scm", "loop.scm"),
-    ("utilities.scm", "utilities.scm")
+    ("utilities.scm", "utilities.scm"),
+    ("schedule.scm", "schedule.scm"),
 ]
 # list of patchers aside from the external
 patcher_files = [
     "s4m.repl.maxpat",
+    "tests",
 ]
 
 def do(command):
@@ -56,7 +57,7 @@ def package_release():
 
     print("\n... Copying the max patcher files")
     for f in patcher_files:
-        do("cp %s/%s %s/%s" % (patcher_src, f, patcher_dest, f)) 
+        do("cp -r %s/%s %s" % (patcher_src, f, patcher_dest)) 
 
     print("\n... Removing any swap files")
     do("find dist -type f -name \"*.sw[klmnop]\" -delete")
@@ -65,6 +66,7 @@ def package_release():
     os.chdir("dist") 
     do("tar cvf Scheme-For-Max-%s.tar Scheme-For-Max" % version)
     os.chdir("..") 
+
 
 if __name__=="__main__":
     print ("\nmake-release.py: package up a scheme-for-max release")
