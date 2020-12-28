@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 1529.0, -1038.0, 1489.0, 967.0 ],
+		"rect" : [ 34.0, 79.0, 1372.0, 749.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -38,6 +38,67 @@
 		"style" : "",
 		"subpatcher_template" : "",
 		"boxes" : [ 			{
+				"box" : 				{
+					"editor_rect" : [ 100.0, 100.0, 300.0, 300.0 ],
+					"embed" : 0,
+					"id" : "obj-91",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 2,
+					"outlettype" : [ "int", "bang" ],
+					"patching_rect" : [ 572.0, 131.0, 97.0, 22.0 ],
+					"saved_object_attributes" : 					{
+						"embed" : 0,
+						"name" : "tbl",
+						"parameter_enable" : 0,
+						"parameter_mappable" : 0,
+						"range" : 128,
+						"showeditor" : 0,
+						"size" : 4
+					}
+,
+					"showeditor" : 0,
+					"text" : "table tbl @size 4"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-93",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 642.0, 64.0, 62.0, 22.0 ],
+					"text" : "r #0_seed"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-97",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "bang" ],
+					"patching_rect" : [ 572.0, 64.0, 58.0, 22.0 ],
+					"text" : "loadbang"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-101",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 572.0, 97.0, 101.0, 22.0 ],
+					"text" : "set 0 10 20 30 40"
+				}
+
+			}
+, 			{
 				"box" : 				{
 					"comment" : "",
 					"id" : "obj-315",
@@ -950,7 +1011,8 @@
 					"patching_rect" : [ 412.5, 2033.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -1107,7 +1169,8 @@
 					"patching_rect" : [ 219.5, 2033.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -1264,7 +1327,8 @@
 					"patching_rect" : [ 27.0, 2033.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -1510,7 +1574,8 @@
 					"patching_rect" : [ 842.0, 1553.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -1756,7 +1821,8 @@
 					"patching_rect" : [ 556.0, 1553.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -2000,7 +2066,8 @@
 					"patching_rect" : [ 292.0, 1558.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -2429,7 +2496,8 @@
 					"patching_rect" : [ 33.0, 1562.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -2624,7 +2692,8 @@
 					"patching_rect" : [ 791.5, 1049.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -2821,7 +2890,8 @@
 					"patching_rect" : [ 522.5, 1054.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -3016,7 +3086,8 @@
 					"patching_rect" : [ 264.5, 1060.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -3231,7 +3302,8 @@
 					"patching_rect" : [ 27.5, 1060.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -3388,7 +3460,8 @@
 					"patching_rect" : [ 740.5, 491.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -3545,7 +3618,8 @@
 					"patching_rect" : [ 551.5, 491.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -3768,7 +3842,8 @@
 					"patching_rect" : [ 366.5, 491.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -3975,7 +4050,8 @@
 					"patching_rect" : [ 183.5, 487.5, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -4244,7 +4320,8 @@
 					"patching_rect" : [ 27.5, 491.0, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -4273,6 +4350,13 @@
 					"destination" : [ "obj-111", 0 ],
 					"midpoints" : [ 498.0, 930.0, 498.0, 989.0 ],
 					"source" : [ "obj-100", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-91", 0 ],
+					"source" : [ "obj-101", 0 ]
 				}
 
 			}
@@ -6691,6 +6775,13 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-101", 0 ],
+					"source" : [ "obj-93", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-111", 0 ],
 					"source" : [ "obj-94", 0 ]
 				}
@@ -6736,6 +6827,13 @@
 					"destination" : [ "obj-94", 0 ],
 					"midpoints" : [ 499.0, 874.0, 499.0, 969.0 ],
 					"source" : [ "obj-96", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-101", 0 ],
+					"source" : [ "obj-97", 0 ]
 				}
 
 			}
