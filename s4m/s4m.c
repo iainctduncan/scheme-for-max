@@ -1089,11 +1089,11 @@ void s4m_bang(t_s4m *x){
     //post("s4m_bang(): isr: %i", in_isr );
     // schedule/defer require an A_ANYTHING sig, so we need to call our wrapper s4m_call_bang
     if( !in_isr && x->thread == 'h' ){ 
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        t_atom *ap = (t_atom *) sysmem_newptr( sizeof( t_atom ) );
         atom_setlong(ap, inlet_num);
         return schedule(x, s4m_callback_bang, 0, NULL, 1, ap); 
     }else if( in_isr && x->thread == 'l'){
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        t_atom *ap = (t_atom *) sysmem_newptr( sizeof( t_atom ) );
         atom_setlong(ap, inlet_num);
         return defer(x, s4m_callback_bang, NULL, 1, ap); 
     }    
@@ -1128,12 +1128,12 @@ void s4m_int(t_s4m *x, long arg){
     // if this message came in on the wrong thread for the interpreter, schedule it
     // schedule requires A_ANYTHING sig, so call wrapper s4m_callback_int
     if( !in_isr && x->thread == 'h' ){ 
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) * 2 );
+        t_atom *ap = (t_atom *)sysmem_newptr( sizeof( t_atom ) * 2 );
         atom_setlong(ap, inlet_num);
         atom_setlong(ap+1, arg);
         return schedule(x, s4m_callback_int, 0, NULL, 2, ap); 
     }else if( in_isr && x->thread == 'l'){ 
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) * 2 );
+        t_atom *ap = (t_atom *)sysmem_newptr( sizeof( t_atom ) * 2 );
         atom_setlong(ap, inlet_num);
         atom_setlong(ap+1, arg);
         return defer(x, s4m_callback_int, NULL, 2, ap); 
@@ -1180,12 +1180,12 @@ void s4m_float(t_s4m *x, double arg){
     //post("s4m_float(): inlet_num: %i arg: %5.4f, isr: %i", inlet_num, arg, in_isr);
     if( !in_isr && x->thread == 'h' ){ 
         // schedule requires A_ANYTHING sig, so call wrapper s4m_call_float
-        t_atom *ap = sysmem_newptr( sizeof(t_atom) * 2 );
+        t_atom *ap = (t_atom *)sysmem_newptr( sizeof(t_atom) * 2 );
         atom_setlong(ap, inlet_num);
         atom_setfloat(ap + 1, arg);
         return schedule(x, s4m_callback_float, 0, NULL, 2, ap); 
     }else if( in_isr && x->thread == 'l'){ 
-        t_atom *ap = sysmem_newptr( sizeof(t_atom) * 2 );
+        t_atom *ap = (t_atom *)sysmem_newptr( sizeof(t_atom) * 2 );
         atom_setlong(ap, inlet_num);
         atom_setfloat(ap + 1, arg);
         return defer(x, s4m_callback_float, NULL, 2, ap); 
@@ -1242,7 +1242,7 @@ void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     
     // need to make a new list with the same args, but with inlet_num at the head as new atom
     if( (!in_isr && x->thread == 'h') || (in_isr && x->thread == 'l') ){
-        t_atom *ap = sysmem_newptr( sizeof(t_atom) * (argc + 1) );
+        t_atom *ap = (t_atom *)sysmem_newptr( sizeof(t_atom) * (argc + 1) );
         atom_setlong(ap, inlet_num);
         for(int i=0; i<argc; i++){
             *(ap + i + 1) = *(argv + i);
@@ -1320,7 +1320,7 @@ void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
 
     // for promotion/deferal, we need a new list with same args, but inlet_num at the head as new atom
     if( (!in_isr && x->thread == 'h') || (in_isr && x->thread == 'l') ){
-        t_atom *ap = sysmem_newptr( sizeof(t_atom) * (argc + 1) );
+        t_atom *ap = (t_atom *)sysmem_newptr( sizeof(t_atom) * (argc + 1) );
         atom_setlong(ap, inlet_num);
         for(int i=0; i<argc; i++){
             *(ap + i + 1) = *(argv + i);
@@ -1436,7 +1436,7 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
         s7_obj = s7_make_hash_table(s7, num_keys);
         for(int i=0; i < num_keys; i++){
             t_symbol *key_sym = *(keys + i); 
-            t_atom *value = sysmem_newptr( sizeof( t_atom ) );
+            t_atom *value = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
             dictionary_getatom( atom_getobj(ap), key_sym, value);
             s7_hash_table_set(s7, s7_obj, 
                 s7_make_symbol(s7, key_sym->s_name),    // key
@@ -1513,7 +1513,7 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
         t_atomarray *aa = NULL;
 		aa = atomarray_new(0, NULL);
         for(int i=0; i < vector_len; i++){
-            t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+            t_atom *ap = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
             s7_obj_to_max_atom(s7, s7_vector_ref(s7, s7_obj, i), ap);         
             atomarray_appendatom(aa, ap); 
         }
@@ -1531,7 +1531,7 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
         // make a new dictionary and populate it with keys and atoms
         t_dictionary *dict = dictionary_new();
         for(int i=0; i < num_pairs; i++){
-            t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+            t_atom *ap = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
             s7_pointer kv_pair = s7_list_ref(s7, key_val_list, i);
             s7_pointer key = s7_car( kv_pair ); 
             s7_pointer val = s7_cdr( kv_pair );
@@ -2646,7 +2646,7 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
     else{
         //post("dict-set has list key, using recurser");
         // convert the value we want to set to a Max atom
-        t_atom *value_atom = sysmem_newptr( sizeof( t_atom ) );
+        t_atom *value_atom = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
     
         s7_pointer value_arg = s7_list_ref(s7, args, 2);
         s7_obj_to_max_atom(s7, value_arg, value_atom); 
@@ -2777,7 +2777,7 @@ static s7_pointer s7_dict_replace(s7_scheme *s7, s7_pointer args) {
     // arg three is the value
     s7_pointer value_arg = s7_caddr(args);
     // convert the value we want to set to a Max atom
-    t_atom *value_atom = sysmem_newptr( sizeof( t_atom ) );
+    t_atom *value_atom = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
     s7_obj_to_max_atom(s7, value_arg, value_atom); 
 
     t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
@@ -2850,7 +2850,7 @@ static s7_pointer s7_dict_replace_recurser(s7_scheme *s7, t_atom *container_atom
                 // post("entry missing, need to make it, key: %s", key_str);
                 // make a new dict and atom, set as next_container, and recurse
                 t_dictionary *dict = dictionary_new();
-                t_atom *new_next_container_atom = sysmem_newptr( sizeof( t_atom ) );
+                t_atom *new_next_container_atom = (t_atom*)sysmem_newptr( sizeof( t_atom ) );
                 atom_setobj(new_next_container_atom, (void *)dict);
                 // set dictionary entry
                 dictionary_appendatom( atom_getobj(container_atom), gensym(key_str), new_next_container_atom);
@@ -2931,7 +2931,7 @@ static s7_pointer s7_dict_put(s7_scheme *s7, s7_pointer args) {
     // arg three is the value
     s7_pointer value_arg = s7_caddr(args);
     // convert the value we want to set to a Max atom
-    t_atom *value_atom = sysmem_newptr( sizeof( t_atom ) );
+    t_atom *value_atom = (t_atom*)sysmem_newptr( sizeof( t_atom ) );
     s7_obj_to_max_atom(s7, value_arg, value_atom); 
 
     t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
@@ -2978,7 +2978,7 @@ static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args){
         return;
     }
     // wrap the dict in an atom so we can pass to max_atom_to_s7_obj
-    t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+    t_atom *ap = (t_atom*)sysmem_newptr( sizeof( t_atom ) );
     atom_setobj(ap, (void *)dict);
 
     // turn off the GC in case the object tree we are making is very big
@@ -3034,7 +3034,7 @@ static s7_pointer s7_hashtable_to_dict(s7_scheme *s7, s7_pointer args){
         s7_list(s7, 2, s7_name_to_value(s7, "values"), s7_hash));
     int num_pairs = s7_list_length(s7, key_val_list);
     for(int i=0; i < num_pairs; i++){
-        t_atom *ap = sysmem_newptr( sizeof( t_atom ) );
+        t_atom *ap = (t_atom*)sysmem_newptr( sizeof( t_atom ) );
         s7_pointer kv_pair = s7_list_ref(s7, key_val_list, i);
         s7_pointer key = s7_car( kv_pair ); 
         s7_pointer val = s7_cdr( kv_pair );
@@ -3580,7 +3580,7 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     
     // dynmamically allocate memory for our struct that holds the symbol and the ref to the s4m obj
     // NB: this gets cleaned up by the receiver in the clock callback above
-    t_s4m_clock_callback *clock_cb_info = sysmem_newptr(sizeof(t_s4m_clock_callback));
+    t_s4m_clock_callback *clock_cb_info = (t_s4m_clock_callback *)sysmem_newptr(sizeof(t_s4m_clock_callback));
     clock_cb_info->obj = *x;
     clock_cb_info->handle = gensym(cb_handle_str);
     // make a clock, setting our callback info struct as the owner, as void pointer
@@ -3615,7 +3615,7 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     // lock while we create clock objects and store (docs imply clock_new not thread safe from high thread)
     // allocate memory for our struct that holds the symbol and the ref to the s4m obj
     // note, same kind of struct is fine for clock or time based scheduling 
-    t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
+    t_s4m_clock_callback *clock_cb = (t_s4m_clock_callback *)sysmem_newptr(sizeof(t_s4m_clock_callback));
     clock_cb->obj = *x;
     clock_cb->handle = gensym(cb_handle_str);
     // make a clock, setting our callback struct as owner, as void pointer
@@ -3669,7 +3669,7 @@ static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args){
      
     // allocate memory for our struct that holds the symbol and the ref to the s4m obj
     // note, same kind of struct is fine for clock or time based scheduling 
-    t_s4m_clock_callback *clock_cb = sysmem_newptr(sizeof(t_s4m_clock_callback));
+    t_s4m_clock_callback *clock_cb = (t_s4m_clock_callback *)sysmem_newptr(sizeof(t_s4m_clock_callback));
     clock_cb->obj = *x;
     clock_cb->handle = gensym(cb_handle_str);
     // make a clock, setting our callback struct as owner, as void pointer
