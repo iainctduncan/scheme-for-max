@@ -476,16 +476,16 @@ void s4m_init_s7(t_s4m *x){
     // transport fuctions, v0.2
     s7_define_function(x->s7, "transport-state", s7_itm_get_state, 0, 0, true, "");
     s7_define_function(x->s7, "t-state", s7_itm_get_state, 0, 0, true, "");
-    s7_define_function(x->s7, "transport-set-state", s7_itm_set_state, 1, 0, true, "");
+    s7_define_function(x->s7, "transport-state-set!", s7_itm_set_state, 1, 0, true, "");
     s7_define_function(x->s7, "t-state!", s7_itm_set_state, 1, 0, true, "");
-    s7_define_function(x->s7, "transport-set-bpm", s7_itm_set_tempo, 1, 0, true, "");
+    s7_define_function(x->s7, "transport-bpm-set!", s7_itm_set_tempo, 1, 0, true, "");
     s7_define_function(x->s7, "t-bpm!", s7_itm_set_tempo, 1, 0, true, "");
     s7_define_function(x->s7, "transport-ticks", s7_itm_get_ticks, 0, 0, true, "");
     s7_define_function(x->s7, "t-ticks", s7_itm_get_ticks, 0, 0, true, "");
     
     s7_define_function(x->s7, "transport-time-sig", s7_itm_get_timesig, 0, 0, true, "");
     s7_define_function(x->s7, "t-time-sig", s7_itm_get_timesig, 0, 0, true, "");
-    s7_define_function(x->s7, "transport-set-time-sig", s7_itm_set_timesig, 2, 0, true, "");
+    s7_define_function(x->s7, "transport-time-sig-set!", s7_itm_set_timesig, 2, 0, true, "");
     s7_define_function(x->s7, "t-time-sig!", s7_itm_set_timesig, 2, 0, true, "");
 
     // t-seek is polymorphic version of ticks and bbu
