@@ -172,8 +172,8 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args);
 
-static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_dict_get_recurser(s7_scheme *s7, t_atom *atom_container, s7_pointer key_list);
+static s7_pointer s7_dict_ref(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_dict_ref_recurser(s7_scheme *s7, t_atom *atom_container, s7_pointer key_list);
 static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_set_recurser(s7_scheme *s7, t_atom *atom_container, s7_pointer key_list, t_atom *value);
 static s7_pointer s7_dict_replace(s7_scheme *s7, s7_pointer args);
@@ -460,8 +460,10 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "buffer-set-from-vector!", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
     s7_define_function(x->s7, "bufsv", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
 
-    s7_define_function(x->s7, "dict-get", s7_dict_get, 2, 0, false, "(dict-get 'dict :bar ) returns value from dict :foo at key :bar");
-    s7_define_function(x->s7, "dict-set", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
+    s7_define_function(x->s7, "dict-ref", s7_dict_ref, 2, 0, false, "(dict-ref 'dict :bar ) returns value from dict :foo at key :bar");
+    s7_define_function(x->s7, "dicr", s7_dict_ref, 2, 0, false, "(dict-ref 'dict :bar ) returns value from dict :foo at key :bar");
+    s7_define_function(x->s7, "dict-set!", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
+    s7_define_function(x->s7, "dics", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
     s7_define_function(x->s7, "dict-replace", s7_dict_replace, 3, 0, false, "(dict-replace dict '(a b c) value)");
     s7_define_function(x->s7, "dict->hash-table", s7_dict_to_hashtable, 1, 0, false, "returns a hash-table from a Max dict");
     s7_define_function(x->s7, "d->h", s7_dict_to_hashtable, 1, 0, false, "returns a hash-table from a Max dict");
@@ -2423,10 +2425,10 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
 }
 
 
-// read a value from a named dict, scheme function dict-get
+// read a value from a named dict, scheme function dict-ref
 // at present, only supports keywords or symbols for keys
-static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args) {
-    //post("s7_dict_get()");
+static s7_pointer s7_dict_ref(s7_scheme *s7, s7_pointer args) {
+    //post("s7_dict_ref()");
     // table names could come in from s7 as either strings or symbols, if using keyword table names
     t_s4m *x = get_max_obj(s7);
     char *dict_name;
@@ -2440,7 +2442,7 @@ static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args) {
     } else if( s7_is_string( s7_car(args) ) ){
         dict_name = s7_string( s7_car(args) );
     }else{
-        post("s4m: ERROR in dict-get, dict name is not a keyword, string, or symbol");
+        post("s4m: ERROR in dict-ref, dict name is not a keyword, string, or symbol");
         return;
     }   
 
@@ -2459,7 +2461,7 @@ static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args) {
     }else if( s7_is_list(s7, key_arg ) ){
         list_key = true; 
     }else{
-        object_error((t_object *)x, "dict-get: Only symbol/string dict keys or lists of symbol/strings supported.");                
+        object_error((t_object *)x, "dict-ref: Only symbol/string dict keys or lists of symbol/strings supported.");                
         return s7_nil(s7);
     }
 
@@ -2477,7 +2479,7 @@ static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args) {
     // case list key, setup and use the recursive finder function
     else{
         atom_setobj(&value, (void *)dict);
-        s7_value = s7_dict_get_recurser(s7, &value, key_arg);
+        s7_value = s7_dict_ref_recurser(s7, &value, key_arg);
     }
     // when done with dicts, we must release the ref count
     err = dictobj_release(dict);
@@ -2486,8 +2488,8 @@ static s7_pointer s7_dict_get(s7_scheme *s7, s7_pointer args) {
 
 
 // recursive function for looking up items in dict from key list
-static s7_pointer s7_dict_get_recurser(s7_scheme *s7, t_atom *container_atom, s7_pointer key_list){
-    //post("s7_dict_get_recurser()");
+static s7_pointer s7_dict_ref_recurser(s7_scheme *s7, t_atom *container_atom, s7_pointer key_list){
+    //post("s7_dict_ref_recurser()");
     t_max_err err;
     s7_pointer *s7_value = NULL;
     char err_msg[128];
@@ -2542,7 +2544,7 @@ static s7_pointer s7_dict_get_recurser(s7_scheme *s7, t_atom *container_atom, s7
         }else{
             //post("container found at key '%s', still have keys, recursing", key_str);
             // it's a container, so we can recurse
-            return s7_dict_get_recurser(s7, &value, rest_keys);
+            return s7_dict_ref_recurser(s7, &value, rest_keys);
         } 
     }
     // case int key for array lookup 
@@ -2573,7 +2575,7 @@ static s7_pointer s7_dict_get_recurser(s7_scheme *s7, t_atom *container_atom, s7
         }else{
             //post("container found at key '%s', still have keys, recursing", key_str);
             // it's a container, so we can recurse
-            return s7_dict_get_recurser(s7, &value, rest_keys);
+            return s7_dict_ref_recurser(s7, &value, rest_keys);
         } 
     } 
 }
@@ -2966,7 +2968,7 @@ static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args){
     } else if( s7_is_string( s7_car(args) ) ){
         dict_name = s7_string( s7_car(args) );
     }else{
-        post("s4m: ERROR in dict-get, dict name is not a keyword, string, or symbol");
+        post("s4m: ERROR in dict-ref, dict name is not a keyword, string, or symbol");
         return;
     }   
 

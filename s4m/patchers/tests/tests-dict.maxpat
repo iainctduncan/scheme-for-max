@@ -78,7 +78,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 648.5, 814.555536150932312, 116.0, 38.0 ],
-					"text" : "dict-set list key, mixed 3"
+					"text" : "dict-set! list key, mixed 3"
 				}
 
 			}
@@ -93,7 +93,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 493.5, 814.555536150932312, 116.0, 38.0 ],
-					"text" : "dict-set list key, mixed 2"
+					"text" : "dict-set! list key, mixed 2"
 				}
 
 			}
@@ -108,7 +108,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 329.5, 814.555536150932312, 116.0, 38.0 ],
-					"text" : "dict-set list key, mixed"
+					"text" : "dict-set! list key, mixed"
 				}
 
 			}
@@ -123,7 +123,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 165.5, 818.555536150932312, 116.0, 38.0 ],
-					"text" : "dict-set list key, nested"
+					"text" : "dict-set! list key, nested"
 				}
 
 			}
@@ -138,7 +138,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 17.0, 818.555536150932312, 116.0, 38.0 ],
-					"text" : "dict-set list key single"
+					"text" : "dict-set! list key single"
 				}
 
 			}
@@ -400,7 +400,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 591.0, 664.555536150932312, 116.0, 38.0 ],
-					"text" : "dict-set, hashtable"
+					"text" : "dict-set!, hashtable"
 				}
 
 			}
@@ -480,7 +480,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 591.0, 709.222220301628113, 156.0, 35.0 ],
-					"text" : "(dict-set 'test-dict 'a (hash-table :a 111 :b 222))"
+					"text" : "(dict-set! 'test-dict 'a (hash-table :a 111 :b 222))"
 				}
 
 			}
@@ -663,7 +663,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 347.944442987442017, 664.555536150932312, 116.0, 38.0 ],
-					"text" : "dict-set, hashtable"
+					"text" : "dict-set!, hashtable"
 				}
 
 			}
@@ -743,7 +743,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 344.444442987442017, 709.222220301628113, 178.0, 35.0 ],
-					"text" : "(dict-set 'test-dict 'a (hash-table :a 111 :b 222))"
+					"text" : "(dict-set! 'test-dict 'a (hash-table :a 111 :b 222))"
 				}
 
 			}
@@ -925,7 +925,7 @@
 					"patching_rect" : [ 273.944442987442017, 1849.555536150932312, 174.0, 22.0 ],
 					"presentation" : 1,
 					"presentation_rect" : [ 175.5, 664.555536150932312, 116.0, 22.0 ],
-					"text" : "dict-set, vector"
+					"text" : "dict-set!, vector"
 				}
 
 			}
@@ -1005,7 +1005,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 176.5, 705.222220301628113, 128.0, 35.0 ],
-					"text" : "(dict-set 'test-dict 'a (vector 1 2 3))"
+					"text" : "(dict-set! 'test-dict 'a (vector 1 2 3))"
 				}
 
 			}
@@ -1188,7 +1188,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 18.0, 657.555536150932312, 116.0, 38.0 ],
-					"text" : "dict-set, simple value"
+					"text" : "dict-set!, simple value"
 				}
 
 			}
@@ -1268,7 +1268,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 18.0, 705.222220301628113, 121.0, 35.0 ],
-					"text" : "(dict-set 'test-dict 'a 999)"
+					"text" : "(dict-set! 'test-dict 'a 999)"
 				}
 
 			}
@@ -1452,7 +1452,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 663.5, 481.555536150932312, 152.0, 38.0 ],
-					"text" : "dict-get, list key, invalid\nreturns null"
+					"text" : "dict-ref, list key, invalid\nreturns null"
 				}
 
 			}
@@ -1490,7 +1490,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 663.5, 535.222220301628113, 140.0, 35.0 ],
-					"text" : "(out 0 (null? (dict-get 'test-dict (list 'a 'z 'y))))"
+					"text" : "(out 0 (null? (dict-ref 'test-dict (list 'a 'z 'y))))"
 				}
 
 			}
@@ -1673,7 +1673,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 475.5, 481.555536150932312, 152.0, 38.0 ],
-					"text" : "dict-get, list key sym nested mixed"
+					"text" : "dict-ref, list key sym nested mixed"
 				}
 
 			}
@@ -1688,7 +1688,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 305.5, 481.555536150932312, 152.0, 38.0 ],
-					"text" : "dict-get, list key sym nested"
+					"text" : "dict-ref, list key sym nested"
 				}
 
 			}
@@ -1703,7 +1703,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 161.0, 481.555536150932312, 133.0, 38.0 ],
-					"text" : "dict-get, list key sym, int"
+					"text" : "dict-ref, list key sym, int"
 				}
 
 			}
@@ -1718,7 +1718,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 18.0, 481.555536150932312, 116.0, 38.0 ],
-					"text" : "dict-get, list key sym"
+					"text" : "dict-ref, list key sym"
 				}
 
 			}
@@ -1734,7 +1734,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 183.5, 314.555536150932312, 174.0, 38.0 ],
-					"text" : "dict-get, retrieve dict returns hash-table"
+					"text" : "dict-ref, retrieve dict returns hash-table"
 				}
 
 			}
@@ -1839,7 +1839,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 3,
 					"presentation_rect" : [ 183.5, 360.722220301628113, 145.0, 49.0 ],
-					"text" : "(out 0 (equal? (dict-get 'test-dict 'b) (hash-table 'ba 2 'bb 3))))"
+					"text" : "(out 0 (equal? (dict-ref 'test-dict 'b) (hash-table 'ba 2 'bb 3))))"
 				}
 
 			}
@@ -2036,7 +2036,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 18.5, 314.555536150932312, 152.0, 38.0 ],
-					"text" : "dict-get, retrieve array returns vector"
+					"text" : "dict-ref, retrieve array returns vector"
 				}
 
 			}
@@ -2141,7 +2141,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 3,
 					"presentation_rect" : [ 26.5, 360.722220301628113, 128.0, 49.0 ],
-					"text" : "(out 0 (equal? (dict-get 'test-dict 'c) (vector 11 22 33)))"
+					"text" : "(out 0 (equal? (dict-ref 'test-dict 'c) (vector 11 22 33)))"
 				}
 
 			}
@@ -2259,7 +2259,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 176.5, 140.555536150932312, 152.0, 38.0 ],
-					"text" : "dict-get invalid key type. error,  returns nil"
+					"text" : "dict-ref invalid key type. error,  returns nil"
 				}
 
 			}
@@ -2363,7 +2363,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 481.5, 188.222220301628113, 128.0, 35.0 ],
-					"text" : "(out 0 (null? (dict-get 'test-dict 1)))"
+					"text" : "(out 0 (null? (dict-ref 'test-dict 1)))"
 				}
 
 			}
@@ -2481,7 +2481,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 485.5, 140.555536150932312, 174.0, 38.0 ],
-					"text" : "dict-get, retrieve int \nreturns the int"
+					"text" : "dict-ref, retrieve int \nreturns the int"
 				}
 
 			}
@@ -2585,7 +2585,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 338.944442987442017, 192.222220301628113, 128.0, 35.0 ],
-					"text" : "(out 0 (dict-get 'test-dict 'a))"
+					"text" : "(out 0 (dict-ref 'test-dict 'a))"
 				}
 
 			}
@@ -2703,7 +2703,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 338.944442987442017, 140.555536150932312, 134.0, 38.0 ],
-					"text" : "dict-get key not in, \nreturns nil"
+					"text" : "dict-ref key not in, \nreturns nil"
 				}
 
 			}
@@ -2807,7 +2807,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 176.5, 192.222220301628113, 128.0, 35.0 ],
-					"text" : "(out 0 (null? (dict-get 'test-dict :bad-key)))"
+					"text" : "(out 0 (null? (dict-ref 'test-dict :bad-key)))"
 				}
 
 			}
@@ -2991,7 +2991,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 18.5, 140.555536150932312, 148.0, 38.0 ],
-					"text" : "dict-get bad dict, error\nreturns nil"
+					"text" : "dict-ref bad dict, error\nreturns nil"
 				}
 
 			}
@@ -3029,7 +3029,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 27.5, 192.222220301628113, 128.0, 35.0 ],
-					"text" : "(out 0 (null? (dict-get 'bad-dict :key)))"
+					"text" : "(out 0 (null? (dict-ref 'bad-dict :key)))"
 				}
 
 			}
@@ -3414,7 +3414,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 1005.731676816940308, 2799.77419638633728, 192.0, 22.0 ],
-					"text" : "(out 0 (dict-get 'test-dict '(e 2 2 2)))"
+					"text" : "(out 0 (dict-ref 'test-dict '(e 2 2 2)))"
 				}
 
 			}
@@ -3452,7 +3452,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 648.5, 870.222220301628113, 142.0, 35.0 ],
-					"text" : "(dict-set 'test-dict '(e 2 2 2) :foobar)"
+					"text" : "(dict-set! 'test-dict '(e 2 2 2) :foobar)"
 				}
 
 			}
@@ -3686,7 +3686,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 488.5, 870.222220301628113, 144.0, 35.0 ],
-					"text" : "(dict-set 'test-dict '(d dc 2 e) 111)"
+					"text" : "(dict-set! 'test-dict '(d dc 2 e) 111)"
 				}
 
 			}
@@ -3934,7 +3934,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 329.5, 870.222220301628113, 142.0, 35.0 ],
-					"text" : "(dict-set 'test-dict (list 'c 2) 42)"
+					"text" : "(dict-set! 'test-dict (list 'c 2) 42)"
 				}
 
 			}
@@ -4194,7 +4194,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 165.5, 870.222220301628113, 142.0, 35.0 ],
-					"text" : "(dict-set 'test-dict '(d da daa) (vector 3 2 1))"
+					"text" : "(dict-set! 'test-dict '(d da daa) (vector 3 2 1))"
 				}
 
 			}
@@ -4507,7 +4507,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 23.5, 870.222220301628113, 128.0, 35.0 ],
-					"text" : "(dict-set 'test-dict '(a) 999)"
+					"text" : "(dict-set! 'test-dict '(a) 999)"
 				}
 
 			}
@@ -4713,7 +4713,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 475.5, 527.222220301628113, 140.0, 35.0 ],
-					"text" : "(out 0 (dict-get 'test-dict (list 'd 'dc 2 'f)))"
+					"text" : "(out 0 (dict-ref 'test-dict (list 'd 'dc 2 'f)))"
 				}
 
 			}
@@ -4919,7 +4919,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 305.5, 527.222220301628113, 148.0, 35.0 ],
-					"text" : "(out 0 (dict-get 'test-dict (list 'd 'da 'daa)))"
+					"text" : "(out 0 (dict-ref 'test-dict (list 'd 'da 'daa)))"
 				}
 
 			}
@@ -5125,7 +5125,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 161.0, 528.222220301628113, 128.0, 35.0 ],
-					"text" : "(out 0 (dict-get 'test-dict '(c 2)))"
+					"text" : "(out 0 (dict-ref 'test-dict '(c 2)))"
 				}
 
 			}
@@ -5427,7 +5427,7 @@
 					"presentation" : 1,
 					"presentation_linecount" : 2,
 					"presentation_rect" : [ 17.0, 528.222220301628113, 128.0, 35.0 ],
-					"text" : "(out 0 (dict-get 'test-dict '(a)))"
+					"text" : "(out 0 (dict-ref 'test-dict '(a)))"
 				}
 
 			}
