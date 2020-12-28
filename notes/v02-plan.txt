@@ -17,12 +17,13 @@ V0.2 need to do:
 table-io-tests-1 is not working right (not all passing)
 
 
-Regression Suite:
-- buffer tests:
- - done except for channel specific versions of stuff 
- - could return to those later
+Issues to solve for release
+- logging control?? have I done that yet??
+
+TODO: rename dict-get to dict-ref and dict-set to dict-set!
+
+- switch dict-get and dict-set over to dict-ref and dict-set! 
+  to be consistent with scheme naming (hash-table-ref hash-table-set!)
+  - short form will be dictr dicts  
 
 
-Buffer thoughts:
-- leave bufsv polymorphic and later make bufsv*, an optimized non-polymorphic version that requires all args
-  and thus has do less argument checking per call
