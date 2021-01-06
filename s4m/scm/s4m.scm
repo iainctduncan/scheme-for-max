@@ -15,9 +15,10 @@
 (load-from-max "loop.scm")
 (load-from-max "utilities.scm")
 
-;; misc convenience functions we use
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; From here down, you should not change things unless you know what it's going to do
 
-;; catenated object to string reprs of things
+;; helper for building string reps for posting to console
 (define (str-repr . args) 
  (let ((repr (lambda x (string-append (object->string x) " "))))
    (apply string-append (map repr args))))

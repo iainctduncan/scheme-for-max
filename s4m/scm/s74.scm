@@ -67,4 +67,6 @@
 ;      (else (getter (container (car keylist)) (cdr keylist)))))
 ;  (getter ht keys))
 
+;; example of an error try catch
+;;(catch #t (lambda () (/ 1.0 0)) (lambda args (post :foobar)))
 

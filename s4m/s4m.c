@@ -25,47 +25,48 @@
 
 // object struct
 typedef struct _s4m {
-   t_object obj;
-   s7_scheme *s7;
+    t_object obj;
+    s7_scheme *s7;
 
-   bool log_return_values;             // whether to post the return values of evaluating scheme functions
-
-   t_symbol *source_file;              // main source file name (if one passed as object arg)
-   short *source_file_path_id;         // path to source file
-   t_filehandle source_file_handle;    // file handle for the source file
-   char **source_text_handle;          // string handle for the source file
-   
-   char thread;                        // can be 'h', 'l', or 'a' for high, low, any
-
-   long num_inlets;
-   long proxy_num;
-   void *inlet_proxies[MAX_NUM_INLETS];
-
-   long num_outlets;
-   void *outlets[MAX_NUM_OUTLETS];      
-      
-   t_object *patcher;   
-   t_hashtab *registry;                 // objects by scripting name
-
-   t_hashtab *clocks;                   // delay clocks by handle, for clocks and time objects
-   t_hashtab *clocks_quant;             // clocks by handle for quantization time objects only
- 
-   t_object *timeobj;                   // timeobjs for calculating quantized delay calls
-   t_object *timeobj_quant;             // TODO rename
-
-   t_object *time_listen_ticks;         // time obj for the listen every X ticks callback
-   t_object *time_listen_ticks_q;       // quantize for the above
-
-   t_object *time_listen_ms;            // time obj used for listen-ms-t (uses transport)
-   t_object *clock_listen_ms;           // clock obj used for listen-ms (no attached transport)
-   double clock_listen_ms_interval;     // time in ms for the listen-ms clock  
-   double clock_listen_ms_t_interval;   // time in ms for the listen-ms-t clock  
-
-   t_object *m_editor;                  // text editor
+    t_symbol *source_file;              // main source file name (if one passed as object arg)
+    short *source_file_path_id;         // path to source file
+    t_filehandle source_file_handle;    // file handle for the source file
+    char **source_text_handle;          // string handle for the source file
     
-   t_object *test_obj; 
+    char thread;                        // can be 'h', 'l', or 'a' for high, low, any
 
-   bool initialized;                    // gets set to true after object initialization complete
+    long num_inlets;
+    long proxy_num;
+    void *inlet_proxies[MAX_NUM_INLETS];
+
+    long num_outlets;
+    void *outlets[MAX_NUM_OUTLETS];      
+       
+    t_object *patcher;   
+    t_hashtab *registry;                 // objects by scripting name
+
+    t_hashtab *clocks;                   // delay clocks by handle, for clocks and time objects
+    t_hashtab *clocks_quant;             // clocks by handle for quantization time objects only
+ 
+    t_object *timeobj;                   // timeobjs for calculating quantized delay calls
+    t_object *timeobj_quant;             // TODO rename
+
+    t_object *time_listen_ticks;         // time obj for the listen every X ticks callback
+    t_object *time_listen_ticks_q;       // quantize for the above
+
+    t_object *time_listen_ms;            // time obj used for listen-ms-t (uses transport)
+    t_object *clock_listen_ms;           // clock obj used for listen-ms (no attached transport)
+    double clock_listen_ms_interval;     // time in ms for the listen-ms clock  
+    double clock_listen_ms_t_interval;   // time in ms for the listen-ms-t clock  
+
+    t_object *m_editor;                  // text editor
+     
+    t_object *test_obj; 
+
+    bool initialized;                   // gets set to true after object initialization complete
+    char log_repl;             // whether to post the return values of evaluating scheme functions
+    char log_null;                // whether to post the return value of nil to the console
+    
 
 } t_s4m;
 
@@ -90,7 +91,7 @@ t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
 
 // helpers to do s7 calls with error loggging
 void s4m_post_s7_res(t_s4m *x, s7_pointer res);
-void s4m_s7_eval_string(t_s4m *x, char *string_to_eval);
+void s4m_s7_eval_string(t_s4m *x, t_symbol *s);
 void s4m_s7_load(t_s4m *x, char *full_path);
 void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args);
 
@@ -295,6 +296,7 @@ void ext_main(void *r){
     class_addmethod(c, (method)s4m_list, "list", A_GIMME, 0);
     class_addmethod(c, (method)s4m_msg, "anything", A_GIMME, 0);
 
+
     // one time attrs for number of ins and outs and the thread
     // invisible means it does not show up in inspector, and can't get set from a realtime message
     // we use this to ensure this is only set with an @ arg in the patcher box
@@ -322,6 +324,16 @@ void ext_main(void *r){
     class_time_addattr(c, "_listen_ticks", "Ticks per callback", TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK | TIME_FLAGS_TRANSPORT);
     CLASS_ATTR_ADD_FLAGS(c, "_listen_ticks", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
 
+
+
+    // the below neither saves the attribute nor defaults it to on
+    CLASS_ATTR_CHAR(c, "log-repl", 0, t_s4m, log_repl);
+    CLASS_ATTR_DEFAULT_SAVE(c, "log-repl", 0, "1");
+    CLASS_ATTR_STYLE_LABEL(c, "log-repl", 0, "onoff", "Log REPL return values");
+    CLASS_ATTR_LONG(c, "log-null", 0, t_s4m, log_null);
+    CLASS_ATTR_DEFAULT_SAVE(c, "log-null", 0, "1");
+    CLASS_ATTR_STYLE_LABEL(c, "log-null", 0, "onoff", "Log null from REPL");
+
     class_addmethod(c, (method)s4m_assist, "assist", A_CANT, 0);
     class_register(CLASS_BOX, c); 
     s4m_class = c;
@@ -342,8 +354,9 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     x->m_editor = NULL;
 
     // by default we log return values
-    // todo, should this be an attribute??
-    x->log_return_values = true;
+    // if I set it to true here, then the attribute does not get saved with the patcher
+    x->log_repl = true;
+    x->log_null = false;
 
     // init the singleton time and quant objects, note: they have no task set. 
     x->timeobj = (t_object *) time_new((t_object *)x, gensym("_delaytime"), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
@@ -440,15 +453,16 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "tabr", s7_table_ref, 2, 0, false, "(tabr :foo 4) returns value at index 4 from table :foo");
     s7_define_function(x->s7, "table-set!", s7_table_set, 3, 0, false, "(table-set! :foo 4 127) writes value 4 to index 127 of table :foo");
     s7_define_function(x->s7, "tabs", s7_table_set, 3, 0, false, "short-hand alias for table-set!");
-    s7_define_function(x->s7, "table-set-from-vector!", s7_table_set_from_vector, 2, 3, false, "copy contents of a vector to a Max table");
-    s7_define_function(x->s7, "tabsv", s7_table_set_from_vector, 2, 3, false, "copy contents of a vector to a Max table");
+    s7_define_function(x->s7, "table-set-from-vector!", s7_table_set_from_vector, 3, 2, false, "copy contents of a vector to a Max table");
+    s7_define_function(x->s7, "tabsv", s7_table_set_from_vector, 3, 2, false, "copy contents of a vector to a Max table");
     s7_define_function(x->s7, "table->vector", s7_table_to_vector, 1, 2, false, "create new vector from table");
     s7_define_function(x->s7, "t->v", s7_table_to_vector, 1, 2, false, "create new vector from table");
-    s7_define_function(x->s7, "vector-set-from-table!", s7_vector_set_from_table, 2, 3, false, "copy contents of a Max table to an existing vector");
+    s7_define_function(x->s7, "vector-set-from-table!", s7_vector_set_from_table, 3, 2, false, "copy contents of a Max table to an existing vector");
     s7_define_function(x->s7, "vecst", s7_vector_set_from_table, 3, 2, false, "copy contents of a Max table to an existing vector");
 
     s7_define_function(x->s7, "buffer?", s7_is_buffer, 1, 0, false, "(buffer? 'foo) returns true if buffer named foo exists");
     s7_define_function(x->s7, "buffer-size", s7_buffer_size, 1, 0, false, "(buffer-size 'foo) returns framecount of buffer"); 
+    s7_define_function(x->s7, "bufsz", s7_buffer_size, 1, 0, false, "(bufl 'foo) returns framecount of buffer"); 
 
     s7_define_function(x->s7, "buffer-ref", s7_buffer_ref, 2, 1, false, "(buffer-ref :foo 4) returns value at channel 0, index 4 from buffer :foo");
     s7_define_function(x->s7, "bufr", s7_buffer_ref, 2, 1, false, "alias for buffer-ref");
@@ -456,15 +470,16 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "bufs", s7_buffer_set, 3, 1, false, "(buffer-set! :foo 4 127) writes value 4 to index 127 of buffer :foo");
     s7_define_function(x->s7, "buffer->vector", s7_buffer_to_vector, 1, 3, false, "create new vector from buffer");
     s7_define_function(x->s7, "b->v", s7_buffer_to_vector, 1, 3, false, "create new vector from buffer");
-
     s7_define_function(x->s7, "buffer-set-from-vector!", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
     s7_define_function(x->s7, "bufsv", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
 
+
     s7_define_function(x->s7, "dict-ref", s7_dict_ref, 2, 0, false, "(dict-ref 'dict :bar ) returns value from dict :foo at key :bar");
-    s7_define_function(x->s7, "dicr", s7_dict_ref, 2, 0, false, "(dict-ref 'dict :bar ) returns value from dict :foo at key :bar");
+    s7_define_function(x->s7, "dictr", s7_dict_ref, 2, 0, false, "(dict-ref 'dict :bar ) returns value from dict :foo at key :bar");
     s7_define_function(x->s7, "dict-set!", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
-    s7_define_function(x->s7, "dics", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
-    s7_define_function(x->s7, "dict-replace", s7_dict_replace, 3, 0, false, "(dict-replace dict '(a b c) value)");
+    s7_define_function(x->s7, "dicts", s7_dict_set, 3, 0, false, "(dict-set :foo :bar 99 ) sets dict :foo at key :bar to 99, and returns 99");
+    s7_define_function(x->s7, "dict-replace!", s7_dict_replace, 3, 0, false, "(dict-replace dict '(a b c) value)");
+    s7_define_function(x->s7, "dicts*", s7_dict_replace, 3, 0, false, "(dict-replace dict '(a b c) value)");
     s7_define_function(x->s7, "dict->hash-table", s7_dict_to_hashtable, 1, 0, false, "returns a hash-table from a Max dict");
     s7_define_function(x->s7, "d->h", s7_dict_to_hashtable, 1, 0, false, "returns a hash-table from a Max dict");
     s7_define_function(x->s7, "hash-table->dict", s7_hashtable_to_dict, 2, 0, false, "populates and optionall creates a max dict from a hash-table");
@@ -1014,7 +1029,10 @@ void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args){
         object_error((t_object *)x, "s4m Error: %s", msg);
         free(msg);
     }else{
-        if(x->log_return_values) s4m_post_s7_res(x, res);
+        if( (x->log_repl && x->log_null && s7_is_null(x->s7, res) ) ||
+            (x->log_repl && !s7_is_null(x->s7, res) ) ){
+            s4m_post_s7_res(x, res);
+        }
     }
 }
 
@@ -1046,8 +1064,12 @@ void s4m_s7_load(t_s4m *x, char *full_path){
 }
 
 // eval string  with error logging
-void s4m_s7_eval_string(t_s4m *x, char *string_to_eval){
-    //post("s4m_s7_eval_string() %s", string_to_eval);
+void s4m_s7_eval_string(t_s4m *x, t_symbol *s){
+    //post("s4m_s7_eval_string()");
+
+    // convert max symbol to char string
+    char *string_to_eval = s->s_name; 
+
     int gc_loc;
     s7_pointer old_port;
     const char *errmsg = NULL;
@@ -1068,7 +1090,10 @@ void s4m_s7_eval_string(t_s4m *x, char *string_to_eval){
         object_error((t_object *)x, "s4m Error: %s", msg);
         free(msg);
     }else{
-        if(x->log_return_values) s4m_post_s7_res(x, res);
+        if( (x->log_repl && x->log_null && s7_is_null(x->s7, res) ) ||
+            (x->log_repl && !s7_is_null(x->s7, res) ) ){
+            s4m_post_s7_res(x, res);
+        }
     }
 }
 
@@ -1291,9 +1316,11 @@ void s4m_handle_list(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *ar
     }
 }
 
-// evaluate a symbol passed in as a string of Scheme code
+// Max message handler for eval-string messages 
 void s4m_eval_string(t_s4m *x, t_symbol *s){
-    //post("new eval string handler");
+    bool in_isr = isr();
+    //post("s4m_eval_string() in_isr: %i", in_isr);
+
     int inlet_num = proxy_getinlet((t_object *)x);
     if( inlet_num != 0 ){
         error("s4m: eval-string only valid on inlet 0");
@@ -1301,14 +1328,16 @@ void s4m_eval_string(t_s4m *x, t_symbol *s){
     }
     // check if we need thread promotion or deferal 
     // nothing fancy for preserving inlet numbers as inlet must be 0 already
-    bool in_isr = isr();
-    if( !in_isr && x->thread == 'h' ){ return schedule(x, s4m_eval_string, 0, s, 0, NULL); } 
-    if(  in_isr && x->thread == 'l' ){ return defer(x, s4m_eval_string, s, 0, NULL); } 
-    
-    char *sexp_input = s->s_name; 
-    //post("s7-in> %s", sexp_input);
-    s4m_s7_eval_string(x, sexp_input);
-    return; 
+    if( !in_isr && x->thread == 'h' ){ 
+        return schedule(x, s4m_s7_eval_string, 0, s, 0, NULL); 
+    } 
+    else if(  in_isr && x->thread == 'l' ){ 
+        return defer(x, s4m_s7_eval_string, s, 0, NULL); 
+    }else {
+        // dispatch to the next handler
+        s4m_s7_eval_string(x, s);
+        return; 
+    }
 }
 
 
@@ -1326,27 +1355,31 @@ void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
             *(ap + i + 1) = *(argv + i);
         }
         // if this is a low-priority thread message, re-sched as high and exit and vice versa
-        // calling with our new list that encodes the inlet number
+        // calling with our new list that encodes the inlet number to preserve inlet number
         if( x->thread == 'h' ){ 
+            //post(".. promoting with call to schedule...");
             return schedule(x, s4m_callback_msg, 0, s, argc+1, ap); 
         }else if( x->thread == 'l' ){ 
+            //post(".. defering with call to defer...");
             return defer(x, s4m_callback_msg, s, argc+1, ap); 
         }
     } 
     // if we are in the right thread, just dispatch
+    // post(" ... in correct thread, calling s4m_handle_msg");
     s4m_handle_msg(x, inlet_num, s, argc, argv);
 }
 
 void s4m_callback_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_callback_msg()");
+    bool in_isr = isr();
+    // post("s4m_callback_msg() in_isr: %i", in_isr);
     long inlet_num = atom_getlong( argv );
-    //post("inlet_num: %i", inlet_num);
+    // post(" - inlet_num: %i", inlet_num);
     s4m_handle_msg(x, inlet_num, s, argc - 1, argv + 1);
     sysmem_freeptr(argv);
 }
 
 void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_handle_msg(): inlet_num: %i arguments: %ld isr: %i", inlet_num, argc, isr());
+    // post("s4m_handle_msg(): inlet_num: %i arguments: %ld isr: %i", inlet_num, argc, isr());
     t_atom *ap;
 
     // treat input to inlet 0 as a list of atoms that should be evaluated as a scheme expression
@@ -1967,14 +2000,18 @@ static s7_pointer s7_vector_set_from_table(s7_scheme *s7, s7_pointer args) {
     }
     // copy data, update vector with table data
     long value_from_table;
+    s7_pointer s7_return_vector = s7_make_vector(s7, count);
+
     for(int i=0; i < count; i++){
         value_from_table = (*table_data)[table_offset + i];
-        s7_vector_set(s7, s7_dest_vector, vector_offset + i, s7_make_integer(s7, value_from_table));
+        s7_pointer s7_value = s7_make_integer(s7, value_from_table);
+        s7_vector_set(s7, s7_dest_vector, vector_offset + i, s7_value);
+        s7_vector_set(s7, s7_return_vector, i, s7_value);
     }
     // mark table as altered for max (will update views, etc)
     table_dirty( gensym(table_name) );
-    // return the vector
-    return s7_dest_vector;
+    // return the vector of data copied
+    return s7_return_vector;
 }
 
 // scheme function to write data from a vector into an existing table
@@ -2059,8 +2096,11 @@ static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args) {
     // copy data, converting floats to ints, C style (truncate, not round)
     // in future we might allow disabling checks for speed
     long value;
+    s7_pointer s7_return_vector = s7_make_vector(s7, count);
+
     for(int i=0; i < count; i++){
         s7_pointer *source_value = s7_vector_values[ i + vector_offset ];
+        s7_vector_set(s7, s7_return_vector, i, source_value);
         
         if( s7_is_real(source_value) ){
             value = (long)s7_real(source_value);     
@@ -2076,7 +2116,7 @@ static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args) {
     table_dirty( gensym(table_name) );
     // return the vector
     // ?? should we return only the part that was copied? 
-    return s7_source_vector;
+    return s7_return_vector;
 }
 
 
@@ -2317,7 +2357,6 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
             "error fetching buffer, buffer name is not a keyword, string, or symbol"));
     }
 
-    
     // buffer-set-from-vector! buffer-name {buffer-chan} {buffer-index}
     // after the buffer name arg, there may be two optional integer args, channel and index
     
@@ -2402,7 +2441,8 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
     double value;
     // NB: we are only dealing with float buffers at preset
     s7_pointer *s7_vector_values = s7_vector_elements(source_vector);
-
+    s7_pointer s7_return_vector = s7_make_vector(s7, count);
+    
     for(int i=0; i < count; i++){
         s7_pointer *source_value = s7_vector_values[ i + vector_offset ];
         if( s7_is_real(source_value) ){
@@ -2416,12 +2456,13 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
         int buff_index = ( (buffer_channel * (i + buffer_offset)) + (i + buffer_offset)); 
         //post("writing value %.5f to index: %i", buff_index, value);
         buffer_data[ buff_index ] = value;
+        s7_vector_set(s7, s7_return_vector, i, source_value);
     }
     // unlock buffers
     buffer_unlocksamples(buffer);
     object_free(buffer_ref);
     // return the vector
-    return source_vector;
+    return s7_return_vector;
 }
 
 
@@ -2433,6 +2474,7 @@ static s7_pointer s7_dict_ref(s7_scheme *s7, s7_pointer args) {
     t_s4m *x = get_max_obj(s7);
     char *dict_name;
     char *dict_key = NULL;
+    char err_msg[128];
     s7_pointer *s7_value = NULL;
     t_max_err err;
     bool list_key = false;
@@ -2442,14 +2484,14 @@ static s7_pointer s7_dict_ref(s7_scheme *s7, s7_pointer args) {
     } else if( s7_is_string( s7_car(args) ) ){
         dict_name = s7_string( s7_car(args) );
     }else{
-        post("s4m: ERROR in dict-ref, dict name is not a keyword, string, or symbol");
-        return;
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "dict name is not a keyword, string, or symbol"));
     }   
 
     t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
     if( !dict ){
-        object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
-        return s7_nil(s7);
+        sprintf(err_msg, "Unable to reference dictionary %s", dict_name);                
+        return s7_error(s7, s7_make_symbol(s7, "read-error"), s7_make_string(s7, err_msg));
     }
     
     // get the key, which could be a list
@@ -2461,8 +2503,8 @@ static s7_pointer s7_dict_ref(s7_scheme *s7, s7_pointer args) {
     }else if( s7_is_list(s7, key_arg ) ){
         list_key = true; 
     }else{
-        object_error((t_object *)x, "dict-ref: Only symbol/string dict keys or lists of symbol/strings supported.");                
-        return s7_nil(s7);
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "dict-ref arg 2 must be a symbol, string, or list"));
     }
 
     // case regular key, simple lookup, convert, return
@@ -2470,8 +2512,8 @@ static s7_pointer s7_dict_ref(s7_scheme *s7, s7_pointer args) {
     if( !list_key ){
         err = dictionary_getatom(dict, gensym(dict_key), &value);
         if(err){
-            object_error((t_object *)x, "No key %s in dict %s, returning Nil", dict_key, dict_name);                
-            s7_value = s7_nil(s7);
+            sprintf(err_msg, "No key %s in dict %s", dict_key, dict_name);                
+            return s7_error(s7, s7_make_symbol(s7, "key-error"), err_msg);
         }else{    
             s7_value = max_atom_to_s7_obj(s7, &value); 
         }
@@ -2526,8 +2568,8 @@ static s7_pointer s7_dict_ref_recurser(s7_scheme *s7, t_atom *container_atom, s7
         // case: key not in dict
         if(err){
             //post("key '%s' not found in dict, returning null", key_str);
-            s7_value = s7_nil(s7);
-            return s7_value;
+            sprintf(err_msg, "No key %s in dict", key_str);                
+            return s7_error(s7, s7_make_symbol(s7, "key-error"), err_msg);
         }
         // case: found value - have used up keys 
         if( s7_is_null(s7, rest_keys) ){
@@ -2539,8 +2581,8 @@ static s7_pointer s7_dict_ref_recurser(s7_scheme *s7, t_atom *container_atom, s7
         // case: found non-container value but have not used up keys, return nil
         if( !atomisdictionary(&value) && !atomisatomarray(&value) ){
             //post("container found at key '%s' but key list not used up, returning nil", key_str);
-            s7_value = s7_nil(s7);
-            return s7_value;
+            sprintf(err_msg, "Key list not traversable");                
+            return s7_error(s7, s7_make_symbol(s7, "key-error"), err_msg);
         }else{
             //post("container found at key '%s', still have keys, recursing", key_str);
             // it's a container, so we can recurse
@@ -2556,9 +2598,8 @@ static s7_pointer s7_dict_ref_recurser(s7_scheme *s7, t_atom *container_atom, s7
         err = atomarray_getindex( atom_getobj(container_atom), key_int, &value);
         // case: index not valid 
         if(err){
-            //post("key %i not in array, returning null", key_int);
-            s7_value = s7_nil(s7);
-            return s7_value;
+            sprintf(err_msg, "Index out of range");                
+            return s7_error(s7, s7_make_symbol(s7, "key-error"), err_msg);
         }
         // case: found value - have used up keys 
         if( s7_is_null(s7, rest_keys) ){
@@ -2570,8 +2611,8 @@ static s7_pointer s7_dict_ref_recurser(s7_scheme *s7, t_atom *container_atom, s7
         // case: found non-container value but have not used up keys, return nil
         if( !atomisdictionary(&value) && !atomisatomarray(&value) ){
             //post("atomic value found at key %i but key list not used up, returning nil", key_int);
-            s7_value = s7_nil(s7);
-            return s7_value;
+            sprintf(err_msg, "Key list not traversable");                
+            return s7_error(s7, s7_make_symbol(s7, "key-error"), err_msg);
         }else{
             //post("container found at key '%s', still have keys, recursing", key_str);
             // it's a container, so we can recurse
@@ -2588,21 +2629,25 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
     char *dict_name;
     char *dict_key;
     t_max_err err;
+    char err_msg[128];
     bool is_list_key = false;
+    s7_pointer s7_value_arg, s7_return_value;
 
+    // get dict name argument, error if not a string, symbol, or keyword
     if( s7_is_symbol( s7_car(args) ) ){ 
         dict_name = s7_symbol_name( s7_car(args) );
     } else if( s7_is_string( s7_car(args) ) ){
         dict_name = s7_string( s7_car(args) );
     }else{
-        post("s4m: ERROR in dict-set, dict name is not a keyword, string, or symbol");
-        return;
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "dict name is not a keyword, string, or symbol"));
     }   
 
+    // fetch the dict, 'read-error if no dict by that name found
     t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
     if( !dict ){
-        object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
-        return;
+        sprintf(err_msg, "Unable to reference dictionary %s", dict_name);                
+        return s7_error(s7, s7_make_symbol(s7, "read-error"), s7_make_string(s7, err_msg));
     }
 
     // get the key, which could be a list
@@ -2614,57 +2659,51 @@ static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args) {
     }else if( s7_is_list(s7, key_arg ) ){
         is_list_key = true; 
     }else{
-        object_error((t_object *)x, "dict-set: Only symbol/string dict keys or lists of symbol/strings supported.");                
-        return s7_nil(s7);
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "dict-set! arg 2 must be a symbol, string, or list"));
     }
 
-    // get the value we are setting
-    s7_pointer *s7_value = s7_list_ref(s7, args, 2);
-    // an atom to store it in
-    t_atom value;
+    // get value from s7 arg 3 and convert to max atom
+    s7_value_arg = s7_caddr(args);
+    // convert the value we want to set to a Max atom
+    t_atom *value_atom = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
+    err = s7_obj_to_max_atom(s7, s7_value_arg, value_atom);
+    if(err){
+        err = dictobj_release(dict);
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "unhandled type for dict storage"));
+    }
 
-    // case simple key, convert and store
+    // case simple key, convert, store, return the value set
     if( !is_list_key ){
-        err = s7_obj_to_max_atom(s7, s7_value, &value);
-        if(err){
-            object_error((t_object *)x, "unhandled type for dict storage");                
-            err = dictobj_release(dict);
-            return;
-        }
         // clear the previous value in the dictionary and free it
         dictionary_deleteentry(dict, gensym(dict_key));
-        
         // set the value in the dictionary now
-        err = dictionary_appendatom(dict, gensym(dict_key), &value);
+        err = dictionary_appendatom(dict, gensym(dict_key), value_atom);
         if(err){
-            object_error((t_object *)x, "error setting value to %s %s", dict_name, dict_key);
             err = dictobj_release(dict);
-            return;
-        } 
+            return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+                "error setting dict value"));
+        }else{
+            err = dictobj_release(dict);
+            return s7_value_arg;
+        }         
     }
     // case list key, need to use the recruser 
     else{
         //post("dict-set has list key, using recurser");
-        // convert the value we want to set to a Max atom
-        t_atom *value_atom = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
-    
-        s7_pointer value_arg = s7_list_ref(s7, args, 2);
-        s7_obj_to_max_atom(s7, value_arg, value_atom); 
-
         // make an atom to hold the dict for recursing
         t_atom container;
         atom_setobj(&container, (void *)dict);
-
-        // call the recursive setter
-        //s7_value = s7_dict_set_recurser(s7, &container, key_arg, value_atom);
-        s7_dict_set_recurser(s7, &container, key_arg, value_atom);
+        // call the recursive setter, which will return s7_error on various issues
+        s7_return_value = s7_dict_set_recurser(s7, &container, key_arg, value_atom);
+        // all done, dict key has been set, now return s7_value (could be error)
+        err = dictobj_release(dict);
+        return s7_return_value;
     }
-    
-    // all done, dict key has been set, now return s7_value
-    err = dictobj_release(dict);
-    return s7_value;
 }
 
+// TODO: fix this so that key errors return null, currently returning error
 // recursive function for looking up items in dict from key list
 static s7_pointer s7_dict_set_recurser(s7_scheme *s7, t_atom *container_atom, s7_pointer key_list, t_atom *value){
     //post("s7_dict_set_recurser()");
@@ -2703,8 +2742,8 @@ static s7_pointer s7_dict_set_recurser(s7_scheme *s7, t_atom *container_atom, s7
             dictionary_deleteentry( atom_getobj(container_atom), gensym(key_str));
             // set container[key] to value and return
             dictionary_appendatom( atom_getobj(container_atom), gensym(key_str), value);
-            // should we return the value set??
-            return;
+            // returning null signals we are ok
+            return s7_nil(s7);
         }
         // case string key, but we have more keys to use up: recurse
         else {
@@ -2730,7 +2769,8 @@ static s7_pointer s7_dict_set_recurser(s7_scheme *s7, t_atom *container_atom, s7
             //sysmem_freeptr( (void *)*(inner_ap + key_int) ); 
             // replace with the new value
             *(inner_ap + key_int) = *value; 
-            return;
+            // returning null signals we are ok
+            return s7_nil(s7);
         }
         // case int key and array container, more keys left: recurse
         else {
@@ -2742,8 +2782,8 @@ static s7_pointer s7_dict_set_recurser(s7_scheme *s7, t_atom *container_atom, s7
     }
     // case the container atom we are to look in doesn't actually have a container: error
     else{
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "dict-set, attempt to set value in non-container"));
+        return s7_error(s7, s7_make_symbol(s7, "key-error"), s7_make_string(s7, 
+            "dict-set, attempt to recurse through non-existent key"));
     }
 
 }
@@ -2755,16 +2795,18 @@ static s7_pointer s7_dict_replace(s7_scheme *s7, s7_pointer args) {
     t_s4m *x = get_max_obj(s7);
     char *dict_name;
     char *dict_key;
+    char err_msg[128];
     s7_pointer *s7_value = NULL;
     t_max_err err;
+    s7_pointer s7_return_value;
 
     if( s7_is_symbol( s7_car(args) ) ){ 
         dict_name = s7_symbol_name( s7_car(args) );
     } else if( s7_is_string( s7_car(args) ) ){
         dict_name = s7_string( s7_car(args) );
     }else{
-        post("s4m: ERROR in dict-replace, dict name is not a keyword, string, or symbol");
-        return;
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "dict name is not a keyword, string, or symbol"));
     }   
 
     // if arg 2 is not a list of keys, error
@@ -2775,27 +2817,29 @@ static s7_pointer s7_dict_replace(s7_scheme *s7, s7_pointer args) {
     }
 
     // arg three is the value
-    s7_pointer value_arg = s7_caddr(args);
+    s7_pointer s7_value_arg = s7_caddr(args);
     // convert the value we want to set to a Max atom
     t_atom *value_atom = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
-    s7_obj_to_max_atom(s7, value_arg, value_atom); 
+    s7_obj_to_max_atom(s7, s7_value_arg, value_atom); 
 
     t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
     if( !dict ){
-        object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
-        return;
+        sprintf(err_msg, "Unable to reference dictionary named %s", dict_name);                
+        return s7_error(s7, s7_make_symbol(s7, "read-error"), s7_make_string(s7, err_msg));
     }
     // make an atom to hold the dict for recursing
     t_atom container;
     atom_setobj(&container, (void *)dict);
 
     // call the replace lookup which may recurse (returns value set on success, null error)
-    s7_value = s7_dict_replace_recurser(s7, &container, key_list_arg, value_atom);
-    
+    s7_return_value = s7_dict_replace_recurser(s7, &container, key_list_arg, value_atom);
+    // if the recurser did not return an error, we are good to return the set value
+    if( s7_is_null(s7, s7_return_value) ){
+        s7_return_value = s7_value_arg;    
+    }   
     // when done with dicts, we must release the ref count
-    //err = dictobj_release(dict);
-    s7_value = s7_nil(s7);
-    return s7_value;
+    err = dictobj_release(dict);
+    return s7_return_value;
 }
 
 // recursive function for looking up items in dict from key list
@@ -2811,7 +2855,7 @@ static s7_pointer s7_dict_replace_recurser(s7_scheme *s7, t_atom *container_atom
     // if key_list length is 1 and container_atom[ key_list[0] ] is not a dict, return the value
     s7_pointer key = s7_car(key_list);
     s7_pointer rest_keys = s7_cdr(key_list);
-  
+ 
     if( s7_is_symbol(key) ){
         key_str = s7_symbol_name(key);
         //post("key: %s", key_str);
@@ -2840,8 +2884,7 @@ static s7_pointer s7_dict_replace_recurser(s7_scheme *s7, t_atom *container_atom
             dictionary_deleteentry( atom_getobj(container_atom), gensym(key_str));
             // set container[key] to value and return
             dictionary_appendatom( atom_getobj(container_atom), gensym(key_str), value);
-            // should we return the value set??
-            return;
+            return s7_nil(s7);
         }
         // case string key, but we have more keys to use up: recurse
         else {
@@ -2882,7 +2925,7 @@ static s7_pointer s7_dict_replace_recurser(s7_scheme *s7, t_atom *container_atom
             //sysmem_freeptr( (void *)*(inner_ap + key_int) ); 
             // replace with the new value
             *(inner_ap + key_int) = *value; 
-            return;
+            return s7_nil(s7);
         }
         // case int key and array container, more keys left: recurse
         else {
