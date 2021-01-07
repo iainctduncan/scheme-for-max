@@ -166,11 +166,11 @@
   ;; as there can only be one of these at once, just use the global tick callback function
   (if (eq? #f s4m-listen-ms-callback) '() (s4m-listen-ms-callback)))
 
-; public function to start listening every {ms} miliseconds, but only if itm running 
+; public function to start listenin every {ms} miliseconds
 (define (listen-ms ms fun)
   (set! s4m-listen-ms-callback fun)
   ;; call into C to register the listener 
-  (s4m-listen-ms ms)) 
+  (s4m-listen-ms ms) (post :ok)) 
 
 ; public function to cancel the itm ms listener
 (define (cancel-listen-ms)

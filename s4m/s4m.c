@@ -3005,20 +3005,21 @@ static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args){
     char *dict_key;
     s7_pointer *s7_value = NULL;
     t_max_err err;
+    char err_msg[128];
 
     if( s7_is_symbol( s7_car(args) ) ){ 
         dict_name = s7_symbol_name( s7_car(args) );
     } else if( s7_is_string( s7_car(args) ) ){
         dict_name = s7_string( s7_car(args) );
     }else{
-        post("s4m: ERROR in dict-ref, dict name is not a keyword, string, or symbol");
-        return;
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "second arg should be a string, symbol, or keyword of a dict name"));
     }   
 
     t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
     if( !dict ){
-        object_error((t_object *)x, "Unable to reference dictionary named %s", dict_name);                
-        return;
+        sprintf(err_msg, "No dict found named %s", dict_name);                
+        return s7_error(s7, s7_make_symbol(s7, "read-error"), err_msg);
     }
     // wrap the dict in an atom so we can pass to max_atom_to_s7_obj
     t_atom *ap = (t_atom*)sysmem_newptr( sizeof( t_atom ) );
@@ -3445,6 +3446,10 @@ static s7_pointer s7_itm_set_ticks(s7_scheme *s7, s7_pointer args){
 // non-itm: runs regardless of transport, can be used to run once a scheduler pass
 static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args){
     //post("s7_listen_ms");
+    if(! isr() ){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "listen-ms can only be called from the high-priority scheduler thread"));
+    }
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
 
@@ -3464,6 +3469,10 @@ static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args){
 // cancel listen-ms callback 
 static s7_pointer s7_cancel_listen_ms(s7_scheme *s7, s7_pointer args){
     //post("s7_cancel_listen_ms()");
+    if(! isr() ){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "cancel-listen-ms can only be called from the high-priority scheduler thread"));
+    }
     t_s4m *x = get_max_obj(s7);
     clock_unset(x->clock_listen_ms);
     return s7_nil(s7);
@@ -3483,6 +3492,10 @@ void s4m_listen_ms_cb(t_s4m *x){
 // used in (listen-ticks)
 static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
     //post("s7_itm_listen_ticks");
+    if(! isr() ){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "listen-ticks can only be called from the high-priority scheduler thread"));
+    }
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
 
@@ -3508,6 +3521,10 @@ static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
 // cancel tick listening 
 static s7_pointer s7_cancel_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
     //post("s7_itm_cancel_listen_ticks");
+    if(! isr() ){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "cancel-listen-ticks can only be called from the high-priority scheduler thread"));
+    }
     t_s4m *x = get_max_obj(s7);
     time_stop(x->time_listen_ticks);
     return s7_nil(s7);
@@ -3535,6 +3552,10 @@ void s4m_itm_listen_ticks_cb(t_s4m *x){
 // because presumably when you hit play, you want the first one firing 
 static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
     // post("s7_itm_listen_ms");
+    if(! isr() ){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "listen-ms-t can only be called from the high-priority scheduler thread"));
+    }
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
     // get number of ms as a double
@@ -3575,6 +3596,10 @@ void s4m_itm_listen_ms_cb(t_s4m *x){
 // cancel time listen 
 static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args){
     // post("s7_cancel_itm_listen_ms()");
+    if(! isr() ){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "cancel-listen-ms-t can only be called from the high-priority scheduler thread"));
+    }
     t_s4m *x = get_max_obj(s7);
     time_stop(x->time_listen_ms);
     return s7_nil(s7);
@@ -3605,7 +3630,11 @@ void s4m_clock_callback(void *arg){
 // called from scheme as (delay)
 static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     //post("s7_schedule_delay()");
-    //post("isr: %i", isr());
+    if(! isr() ){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "delay can only be called from the high-priority scheduler thread"));
+    }
+
     char *cb_handle_str;
     t_s4m *x = get_max_obj(s7);
 
@@ -3643,7 +3672,7 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
 // this one uses one main time object for calculation, but then does the actual delaying with clock objects
 // itm version of schedule, allows sending time as either ticks (int/float), notation (sym) or bbu (sym)
 static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
-    post("s7_schedule_delay_itm()");
+    //post("s7_schedule_delay_itm()");
 
     double ms, tix;
     char *cb_handle_str;
@@ -3685,7 +3714,7 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     //post(" - actual_delay_ticks: %5.2f", actual_delay_ticks);
     // turn into ms
     double delay_ms = itm_tickstoms( itm, actual_delay_ticks );
-    post("delay_ms: %5.2f", delay_ms);
+    //post("delay_ms: %5.2f", delay_ms);
     // and schedule our clock, this is what actually kicks off the timer
     clock_fdelay(clock, delay_ms);
     // return the handle on success
