@@ -41,6 +41,5 @@ Final version
 - dict-set
   - works with key as list or values
 
-- LEFT OFF:
-- bug in the refactor of dict-set for the list key case, crashing
+- I think dict-put just becomes dict-replace now??0
 

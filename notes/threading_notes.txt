@@ -45,3 +45,7 @@ TODO:
 - later add options to have messages specifiy their priority (i.e. defer low or schedule)
   - only relevant to the @thread any situation, which can be released later on
 
+
+Threading notes 2020-12-28
+- fixed the issue
+  

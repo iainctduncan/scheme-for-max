@@ -26,4 +26,9 @@ TODO: rename dict-get to dict-ref and dict-set to dict-set!
   to be consistent with scheme naming (hash-table-ref hash-table-set!)
   - short form will be dictr dicts  
 
+need to rename the transport stuff for consistency too,
+- ie transport-set-state to transport-state-set!
 
+
+ISSUES:
+- oops it looks like I never made vector-set-from-buffer! fuck
