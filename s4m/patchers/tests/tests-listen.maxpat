@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 940.0, -1001.0, 1193.0, 967.0 ],
+		"rect" : [ -327.0, -1001.0, 1193.0, 967.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -261,7 +261,7 @@
 					"patching_rect" : [ 635.5, 415.0, 260.0, 22.0 ],
 					"presentation" : 1,
 					"presentation_linecount" : 2,
-					"presentation_rect" : [ 31.5, 119.500000000000028, 144.0, 38.0 ],
+					"presentation_rect" : [ 259.125, 104.500000000000028, 144.0, 38.0 ],
 					"text" : "Test listen-ms-t & cancel-listen-ms-t"
 				}
 
@@ -274,7 +274,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "bang" ],
 					"patching_rect" : [ 691.5, 513.0, 67.0, 22.0 ],
-					"text" : "delay 5000"
+					"text" : "delay 3000"
 				}
 
 			}
@@ -313,7 +313,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 689.5, 885.5, 31.0, 31.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 31.5, 187.5, 31.0, 31.0 ],
+					"presentation_rect" : [ 259.125, 199.5, 31.0, 31.0 ],
 					"style" : "chiba",
 					"uncheckedcolor" : [ 0.811764705882353, 0.035294117647059, 0.035294117647059, 1.0 ]
 				}
@@ -376,7 +376,9 @@
 					"patching_rect" : [ 682.5, 728.5, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"log-null" : 132856189007429632,
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -393,7 +395,7 @@
 					"patching_rect" : [ 653.0, 636.5, 205.0, 22.0 ],
 					"presentation" : 1,
 					"presentation_linecount" : 2,
-					"presentation_rect" : [ 31.5, 146.5, 187.0, 35.0 ],
+					"presentation_rect" : [ 259.125, 148.5, 187.0, 35.0 ],
 					"text" : "(listen-ms-t 250 (lambda () (out 0 1)))"
 				}
 
@@ -540,7 +542,7 @@
 					"patching_rect" : [ 328.0, 415.0, 260.0, 22.0 ],
 					"presentation" : 1,
 					"presentation_linecount" : 2,
-					"presentation_rect" : [ 31.5, 119.500000000000028, 144.0, 38.0 ],
+					"presentation_rect" : [ 504.5, 104.500000000000028, 144.0, 38.0 ],
 					"text" : "Test listen-ms & cancel-listen-ms"
 				}
 
@@ -592,7 +594,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 382.0, 885.5, 31.0, 31.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 31.5, 187.5, 31.0, 31.0 ],
+					"presentation_rect" : [ 504.5, 199.5, 31.0, 31.0 ],
 					"style" : "chiba",
 					"uncheckedcolor" : [ 0.811764705882353, 0.035294117647059, 0.035294117647059, 1.0 ]
 				}
@@ -655,7 +657,9 @@
 					"patching_rect" : [ 375.0, 728.5, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"log-null" : 132856189007429632,
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -672,7 +676,7 @@
 					"patching_rect" : [ 345.5, 636.5, 198.0, 22.0 ],
 					"presentation" : 1,
 					"presentation_linecount" : 2,
-					"presentation_rect" : [ 31.5, 146.5, 187.0, 35.0 ],
+					"presentation_rect" : [ 504.5, 148.5, 187.0, 35.0 ],
 					"text" : "(listen-ms 100 (lambda () (out 0 1)))"
 				}
 
@@ -917,7 +921,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 75.0, 885.5, 31.0, 31.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 16.5, 172.5, 31.0, 31.0 ],
+					"presentation_rect" : [ 16.5, 199.5, 31.0, 31.0 ],
 					"style" : "chiba",
 					"uncheckedcolor" : [ 0.811764705882353, 0.035294117647059, 0.035294117647059, 1.0 ]
 				}
@@ -980,7 +984,9 @@
 					"patching_rect" : [ 68.0, 728.5, 31.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
-						"outs" : 1
+						"log-null" : 132856189007429632,
+						"outs" : 1,
+						"thread" : 104
 					}
 ,
 					"text" : "s4m"
@@ -997,7 +1003,7 @@
 					"patching_rect" : [ 38.5, 636.5, 211.0, 22.0 ],
 					"presentation" : 1,
 					"presentation_linecount" : 2,
-					"presentation_rect" : [ 16.5, 131.5, 187.0, 35.0 ],
+					"presentation_rect" : [ 16.5, 154.5, 187.0, 35.0 ],
 					"text" : "(listen-ticks 120 (lambda (x) (out 0 x)))"
 				}
 
@@ -1139,7 +1145,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 666.0, 127.5, 53.0, 22.0 ],
-					"text" : "6"
+					"text" : "3"
 				}
 
 			}
