@@ -25,11 +25,14 @@
     ;; dereg the handle
     (set! (s4m-callback-registry key) #f)
     ;; if callback retrieval got false, return false else execute function
-    (if (eq? #f cb-fun) '() (cb-fun))))
-
+    (if (eq? #f cb-fun) 
+      '()
+      ;; call our cb function, catching any errors here and posting
+      (catch #t (lambda () (cb-fun)) (lambda err-args (post "ERROR:" err-args))))
+))
 
 ; public function to delay a function by time ms (int or float)
-; returns the callback key, which can be used to cancel it
+; returns the gensym callback key, which can be used to cancel it
 (define (delay time fun)
   ;(post "(delay) time:" time "args:" arg)
   ;; register the callback and return the handle
@@ -120,7 +123,9 @@
 (define (listen-ticks ticks fun)
   (set! s4m-listen-ticks-callback fun)
   ;; call into C to register the listener 
-  (s4m-itm-listen-ticks ticks)) 
+  (s4m-itm-listen-ticks ticks)
+  :listener-registered
+) 
 
 ; public function to cancel the tick listener
 (define (cancel-listen-ticks)
@@ -146,7 +151,9 @@
 (define (listen-ms-t ms fun)
   (set! s4m-itm-listen-ms-callback fun)
   ;; call into C to register the listener 
-  (s4m-itm-listen-ms ms)) 
+  (s4m-itm-listen-ms ms)
+  :listener-registered
+) 
 
 ; public function to cancel the itm ms listener
 (define (cancel-listen-ms-t)
@@ -169,8 +176,9 @@
 ; public function to start listenin every {ms} miliseconds
 (define (listen-ms ms fun)
   (set! s4m-listen-ms-callback fun)
-  ;; call into C to register the listener 
-  (s4m-listen-ms ms) (post :ok)) 
+  ;; call into C to register the listener and return message
+  (s4m-listen-ms ms) 
+  :listener-registered) 
 
 ; public function to cancel the itm ms listener
 (define (cancel-listen-ms)
