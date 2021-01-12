@@ -120,15 +120,15 @@
 
 ; public function to start listening every {ticks} ticks with function {fun}
 ; depends on transport running, expect tick to be integer
-(define (listen-ticks ticks fun)
+(define (clock-ticks ticks fun)
   (set! s4m-listen-ticks-callback fun)
   ;; call into C to register the listener 
   (s4m-itm-listen-ticks ticks)
-  :listener-registered
+  :clock-registered
 ) 
 
 ; public function to cancel the tick listener
-(define (cancel-listen-ticks)
+(define (cancel-clock-ticks)
   ;(post "cancel-listen-ticks")
   ;; call into C to cancel the scheduled event
   (s4m-cancel-itm-listen-ticks)
@@ -148,15 +148,15 @@
   (if (eq? #f s4m-itm-listen-ms-callback) '() (s4m-itm-listen-ms-callback)))
 
 ; public function to start listening every {ms} miliseconds, but only if transport running 
-(define (listen-ms-t ms fun)
+(define (clock-ms-t ms fun)
   (set! s4m-itm-listen-ms-callback fun)
   ;; call into C to register the listener 
   (s4m-itm-listen-ms ms)
-  :listener-registered
+  :clock-registered
 ) 
 
 ; public function to cancel the itm ms listener
-(define (cancel-listen-ms-t)
+(define (cancel-clock-ms-t)
   ;(post "cancel-listen-ms-t")
   ;; call into C to cancel the scheduled event
   (s4m-cancel-itm-listen-ms)
@@ -174,14 +174,14 @@
   (if (eq? #f s4m-listen-ms-callback) '() (s4m-listen-ms-callback)))
 
 ; public function to start listenin every {ms} miliseconds
-(define (listen-ms ms fun)
+(define (clock-ms ms fun)
   (set! s4m-listen-ms-callback fun)
   ;; call into C to register the listener and return message
   (s4m-listen-ms ms) 
-  :listener-registered) 
+  :clock-registered) 
 
 ; public function to cancel the itm ms listener
-(define (cancel-listen-ms)
+(define (cancel-clock-ms)
   ;(post "(cancel-listen-ms)")
   ;; call into C to cancel the scheduled event
   (s4m-cancel-listen-ms)
