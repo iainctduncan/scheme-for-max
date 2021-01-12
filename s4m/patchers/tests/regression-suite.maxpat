@@ -4,7 +4,7 @@
 		"appversion" : 		{
 			"major" : 8,
 			"minor" : 1,
-			"revision" : 3,
+			"revision" : 8,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
@@ -37,6 +37,7 @@
 		"tags" : "",
 		"style" : "",
 		"subpatcher_template" : "s4m",
+		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
 					"fontface" : 1,
@@ -46,7 +47,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 343.0, 40.0, 179.0, 288.0 ],
+					"patching_rect" : [ 343.0, 40.0, 182.0, 288.0 ],
 					"presentation" : 1,
 					"presentation_linecount" : 5,
 					"presentation_rect" : [ 344.0, 25.5, 760.0, 100.0 ],
@@ -1367,14 +1368,15 @@
 , 			{
 				"box" : 				{
 					"id" : "obj-18",
+					"linecount" : 2,
 					"maxclass" : "newobj",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "int" ],
-					"patching_rect" : [ 360.5, 1082.0, 66.0, 22.0 ],
+					"patching_rect" : [ 360.5, 1082.0, 66.0, 35.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 458.0, 589.5, 92.0, 22.0 ],
-					"text" : "tests-listen"
+					"presentation_rect" : [ 458.0, 589.5, 71.0, 22.0 ],
+					"text" : "tests-clocks"
 				}
 
 			}
@@ -2279,7 +2281,14 @@
 				"implicit" : 1
 			}
 , 			{
-				"name" : "tests-listen.maxpat",
+				"name" : "s4m.repl.maxpat",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/Scheme-For-Max/patchers",
+				"patcherrelativepath" : "../../../Scheme-For-Max/patchers",
+				"type" : "JSON",
+				"implicit" : 1
+			}
+, 			{
+				"name" : "tests-clocks.maxpat",
 				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
@@ -2289,13 +2298,6 @@
 				"name" : "tests-buffer-io.maxpat",
 				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
-				"type" : "JSON",
-				"implicit" : 1
-			}
-, 			{
-				"name" : "s4m.repl.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/Scheme-For-Max/patchers",
-				"patcherrelativepath" : "../../../Scheme-For-Max/patchers",
 				"type" : "JSON",
 				"implicit" : 1
 			}
