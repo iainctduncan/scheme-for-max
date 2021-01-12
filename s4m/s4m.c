@@ -18,7 +18,7 @@
 #include "common/commonsyms.c"
 
 #define MAX_NUM_OUTLETS 32
-#define MAX_NUM_INLETS 32
+#define MAX_NUM_INLETS 32       // note: changing requires making more s4m_callback_msg_inlet_X handlers
 #define MAX_ATOMS_PER_MESSAGE 1024
 #define MAX_ATOMS_PER_OUTPUT_LIST 1024
 #define BOOTSTRAP_FILE "s4m.scm"
@@ -117,7 +117,7 @@ void s4m_callback_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
 void s4m_handle_list(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv);
 
 void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
-void s4m_callback_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
+//void s4m_callback_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
 void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv);
 
 
@@ -1341,6 +1341,43 @@ void s4m_eval_string(t_s4m *x, t_symbol *s){
 }
 
 
+// this looks like a silly way to do this, but eliminates memory allocation of atoms etc for promotion/deferal and so
+// doesn't crash under high loads, so good enough for now
+// note: add more than 32 inlets will require making more of these
+// TODO: figure out how to do this with C string macros instead
+void s4m_callback_msg_inlet_0(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 0, s, argc, argv); }
+void s4m_callback_msg_inlet_1(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 1, s, argc, argv); }
+void s4m_callback_msg_inlet_2(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 2, s, argc, argv); }
+void s4m_callback_msg_inlet_3(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 3, s, argc, argv); }
+void s4m_callback_msg_inlet_4(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 4, s, argc, argv); }
+void s4m_callback_msg_inlet_5(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 5, s, argc, argv); }
+void s4m_callback_msg_inlet_6(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 6, s, argc, argv); }
+void s4m_callback_msg_inlet_7(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 7, s, argc, argv); }
+void s4m_callback_msg_inlet_8(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 8, s, argc, argv); }
+void s4m_callback_msg_inlet_9(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 9, s, argc, argv); }
+void s4m_callback_msg_inlet_10(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 10, s, argc, argv); }
+void s4m_callback_msg_inlet_11(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 11, s, argc, argv); }
+void s4m_callback_msg_inlet_12(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 12, s, argc, argv); }
+void s4m_callback_msg_inlet_13(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 13, s, argc, argv); }
+void s4m_callback_msg_inlet_14(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 14, s, argc, argv); }
+void s4m_callback_msg_inlet_15(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 15, s, argc, argv); }
+void s4m_callback_msg_inlet_16(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 16, s, argc, argv); }
+void s4m_callback_msg_inlet_17(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 17, s, argc, argv); }
+void s4m_callback_msg_inlet_18(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 18, s, argc, argv); }
+void s4m_callback_msg_inlet_19(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 19, s, argc, argv); }
+void s4m_callback_msg_inlet_20(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 20, s, argc, argv); }
+void s4m_callback_msg_inlet_21(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 21, s, argc, argv); }
+void s4m_callback_msg_inlet_22(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 22, s, argc, argv); }
+void s4m_callback_msg_inlet_23(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 23, s, argc, argv); }
+void s4m_callback_msg_inlet_24(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 24, s, argc, argv); }
+void s4m_callback_msg_inlet_25(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 25, s, argc, argv); }
+void s4m_callback_msg_inlet_26(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 26, s, argc, argv); }
+void s4m_callback_msg_inlet_27(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 27, s, argc, argv); }
+void s4m_callback_msg_inlet_28(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 28, s, argc, argv); }
+void s4m_callback_msg_inlet_29(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 29, s, argc, argv); }
+void s4m_callback_msg_inlet_30(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 30, s, argc, argv); }
+void s4m_callback_msg_inlet_31(t_s4m *x, t_symbol *s, long argc, t_atom *argv){ s4m_handle_msg(x, 31, s, argc, argv); }
+
 // the generic message hander, fires on any symbol messages, which includes lists of numbers or strings
 void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     bool in_isr = isr();
@@ -1349,19 +1386,86 @@ void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
 
     // for promotion/deferal, we need a new list with same args, but inlet_num at the head as new atom
     if( (!in_isr && x->thread == 'h') || (in_isr && x->thread == 'l') ){
-        t_atom *ap = (t_atom *)sysmem_newptr( sizeof(t_atom) * (argc + 1) );
-        atom_setlong(ap, inlet_num);
-        for(int i=0; i<argc; i++){
-            *(ap + i + 1) = *(argv + i);
-        }
         // if this is a low-priority thread message, re-sched as high and exit and vice versa
         // calling with our new list that encodes the inlet number to preserve inlet number
         if( x->thread == 'h' ){ 
             //post(".. promoting with call to schedule...");
-            return schedule(x, s4m_callback_msg, 0, s, argc+1, ap); 
+            switch (inlet_num){
+                case 0: return schedule(x, s4m_callback_msg_inlet_0, 0, s, argc, argv); 
+                case 1: return schedule(x, s4m_callback_msg_inlet_1, 0, s, argc, argv); 
+                case 2: return schedule(x, s4m_callback_msg_inlet_2, 0, s, argc, argv); 
+                case 3: return schedule(x, s4m_callback_msg_inlet_3, 0, s, argc, argv); 
+                case 4: return schedule(x, s4m_callback_msg_inlet_4, 0, s, argc, argv); 
+                case 5: return schedule(x, s4m_callback_msg_inlet_5, 0, s, argc, argv); 
+                case 6: return schedule(x, s4m_callback_msg_inlet_6, 0, s, argc, argv); 
+                case 7: return schedule(x, s4m_callback_msg_inlet_7, 0, s, argc, argv); 
+                case 8: return schedule(x, s4m_callback_msg_inlet_8, 0, s, argc, argv); 
+                case 9: return schedule(x, s4m_callback_msg_inlet_9, 0, s, argc, argv); 
+                case 10: return schedule(x, s4m_callback_msg_inlet_10, 0, s, argc, argv); 
+                case 11: return schedule(x, s4m_callback_msg_inlet_11, 0, s, argc, argv); 
+                case 12: return schedule(x, s4m_callback_msg_inlet_12, 0, s, argc, argv); 
+                case 13: return schedule(x, s4m_callback_msg_inlet_13, 0, s, argc, argv); 
+                case 14: return schedule(x, s4m_callback_msg_inlet_14, 0, s, argc, argv); 
+                case 15: return schedule(x, s4m_callback_msg_inlet_15, 0, s, argc, argv); 
+                case 16: return schedule(x, s4m_callback_msg_inlet_16, 0, s, argc, argv); 
+                case 17: return schedule(x, s4m_callback_msg_inlet_17, 0, s, argc, argv); 
+                case 18: return schedule(x, s4m_callback_msg_inlet_18, 0, s, argc, argv); 
+                case 19: return schedule(x, s4m_callback_msg_inlet_19, 0, s, argc, argv); 
+                case 20: return schedule(x, s4m_callback_msg_inlet_20, 0, s, argc, argv); 
+                case 21: return schedule(x, s4m_callback_msg_inlet_21, 0, s, argc, argv); 
+                case 22: return schedule(x, s4m_callback_msg_inlet_22, 0, s, argc, argv); 
+                case 23: return schedule(x, s4m_callback_msg_inlet_23, 0, s, argc, argv); 
+                case 24: return schedule(x, s4m_callback_msg_inlet_24, 0, s, argc, argv); 
+                case 25: return schedule(x, s4m_callback_msg_inlet_25, 0, s, argc, argv); 
+                case 26: return schedule(x, s4m_callback_msg_inlet_26, 0, s, argc, argv); 
+                case 27: return schedule(x, s4m_callback_msg_inlet_27, 0, s, argc, argv); 
+                case 28: return schedule(x, s4m_callback_msg_inlet_28, 0, s, argc, argv); 
+                case 29: return schedule(x, s4m_callback_msg_inlet_29, 0, s, argc, argv); 
+                case 30: return schedule(x, s4m_callback_msg_inlet_30, 0, s, argc, argv); 
+                case 31: return schedule(x, s4m_callback_msg_inlet_31, 0, s, argc, argv); 
+                default:
+                    // bad inlet num, should never happen!
+                    return;
+            }
         }else if( x->thread == 'l' ){ 
             //post(".. defering with call to defer...");
-            return defer(x, s4m_callback_msg, s, argc+1, ap); 
+            switch (inlet_num){
+                case 0: return defer(x, s4m_callback_msg_inlet_0, s, argc, argv); 
+                case 1: return defer(x, s4m_callback_msg_inlet_1, s, argc, argv); 
+                case 2: return defer(x, s4m_callback_msg_inlet_2, s, argc, argv); 
+                case 3: return defer(x, s4m_callback_msg_inlet_3, s, argc, argv); 
+                case 4: return defer(x, s4m_callback_msg_inlet_4, s, argc, argv); 
+                case 5: return defer(x, s4m_callback_msg_inlet_5, s, argc, argv); 
+                case 6: return defer(x, s4m_callback_msg_inlet_6, s, argc, argv); 
+                case 7: return defer(x, s4m_callback_msg_inlet_7, s, argc, argv); 
+                case 8: return defer(x, s4m_callback_msg_inlet_8, s, argc, argv); 
+                case 9: return defer(x, s4m_callback_msg_inlet_9, s, argc, argv); 
+                case 10: return defer(x, s4m_callback_msg_inlet_10, s, argc, argv); 
+                case 11: return defer(x, s4m_callback_msg_inlet_11, s, argc, argv); 
+                case 12: return defer(x, s4m_callback_msg_inlet_12, s, argc, argv); 
+                case 13: return defer(x, s4m_callback_msg_inlet_13, s, argc, argv); 
+                case 14: return defer(x, s4m_callback_msg_inlet_14, s, argc, argv); 
+                case 15: return defer(x, s4m_callback_msg_inlet_15, s, argc, argv); 
+                case 16: return defer(x, s4m_callback_msg_inlet_16, s, argc, argv); 
+                case 17: return defer(x, s4m_callback_msg_inlet_17, s, argc, argv); 
+                case 18: return defer(x, s4m_callback_msg_inlet_18, s, argc, argv); 
+                case 19: return defer(x, s4m_callback_msg_inlet_19, s, argc, argv); 
+                case 20: return defer(x, s4m_callback_msg_inlet_20, s, argc, argv); 
+                case 21: return defer(x, s4m_callback_msg_inlet_21, s, argc, argv); 
+                case 22: return defer(x, s4m_callback_msg_inlet_22, s, argc, argv); 
+                case 23: return defer(x, s4m_callback_msg_inlet_23, s, argc, argv); 
+                case 24: return defer(x, s4m_callback_msg_inlet_24, s, argc, argv); 
+                case 25: return defer(x, s4m_callback_msg_inlet_25, s, argc, argv); 
+                case 26: return defer(x, s4m_callback_msg_inlet_26, s, argc, argv); 
+                case 27: return defer(x, s4m_callback_msg_inlet_27, s, argc, argv); 
+                case 28: return defer(x, s4m_callback_msg_inlet_28, s, argc, argv); 
+                case 29: return defer(x, s4m_callback_msg_inlet_29, s, argc, argv); 
+                case 30: return defer(x, s4m_callback_msg_inlet_30, s, argc, argv); 
+                case 31: return defer(x, s4m_callback_msg_inlet_31, s, argc, argv); 
+                default:
+                    // bad inlet num, should never happen!
+                    return;
+            }
         }
     } 
     // if we are in the right thread, just dispatch
@@ -1369,17 +1473,9 @@ void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     s4m_handle_msg(x, inlet_num, s, argc, argv);
 }
 
-void s4m_callback_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    bool in_isr = isr();
-    // post("s4m_callback_msg() in_isr: %i", in_isr);
-    long inlet_num = atom_getlong( argv );
-    // post(" - inlet_num: %i", inlet_num);
-    s4m_handle_msg(x, inlet_num, s, argc - 1, argv + 1);
-    sysmem_freeptr(argv);
-}
 
 void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv){
-    // post("s4m_handle_msg(): inlet_num: %i arguments: %ld isr: %i", inlet_num, argc, isr());
+    //post("s4m_handle_msg(): inlet_num: %i arguments: %ld isr: %i", inlet_num, argc, isr());
     t_atom *ap;
 
     // treat input to inlet 0 as a list of atoms that should be evaluated as a scheme expression
