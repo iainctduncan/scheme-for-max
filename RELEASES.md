@@ -1,5 +1,14 @@
 # Scheme-For-Max Release Log
 
+## 0.2.0 2021-01-13
+- thread lock to high or low thread
+- attributes for log-nulls and log-repl
+- table i/o
+- buffer i/o
+- dict i/o
+- transport integration
+- delay and clock functions
+
 ## 0.1.3 2020-04-30
 - bug fixes in list output
 - adding loop.scm and utilities.scm from Common Music by default
