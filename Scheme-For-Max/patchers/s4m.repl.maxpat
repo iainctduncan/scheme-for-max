@@ -3,14 +3,14 @@
 		"fileversion" : 1,
 		"appversion" : 		{
 			"major" : 8,
-			"minor" : 0,
-			"revision" : 3,
+			"minor" : 1,
+			"revision" : 8,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 88.0, 79.0, 827.0, 744.0 ],
+		"rect" : [ -139.0, -778.0, 827.0, 744.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 1,
 		"default_fontsize" : 12.0,
@@ -37,6 +37,7 @@
 		"tags" : "",
 		"style" : "",
 		"subpatcher_template" : "",
+		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
 					"id" : "obj-6",
@@ -140,7 +141,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 133.666656494140625, 415.0, 196.0, 60.0 ],
+					"patching_rect" : [ 133.666656494140625, 415.0, 199.0, 60.0 ],
 					"text" : "to prevent textedit from sending contents on a tab change, we need to open the gate, bang the textedit, and close the gate for each send"
 				}
 
@@ -410,6 +411,7 @@
 			}
 , 			{
 				"box" : 				{
+					"fontsize" : 12.0,
 					"id" : "obj-3",
 					"maxclass" : "textedit",
 					"numinlets" : 1,
@@ -417,10 +419,11 @@
 					"outlettype" : [ "", "int", "", "" ],
 					"outputmode" : 1,
 					"parameter_enable" : 0,
-					"patching_rect" : [ 76.5, 72.5, 514.0, 105.0 ],
+					"patching_rect" : [ 76.5, 72.5, 470.0, 105.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 4.5, 30.5, 476.625, 122.0 ],
+					"presentation_rect" : [ 4.5, 30.5, 436.0, 122.0 ],
 					"tabmode" : 0,
+					"text" : "dddd",
 					"varname" : "repl-box"
 				}
 
