@@ -119,4 +119,6 @@
 
 (define s4m-done-bootstrap #t)
 
-(post "s4m.scm BOOTSTRAP COMPLETE")
+(define buffer-samples buffer-size)
+
+;(post "s4m.scm init complete")

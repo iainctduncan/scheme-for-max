@@ -869,26 +869,26 @@ int s4m_table_write(t_s4m *x, char *table_name, int index, int value){
 } 
 
 // write from data, {count} values starting at {index}, to table_name
-int s4m_table_write_array(t_s4m *x, char *table_name, int *source_data, int index, int count){
-    post("s4m_table_write_array() %s i:%i v:%i", table_name, index, count);
-    long **data = NULL;
-    long size;
-    int res = table_get(gensym(table_name), &data, &size);
-    if(res){
-        post("s4m: ERROR: could not load table %s", table_name);
-        return res; 
-    }
-    if( index < 0 || index >= size || (index + count) > size){
-        error("s4m: error attempt to write out of range to table %s", table_name);
-        return 1;
-    }
-    // copy from the source array
-    for(int i=0; i < count; i++){
-        (*data)[index + i] = source_data[i];
-    }
-    table_dirty( gensym(table_name) );
-    return 0;
-}
+//int s4m_table_write_array(t_s4m *x, char *table_name, int *source_data, int index, int count){
+//    post("s4m_table_write_array() %s i:%i v:%i", table_name, index, count);
+//    long **data = NULL;
+//    long size;
+//    int res = table_get(gensym(table_name), &data, &size);
+//    if(res){
+//        post("s4m: ERROR: could not load table %s", table_name);
+//        return res; 
+//    }
+//    if( index < 0 || index >= size || (index + count) > size){
+//        error("s4m: error attempt to write out of range to table %s", table_name);
+//        return 1;
+//    }
+//    // copy from the source array
+//    for(int i=0; i < count; i++){
+//        (*data)[index + i] = source_data[i];
+//    }
+//    table_dirty( gensym(table_name) );
+//    return 0;
+//}
 
 
 // get a max named buffer, write a single data point, and return it
@@ -918,7 +918,7 @@ int s4m_buffer_read(t_s4m *x, char *buffer_name, long index, double *value){
 
 // multi-channel buffer read, channels numbered 1 up
 int s4m_mc_buffer_read(t_s4m *x, char *buffer_name, int channel, long index, double *value){
-    post("s4m_mc_buffer_read() %s c:%i i:%i", buffer_name, channel, index);
+    //post("s4m_mc_buffer_read() %s c:%i i:%i", buffer_name, channel, index);
     
     t_buffer_ref *buffer_ref = buffer_ref_new((t_object *)x, gensym(buffer_name));
     t_buffer_obj *buffer = buffer_ref_getobject(buffer_ref);
