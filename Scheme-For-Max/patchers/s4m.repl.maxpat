@@ -421,9 +421,8 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 76.5, 72.5, 470.0, 105.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 4.5, 30.5, 436.0, 122.0 ],
+					"presentation_rect" : [ 4.5, 30.5, 476.625, 122.0 ],
 					"tabmode" : 0,
-					"text" : "dddd",
 					"varname" : "repl-box"
 				}
 
