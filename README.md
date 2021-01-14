@@ -2,7 +2,7 @@
 Scheme For Max (s4m) is an open source Max/MSP external to enable scripting and live coding 
 Max/MSP with Scheme / Lisp. It is available as a packages for Mac and Windows (32 and 64), and as source. It has been developed and tested on Max 8, but may well work on Max 7 too, unknown as yet.
 
-**2021-01-14: 0.2.0-beta: This release adds significant new functionality.
+**2021-01-14**: 0.2.0-beta: This release adds significant new functionality, including table, buffer, and dict i/o, and realtime scheduling with transport integration.
 
 **Documentation** lives here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
