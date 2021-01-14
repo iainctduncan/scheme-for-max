@@ -2294,7 +2294,7 @@ static s7_pointer s7_buffer_ref(s7_scheme *s7, s7_pointer args) {
             "wrong number of args, must be buffer,index or buffer,channel,index"));
     }
 
-    post(" buffer: %s channel: %d index: %d", buffer_name, channel, index);
+    //post(" buffer: %s channel: %d index: %d", buffer_name, channel, index);
     t_s4m *x = get_max_obj(s7);
     double value;
     int res = s4m_mc_buffer_read(x, buffer_name, channel, index, &value);
