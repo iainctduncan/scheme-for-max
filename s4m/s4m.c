@@ -3544,7 +3544,7 @@ static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args){
     //post("s7_listen_ms");
     if(! isr() ){
         return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "listen-ms can only be called from the high-priority scheduler thread"));
+            "listen-ms can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
     }
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
@@ -3567,7 +3567,7 @@ static s7_pointer s7_cancel_listen_ms(s7_scheme *s7, s7_pointer args){
     //post("s7_cancel_listen_ms()");
     if(! isr() ){
         return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "cancel-listen-ms can only be called from the high-priority scheduler thread"));
+            "cancel-listen-ms can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
     }
     t_s4m *x = get_max_obj(s7);
     clock_unset(x->clock_listen_ms);
@@ -3590,7 +3590,7 @@ static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
     //post("s7_itm_listen_ticks");
     if(! isr() ){
         return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "listen-ticks can only be called from the high-priority scheduler thread"));
+            "listen-ticks can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
     }
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
@@ -3619,7 +3619,7 @@ static s7_pointer s7_cancel_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
     //post("s7_itm_cancel_listen_ticks");
     if(! isr() ){
         return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "cancel-listen-ticks can only be called from the high-priority scheduler thread"));
+            "cancel-listen-ticks can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
     }
     t_s4m *x = get_max_obj(s7);
     time_stop(x->time_listen_ticks);
@@ -3650,7 +3650,7 @@ static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
     // post("s7_itm_listen_ms");
     if(! isr() ){
         return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "listen-ms-t can only be called from the high-priority scheduler thread"));
+            "listen-ms-t can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
     }
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
@@ -3694,7 +3694,7 @@ static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args){
     // post("s7_cancel_itm_listen_ms()");
     if(! isr() ){
         return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "cancel-listen-ms-t can only be called from the high-priority scheduler thread"));
+            "cancel-listen-ms-t can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
     }
     t_s4m *x = get_max_obj(s7);
     time_stop(x->time_listen_ms);
@@ -3728,7 +3728,7 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     //post("s7_schedule_delay()");
     if(! isr() ){
         return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "delay can only be called from the high-priority scheduler thread"));
+            "delay can only be called from the high-priority scheduler thread. Is Overdrive enabled?"));
     }
 
     char *cb_handle_str;
