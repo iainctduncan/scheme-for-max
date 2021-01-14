@@ -7,7 +7,7 @@ Max/MSP with Scheme / Lisp. It is available as a packages for Mac and Windows (3
 **Documentation** lives here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
 ## About
-Scheme-For-Max provides two objects: s4m (the interpreter, formely named s4m.scm) and s4m.repl (a REPL GUI patcher)
+Scheme-For-Max provides two objects: s4m (the interpreter, formerly named s4m.scm) and s4m.repl (a REPL GUI patcher)
 
 Features of v0.2 include:
 
