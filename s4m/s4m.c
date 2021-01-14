@@ -330,7 +330,7 @@ void ext_main(void *r){
     CLASS_ATTR_CHAR(c, "log-repl", 0, t_s4m, log_repl);
     CLASS_ATTR_DEFAULT_SAVE(c, "log-repl", 0, "1");
     CLASS_ATTR_STYLE_LABEL(c, "log-repl", 0, "onoff", "Log REPL return values");
-    CLASS_ATTR_LONG(c, "log-null", 0, t_s4m, log_null);
+    CLASS_ATTR_CHAR(c, "log-null", 0, t_s4m, log_null);
     CLASS_ATTR_DEFAULT_SAVE(c, "log-null", 0, "1");
     CLASS_ATTR_STYLE_LABEL(c, "log-null", 0, "onoff", "Log null from REPL");
 
@@ -2609,7 +2609,7 @@ static s7_pointer s7_dict_ref(s7_scheme *s7, s7_pointer args) {
         err = dictionary_getatom(dict, gensym(dict_key), &value);
         if(err){
             sprintf(err_msg, "No key %s in dict %s", dict_key, dict_name);                
-            return s7_error(s7, s7_make_symbol(s7, "key-error"), err_msg);
+            return s7_error(s7, s7_make_symbol(s7, "key-error"), s7_make_string(s7, err_msg));
         }else{    
             s7_value = max_atom_to_s7_obj(s7, &value); 
         }
@@ -2665,7 +2665,7 @@ static s7_pointer s7_dict_ref_recurser(s7_scheme *s7, t_atom *container_atom, s7
         if(err){
             //post("key '%s' not found in dict, returning null", key_str);
             sprintf(err_msg, "No key %s in dict", key_str);                
-            return s7_error(s7, s7_make_symbol(s7, "key-error"), err_msg);
+            return s7_error(s7, s7_make_symbol(s7, "key-error"), s7_make_string(s7, err_msg));
         }
         // case: found value - have used up keys 
         if( s7_is_null(s7, rest_keys) ){
@@ -2678,7 +2678,7 @@ static s7_pointer s7_dict_ref_recurser(s7_scheme *s7, t_atom *container_atom, s7
         if( !atomisdictionary(&value) && !atomisatomarray(&value) ){
             //post("container found at key '%s' but key list not used up, returning nil", key_str);
             sprintf(err_msg, "Key list not traversable");                
-            return s7_error(s7, s7_make_symbol(s7, "key-error"), err_msg);
+            return s7_error(s7, s7_make_symbol(s7, "key-error"), s7_make_string(s7, err_msg));
         }else{
             //post("container found at key '%s', still have keys, recursing", key_str);
             // it's a container, so we can recurse
@@ -2695,7 +2695,7 @@ static s7_pointer s7_dict_ref_recurser(s7_scheme *s7, t_atom *container_atom, s7
         // case: index not valid 
         if(err){
             sprintf(err_msg, "Index out of range");                
-            return s7_error(s7, s7_make_symbol(s7, "key-error"), err_msg);
+            return s7_error(s7, s7_make_symbol(s7, "key-error"), s7_make_string(s7, err_msg));
         }
         // case: found value - have used up keys 
         if( s7_is_null(s7, rest_keys) ){
@@ -2708,7 +2708,7 @@ static s7_pointer s7_dict_ref_recurser(s7_scheme *s7, t_atom *container_atom, s7
         if( !atomisdictionary(&value) && !atomisatomarray(&value) ){
             //post("atomic value found at key %i but key list not used up, returning nil", key_int);
             sprintf(err_msg, "Key list not traversable");                
-            return s7_error(s7, s7_make_symbol(s7, "key-error"), err_msg);
+            return s7_error(s7, s7_make_symbol(s7, "key-error"), s7_make_string(s7, err_msg));
         }else{
             //post("container found at key '%s', still have keys, recursing", key_str);
             // it's a container, so we can recurse
@@ -3115,7 +3115,7 @@ static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args){
     t_dictionary *dict = dictobj_findregistered_retain( gensym(dict_name) );
     if( !dict ){
         sprintf(err_msg, "No dict found named %s", dict_name);                
-        return s7_error(s7, s7_make_symbol(s7, "read-error"), err_msg);
+        return s7_error(s7, s7_make_symbol(s7, "read-error"), s7_make_string(s7, err_msg));
     }
     // wrap the dict in an atom so we can pass to max_atom_to_s7_obj
     t_atom *ap = (t_atom*)sysmem_newptr( sizeof( t_atom ) );
