@@ -2,7 +2,7 @@
 Scheme For Max (s4m) is an open source Max/MSP external to enable scripting and live coding 
 Max/MSP with Scheme / Lisp. It is available as a packages for Mac and Windows (32 and 64), and as source. It has been developed and tested on Max 8, but may well work on Max 7 too, unknown as yet.
 
-**2020-05-08: 0.1.6-beta: This release is the new windows beta. This required the main object to be renamed from s4m.scm to s4m.  Demo videos are not yet updated.** 
+**2021-01-14: 0.2.0-beta: This release adds significant new functionality.
 
 **Windows Known Issues:**
 * Saving from the popup editor is not yet working on Windows
@@ -14,12 +14,22 @@ Max/MSP with Scheme / Lisp. It is available as a packages for Mac and Windows (3
 ## About
 Scheme-For-Max provides two objects: s4m (the interpreter, formely named s4m.scm) and s4m.repl (a REPL GUI patcher)
 
-Scheme-for-Max 0.1-beta features include:
-* Hot reloading code from files
-* Live code evaluation from a REPL
-* Evaluating Max messages as scheme
-* Listening to Max messages with dynamic registered listener functions for basic Max messages
-* Sending remote messages to other objects to interact with other objects
+Features of v0.2 include:
+
+* Hot reloading of scheme code
+* Text editor integration (similar to the JS object)
+* A built in REPL terminal editor for interactive coding 
+* Max messages on inlet 0 automatically execute as Scheme code 
+* Dynamically registered listener functions for Max messages on inlets 1+
+* Sending messages to remote objects by scripting name
+* Ability to run in either the high or low priority thread
+* Table access and i/o
+* Buffer access and i/o
+* Dictionary access and i/o, including nested lookup
+* Integration with the Max transport controls 
+* High-accuracy event and function scheduling
+* Support for Max time notation for scheduling
+* Quantization with master transport settings
 
 Scheme-for-Max uses S7 Scheme, a "lisp-y" embeddable Scheme implementation by Bill Schottstaedt at
 CCRMA, based originally on Tiny Scheme.  S7 is a minimal Scheme, with many nice features for algorithmic 
@@ -30,15 +40,12 @@ Linguistically, it is mostly R4RS with some later extensions, and is quite simil
 many features with Clojure as well, and is easy to learn for anyone with Lisp experience. 
 
 ## Demo
-Watch a 10 minute video demo of the features in 0.1 here:
-https://youtu.be/ErirIFCTdjg
+Video demos are available on the Music With Lisp youtube channel here:
+https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA
 
-**Note: This video uses the old s4m.scm object, the new object is now just s4m**
 
-## Releases
-Scheme-For-Max 0.1.5-beta https://github.com/iainctduncan/scheme-for-max/releases
-
-Note: bug fix releases will be announced here and on the google group only.
+## Download Releases
+Releases are posted here https://github.com/iainctduncan/scheme-for-max/releases
 
 ## Documentation and Community
 An extensive help file demonstrating all official features of the release is included, with
@@ -46,9 +53,9 @@ sample source code in the package. Clicking "launch" on the package menu will op
 
 Narative documentation is here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
-To file tickets about errors or improvement suggestions for the docs, use the docs repo: https://github.com/iainctduncan/scheme-for-max-docs
+To file bug reports or fork Scheme For Max, use the github repo: https://github.com/iainctduncan/scheme-for-max
 
-Video Overview here: https://youtu.be/ErirIFCTdjg
+To file tickets about errors or improvement suggestions for the docs, use the docs repo: https://github.com/iainctduncan/scheme-for-max-docs
 
 The S7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html
 
@@ -58,7 +65,7 @@ please join the scheme-for-max google group.
 https://groups.google.com/forum/#!forum/scheme-for-max
 
 ## Installation
-Binary packages are available for OSX and Windows (windows is brand new and may have issues)
+Binary packages are available for OSX and Windows 
 Download the Scheme-For-Max tar file from the Releases tab on Github,
 and untar it in your Max Packages directory. 
 
