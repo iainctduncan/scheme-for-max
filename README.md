@@ -36,7 +36,9 @@ many features with Clojure as well, and is easy to learn for anyone with Lisp ex
 
 ## Demo
 Video demos are available on the Music With Lisp youtube channel here:
-https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA
+https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA.  The overview (https://www.youtube.com/watch?v=ErirIFCTdjg) is a good place to start.
+
+There is also a small cookbook with some examples available here: https://github.com/iainctduncan/scheme-for-max-cookbook
 
 ## Download Releases
 Releases are posted here https://github.com/iainctduncan/scheme-for-max/releases
