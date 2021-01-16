@@ -40,6 +40,9 @@ https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA.  The overview (https:/
 
 There is also a small cookbook with some examples available here: https://github.com/iainctduncan/scheme-for-max-cookbook
 
+## Support Development
+If you enjoy Scheme for Max, please consider supporting development on my patreon account. Every bit helps me spend more time on Lisp music projects and less on regular work! There are no real perks though, all Scheme For Max releases, docs, and examples are free for everyone.
+
 ## Download Releases
 Releases are posted here https://github.com/iainctduncan/scheme-for-max/releases
 
