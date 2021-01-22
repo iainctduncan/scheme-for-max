@@ -2405,6 +2405,7 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
     }
     t_atom_long frames;
     frames = buffer_getframecount(buffer);
+    t_atom_long buffer_channels = buffer_getchannelcount(buffer);
     float *buffer_data = buffer_locksamples(buffer);
     buffer_size = (long) frames;
      
@@ -2417,7 +2418,9 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
     // create a new vector and copy from buffer (vector sizes itself dynamically)
     s7_pointer *new_vector = s7_make_vector(s7, count); 
     for(int i=0; i < count; i++){
-        int buff_index = ( (channel * (i + buffer_offset)) + (i + buffer_offset)); 
+
+        int index = i + buffer_offset;
+        int buff_index = ( (buffer_channels - 1) * index) + channel + index;
         s7_vector_set(s7, new_vector, i, s7_make_real(s7, (buffer_data)[ buff_index ] ) ); 
     }
     buffer_unlocksamples(buffer);
@@ -2425,10 +2428,10 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
     return new_vector;
 }    
 
-// scheme function to write (some) data from a vector into an existing table
+// scheme function to write (some) data from a vector into an existing buffer
 // (buffer-set-from-vector! buffer {opt-chan} {index} vector {opt-start} {opt-count}) 
 static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
-    // post("s7_table_set_from_vector()");
+    //post("s7_buffer_set_from_vector()");
     t_s4m *x = get_max_obj(s7);
     int buffer_channel = 0;
     long buffer_offset = 0;   // default target index is 0 unless overridden
@@ -2513,8 +2516,9 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "Could not retrieve buffer"));
     }
-    t_atom_long buffer_size;
-    buffer_size = buffer_getframecount(buffer);
+
+    t_atom_long buffer_size = buffer_getframecount(buffer);
+    t_atom_long buffer_channels = buffer_getchannelcount(buffer);
     float *buffer_data = buffer_locksamples(buffer);
 
     // if no count specified, count is set to as much of the vector as fits, given the buffer size and offset
@@ -2549,7 +2553,9 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
             return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7,
                "buffer-set-from-vector! : value is not an int or float, aborting")); 
         }
-        int buff_index = ( (buffer_channel * (i + buffer_offset)) + (i + buffer_offset)); 
+        // buffers are interleaved by channel
+        int index = i + buffer_offset;
+        int buff_index = ( (buffer_channels - 1) * index) + buffer_channel + index;
         //post("writing value %.5f to index: %i", buff_index, value);
         buffer_data[ buff_index ] = value;
         s7_vector_set(s7, s7_return_vector, i, source_value);
