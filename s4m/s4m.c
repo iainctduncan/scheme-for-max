@@ -1,6 +1,6 @@
 #include "ext.h"
-#include "ext_obex.h"						// required for new style Max object
-#include "ext_obex_util.h"						// required for new style Max object
+#include "ext_obex.h"                        // required for new style Max object
+#include "ext_obex_util.h"                        // required for new style Max object
 #include "math.h"
 #include "ext_common.h"
 #include "ext_buffer.h"
@@ -271,15 +271,15 @@ char *trim_symbol_quote(char *input){
 void ext_main(void *r){
     //post("s4m.c ext_main()");
     t_class *c;
-	common_symbols_init();
+    common_symbols_init();
 
     c = class_new("s4m", (method)s4m_new, (method)s4m_free,
          (long)sizeof(t_s4m), 0L /* leave NULL!! */, A_GIMME, 0);
 
     
-	class_addmethod(c, (method)s4m_reset, "reset", NULL, 0);
-	class_addmethod(c, (method)s4m_eval_string, "eval-string", A_DEFSYM, 0);
-	class_addmethod(c, (method)s4m_read, "read", A_DEFSYM, 0);
+    class_addmethod(c, (method)s4m_reset, "reset", NULL, 0);
+    class_addmethod(c, (method)s4m_eval_string, "eval-string", A_DEFSYM, 0);
+    class_addmethod(c, (method)s4m_read, "read", A_DEFSYM, 0);
     class_addmethod(c, (method)s4m_scan, "scan", NULL, 0);
     class_addmethod(c, (method)s4m_dblclick, "dblclick", A_CANT, 0);
     class_addmethod(c, (method)s4m_edclose, "edclose", A_CANT, 0);
@@ -346,10 +346,10 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
 
     x = (t_s4m *)object_alloc(s4m_class);
 
-	x->s7 = NULL;
-	x->source_file = NULL;
-	x->source_file_path_id = NULL;
-	x->source_file_handle = NULL;
+    x->s7 = NULL;
+    x->source_file = NULL;
+    x->source_file_path_id = NULL;
+    x->source_file_handle = NULL;
     x->source_text_handle = sysmem_newhandle(0);
     x->m_editor = NULL;
 
@@ -360,15 +360,15 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
 
     // init the singleton time and quant objects, note: they have no task set. 
     x->timeobj = (t_object *) time_new((t_object *)x, gensym("_delaytime"), NULL, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-	x->timeobj_quant = (t_object *) time_new((t_object *)x, gensym("_quantize"), NULL, TIME_FLAGS_TICKSONLY);
+    x->timeobj_quant = (t_object *) time_new((t_object *)x, gensym("_quantize"), NULL, TIME_FLAGS_TICKSONLY);
 
     // time object for the tick listen callback
-	x->time_listen_ticks = (t_object *) time_new((t_object *)x, gensym("_listen_ticks"), (method) s4m_itm_listen_ticks_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
-	x->time_listen_ticks_q = (t_object *) time_new((t_object *)x, gensym("_listen_ticks_q"), NULL, TIME_FLAGS_TICKSONLY );
+    x->time_listen_ticks = (t_object *) time_new((t_object *)x, gensym("_listen_ticks"), (method) s4m_itm_listen_ticks_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    x->time_listen_ticks_q = (t_object *) time_new((t_object *)x, gensym("_listen_ticks_q"), NULL, TIME_FLAGS_TICKSONLY );
     // time object for the itm_listen_ms function
-	x->time_listen_ms = (t_object *) time_new((t_object *)x, gensym("_listen_ms_t"), (method) s4m_itm_listen_ms_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    x->time_listen_ms = (t_object *) time_new((t_object *)x, gensym("_listen_ms_t"), (method) s4m_itm_listen_ms_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
     // clock object used for the listen_ms no transport function
-	x->clock_listen_ms = (t_object *) clock_new((t_object *)x, (method) s4m_listen_ms_cb); 
+    x->clock_listen_ms = (t_object *) clock_new((t_object *)x, (method) s4m_listen_ms_cb); 
 
     // setup internal member defaults 
     x->num_inlets = 1;
@@ -555,12 +555,12 @@ void s4m_reset(t_s4m *x){
     }
     // cancel all the member clocks and time objects
     time_stop(x->timeobj);  
-	time_stop(x->timeobj_quant); 
-	time_stop(x->time_listen_ticks); 
-	time_stop(x->time_listen_ticks_q); 
-	time_stop(x->time_listen_ms); 
+    time_stop(x->timeobj_quant); 
+    time_stop(x->time_listen_ticks); 
+    time_stop(x->time_listen_ticks_q); 
+    time_stop(x->time_listen_ms); 
     // clock object used for the listen_ms no transport function
-	clock_unset(x->clock_listen_ms);
+    clock_unset(x->clock_listen_ms);
 
     // cancel and free any clock in the clocks registry
     hashtab_funall(x->clocks, (method) s4m_cancel_clock_entry, x);
@@ -1640,7 +1640,7 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
         int vector_len = s7_vector_length(s7_obj);
         // make a new empty atom array
         t_atomarray *aa = NULL;
-		aa = atomarray_new(0, NULL);
+        aa = atomarray_new(0, NULL);
         for(int i=0; i < vector_len; i++){
             t_atom *ap = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
             s7_obj_to_max_atom(s7, s7_vector_ref(s7, s7_obj, i), ap);         
@@ -3812,7 +3812,7 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     }
     // get the itm obj (for now it's always going to be the global itm)
     t_itm *itm = time_getitm( x->timeobj );
-	double actual_delay_ticks = time_getticks( x->timeobj );
+    double actual_delay_ticks = time_getticks( x->timeobj );
     //post(" - actual_delay_ticks: %5.2f", actual_delay_ticks);
     // turn into ms
     double delay_ms = itm_tickstoms( itm, actual_delay_ticks );
@@ -3883,8 +3883,8 @@ static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args){
     }
     // get the tix and ms, determined from the associated itm, which is the global one by default
     // does *not* need a call to schedule to have appeared to work
-	double delay_ticks = time_getticks(x->timeobj);
-	double quant_ticks = time_getticks(x->timeobj_quant);
+    double delay_ticks = time_getticks(x->timeobj);
+    double quant_ticks = time_getticks(x->timeobj_quant);
     //post("delay_ticks: %5.2f quant_tick: %5.2f", delay_ticks, quant_ticks);
     // this gives us the time and quant values in ms, but not after the quantize calculation        
     

@@ -13,7 +13,6 @@
 ;; return a list of integers from start to finish (doesn't do skipping, yet)
 ;; not the best implementation, but will do for now
 (define (range start end)
-  (post "range" start end)
   (reverse 
     (let loop ((res (list start)))  
       (cond   
