@@ -18,8 +18,6 @@
       (cond   
         ((= (- end 1) (car res)) res)
         (else (loop (cons (+ 1 (car res)) res)))))))
-              
-
 
 (define (member? a lat)
   (cond
