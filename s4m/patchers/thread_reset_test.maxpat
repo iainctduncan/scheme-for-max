@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 34.0, 79.0, 739.0, 725.0 ],
+		"rect" : [ 1969.0, -1056.0, 858.0, 832.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -40,6 +40,42 @@
 		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
+					"fontsize" : 15.0,
+					"id" : "obj-24",
+					"maxclass" : "comment",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 215.0, 149.0, 52.0, 23.0 ],
+					"text" : "Fixed"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"fontsize" : 15.0,
+					"id" : "obj-15",
+					"maxclass" : "comment",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 342.5, 149.0, 52.0, 23.0 ],
+					"text" : "Fixed"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-23",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 236.5, 396.0, 33.0, 22.0 ],
+					"text" : "read"
+				}
+
+			}
+, 			{
+				"box" : 				{
 					"id" : "obj-21",
 					"maxclass" : "toggle",
 					"numinlets" : 1,
@@ -66,12 +102,12 @@
 				"box" : 				{
 					"fontsize" : 15.0,
 					"id" : "obj-20",
-					"linecount" : 6,
+					"linecount" : 5,
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 307.0, 396.0, 307.0, 107.0 ],
-					"text" : "Instructions: start the counter, turn on the gc metro, and either defer or non defer reads will crash it\n\nthe reset metro seems to be (mostly) ok when not defered, but will crash if defered"
+					"patching_rect" : [ 31.0, 34.0, 307.0, 90.0 ],
+					"text" : "Instructions: turn on the various metros and switch the g-gates. It should not crash.\n\n2021-03-14: can't make it crash anymore, seems fixed"
 				}
 
 			}
@@ -369,7 +405,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 31.0, 452.999999940395355, 249.0, 22.0 ],
+					"patching_rect" : [ 31.0, 452.999999940395355, 189.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"ins" : 1,
 						"log-null" : 0,
@@ -378,7 +414,7 @@
 						"thread" : 104
 					}
 ,
-					"text" : "s4m thread-reset-test-clocker.scm @thread h"
+					"text" : "s4m thread-reset-test-clocker.scm"
 				}
 
 			}
@@ -480,6 +516,13 @@
 				"patchline" : 				{
 					"destination" : [ "obj-3", 1 ],
 					"source" : [ "obj-22", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-37", 0 ],
+					"source" : [ "obj-23", 0 ]
 				}
 
 			}

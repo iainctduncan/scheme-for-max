@@ -324,8 +324,6 @@ void ext_main(void *r){
     class_time_addattr(c, "_listen_ticks", "Ticks per callback", TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK | TIME_FLAGS_TRANSPORT);
     CLASS_ATTR_ADD_FLAGS(c, "_listen_ticks", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
 
-
-
     // the below neither saves the attribute nor defaults it to on
     CLASS_ATTR_CHAR(c, "log-repl", 0, t_s4m, log_repl);
     CLASS_ATTR_DEFAULT_SAVE(c, "log-repl", 0, "1");
@@ -424,7 +422,7 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
         } 
         //post("s4m_new() source file: %s", x->source_file->s_name);
     }
-    post("init s7, @thread is: %c", x->thread);
+    //post("init s7, @thread is: %c", x->thread);
     s4m_init_s7(x);
 
     // set initialized flag, used to prevent some changes after object creation
@@ -553,6 +551,15 @@ void s4m_reset(t_s4m *x){
     if( proxy_getinlet((t_object *)x) != 0 ){
         return;
     }
+    // promote/defer to correct thread
+    bool in_isr = isr();
+    if( !in_isr && x->thread == 'h' ){ 
+      return schedule(x, (method)s4m_reset, 0, NULL, 0, NULL); 
+    }else if( in_isr && x->thread == 'l'){
+      return defer(x, (method)s4m_reset, NULL, 0, NULL);
+    }
+    // in correct thread
+
     // cancel all the member clocks and time objects
     time_stop(x->timeobj);  
     time_stop(x->timeobj_quant); 
@@ -568,7 +575,7 @@ void s4m_reset(t_s4m *x){
     hashtab_clear(x->clocks); 
     hashtab_clear(x->clocks_quant); 
 
-    // I think this can run in any thread as we wipe the interpreter anyway
+    // reset the interpreter
     s4m_init_s7(x);
     post("s4m re-initialized");
 }
@@ -720,19 +727,15 @@ t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     return 0;
 }
 
-// THREAD
-// the read method defers to a low priority method
-// 2021-03 - should not defer to low thread if in high thread
+// find a file on the max path, get its full path, and delegate to s4m_s7_load
 void s4m_read(t_s4m *x, t_symbol *s){
-    post("s4m_read()");
+    //post("s4m_read()");
     bool in_isr = isr();
     if( !in_isr && x->thread == 'h' ){ 
       return schedule(x, (method)s4m_read, 0, s, 0, NULL); 
     }else if( in_isr && x->thread == 'l'){
       return defer(x, (method)s4m_doread, s, 0, NULL);
     }
-
-    post("... in s4m_read in correct thread");
 
     t_fourcc filetype = 'TEXT', outtype;
     char filename[MAX_PATH_CHARS];
@@ -1061,8 +1064,6 @@ void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args){
 }
 
 // call s7_load, with error logging
-// THREAD: 2021-03 this should be able to stay as is
-// NB: obviously this can ONLY be called from the right thread for an s4m object, which is not currently happening
 void s4m_s7_load(t_s4m *x, char *full_path){
     // post("s4m_s7_load() %s", full_path);
     int gc_loc;

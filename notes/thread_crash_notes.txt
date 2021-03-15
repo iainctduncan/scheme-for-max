@@ -1,0 +1,26 @@
+Thread crash notes:
+
+Function docs:
+s4m_read( symbol )
+  - defers a message to doread, with the symbol arg
+
+static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args) - 1734
+  - just calls s4m_doread under the hood
+
+732: void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file, bool skip_s7_load)
+  - meant to handle all file reading
+  - does not defer or promote
+  - implementation notes:
+    - checks for symbol, or gets one with popup
+    - locates file, getting fullpath
+    - has special editor logic for if is_main_source_file
+    - loads file into scheme by calling s4m_s7_load
+
+
+1041: void s4m_s7_load(t_s4m *x, char *full_path)
+  - surrounds and calls the s7_load built in function
+  - which means this can definitely *only* be called from the correct threa
+
+2012-03-14:
+- fixed issues with read and reset, seems to be fine now
+- not sure if how doread works for main file should still be overhauled or not
