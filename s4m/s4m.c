@@ -424,7 +424,7 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
         } 
         //post("s4m_new() source file: %s", x->source_file->s_name);
     }
-    //post("init s7");
+    post("init s7, @thread is: %c", x->thread);
     s4m_init_s7(x);
 
     // set initialized flag, used to prevent some changes after object creation
@@ -720,10 +720,34 @@ t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     return 0;
 }
 
-
+// THREAD
 // the read method defers to a low priority method
+// 2021-03 - should not defer to low thread if in high thread
 void s4m_read(t_s4m *x, t_symbol *s){
-    defer(x, (method)s4m_doread, s, 0, NULL);
+    post("s4m_read()");
+    bool in_isr = isr();
+    if( !in_isr && x->thread == 'h' ){ 
+      return schedule(x, (method)s4m_read, 0, s, 0, NULL); 
+    }else if( in_isr && x->thread == 'l'){
+      return defer(x, (method)s4m_doread, s, 0, NULL);
+    }
+
+    post("... in s4m_read in correct thread");
+
+    t_fourcc filetype = 'TEXT', outtype;
+    char filename[MAX_PATH_CHARS];
+    short path_id;
+    // must copy symbol before calling locatefile_extended
+    strcpy(filename, s->s_name);        
+    if (locatefile_extended(filename, &path_id, &outtype, &filetype, 1)) {  // non-zero: not found
+        object_error((t_object *)x, "s4m: file '%s' not found", s->s_name);
+        return;
+    }
+    // we have a file and a path short, need to convert it to abs path for scheme load
+    char full_path[1024]; 
+    path_toabsolutesystempath(path_id, filename, full_path);
+    // now read into S7 using s4m_s7_load(fullpath), which in turn calls built in s7_load
+    s4m_s7_load(x, full_path);
 }
 
 // read function to either pass on a filename or open the file selector box
@@ -1037,6 +1061,8 @@ void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args){
 }
 
 // call s7_load, with error logging
+// THREAD: 2021-03 this should be able to stay as is
+// NB: obviously this can ONLY be called from the right thread for an s4m object, which is not currently happening
 void s4m_s7_load(t_s4m *x, char *full_path){
     // post("s4m_s7_load() %s", full_path);
     int gc_loc;
@@ -3732,14 +3758,17 @@ void s4m_clock_callback(void *arg){
 // called from scheme as (delay)
 static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     //post("s7_schedule_delay()");
+    t_s4m *x = get_max_obj(s7);
+    if(x->thread == 'l'){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "delay functions can currently only be called from @thread high s4m objects"));
+    }
     if(! isr() ){
         return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
             "delay can only be called from the high-priority scheduler thread. Is Overdrive enabled?"));
     }
 
     char *cb_handle_str;
-    t_s4m *x = get_max_obj(s7);
-
     // first arg is float of time in ms 
     double delay_time = s7_real( s7_car(args) );
     // second arg is the symbol from gensym
@@ -3775,10 +3804,18 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
 // itm version of schedule, allows sending time as either ticks (int/float), notation (sym) or bbu (sym)
 static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     //post("s7_schedule_delay_itm()");
+    t_s4m *x = get_max_obj(s7);
+    if(x->thread == 'l'){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "delay functions can currently only be called from @thread high s4m objects"));
+    }
+    if(! isr() ){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "delay can only be called from the high-priority scheduler thread. Is Overdrive enabled?"));
+    }
 
     double ms, tix;
     char *cb_handle_str;
-    t_s4m *x = get_max_obj(s7);
 
     // first arg is the delay time, int/float for ticks, symbol for note-length notation or bbu
     s7_pointer time_arg = s7_car(args);
@@ -3828,9 +3865,17 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
 // itm version of schedule, allows sending time as either ticks (int/float), notation (sym) or bbu (sym)
 static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args){
     //post("s7_schedule_delay_itm_quant()");
+    t_s4m *x = get_max_obj(s7);
+    if(x->thread == 'l'){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "delay functions can currently only be called from @thread high s4m objects"));
+    }
+    if(! isr() ){
+        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+            "delay can only be called from the high-priority scheduler thread. Is Overdrive enabled?"));
+    }
     double ms, tix, ms_q, tix_q;
     char *cb_handle_str;
-    t_s4m *x = get_max_obj(s7);
 
     // first arg is the delay time, int/float for ticks, symbol for note-length notation or bbu
     s7_pointer time_arg = s7_car(args);
