@@ -9,6 +9,8 @@ https://iainctduncan.github.io/learn-scheme-for-max/index.html
 
 **Documentation** lives here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
+**Demos and Tutorials** on YouTube Music With Lisp channel: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA
+
 ## About
 Scheme-For-Max provides two objects: s4m (the interpreter, formerly named s4m.scm) and s4m.repl (a REPL GUI patcher)
 
