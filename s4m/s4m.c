@@ -853,7 +853,7 @@ void s4m_post_s7_res(t_s4m *x, s7_pointer res) {
     // skip posting to console if filter-result returns the keyword :no-log
     // else we want the default logging
     char *log_out = s7_object_to_c_string(x->s7, res);
-    if(strcmp(log_out, ":no-log")){
+    if( strcmp(log_out, ":no-log") && log_out[0] != '{' ){
         post("s4m> %s", s7_object_to_c_string(x->s7, res) );
     }
 }
@@ -1056,8 +1056,8 @@ void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args){
         object_error((t_object *)x, "s4m Error: %s", msg);
         free(msg);
     }else{
-        if( (x->log_repl && x->log_null && s7_is_null(x->s7, res) ) ||
-            (x->log_repl && !s7_is_null(x->s7, res) ) ){
+        if( (x->log_repl && x->log_null && s7_is_null(x->s7, res)  ) ||
+            (x->log_repl && !s7_is_null(x->s7, res) && !s7_is_unspecified(x->s7, res)  ) ){
             s4m_post_s7_res(x, res);
         }
     }
