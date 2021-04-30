@@ -8,11 +8,9 @@ https://iainctduncan.github.io/s4m-stk/
 **2021-03-15**: I have released a free e-book on learning S7 Scheme and Scheme For Max, suitable for new and experienced programmers!
 https://iainctduncan.github.io/learn-scheme-for-max/index.html
 
-**2021-01-14**: 0.2.0-beta: This release adds significant new functionality, including table, buffer, and dict i/o, and realtime scheduling with transport integration.
+**Main Documentation** lives here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
-**Documentation** lives here: https://iainctduncan.github.io/scheme-for-max-docs/ 
-
-**Demos and Tutorials** on YouTube Music With Lisp channel: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA
+**Demos and Tutorial videeos** on YouTube Music With Lisp channel: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA
 
 ## About
 Scheme-For-Max provides two objects: s4m (the interpreter, formerly named s4m.scm) and s4m.repl (a REPL GUI patcher)
