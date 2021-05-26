@@ -66,7 +66,6 @@ typedef struct _s4m {
     bool initialized;                   // gets set to true after object initialization complete
     char log_repl;             // whether to post the return values of evaluating scheme functions
     char log_null;                // whether to post the return value of nil to the console
-    
 
 } t_s4m;
 
@@ -132,6 +131,7 @@ void s4m_make(t_s4m *x);
 
 void s4m_scan(t_s4m *x);
 long s4m_scan_iterator(t_s4m *x, t_object *b);
+static s7_pointer s7_scan(s7_scheme *s7, s7_pointer args);
 
 int s4m_table_read(t_s4m *x, char *table_name, long index, long *value);
 int s4m_table_write(t_s4m *x, char *table_name, int index, int value);
@@ -154,7 +154,6 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *ap);
 t_s4m *get_max_obj(s7_scheme *s7);
 static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_is_table(s7_scheme *s7, s7_pointer args);
@@ -422,12 +421,14 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
         } 
         //post("s4m_new() source file: %s", x->source_file->s_name);
     }
+    s4m_scan(x);
     //post("init s7, @thread is: %c", x->thread);
     s4m_init_s7(x);
 
     // set initialized flag, used to prevent some changes after object creation
     x->initialized = true;
- 
+
+    post("s4m initialized"); 
     return (x);
 }
 
@@ -442,6 +443,8 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "max-output", s7_max_output, 2, 0, false, "(max-output 1 99) sends value 99 out outlet 1");
     s7_define_function(x->s7, "max-post", s7_post, 1, 0, false, "send strings to the max log");
     s7_define_function(x->s7, "load-from-max", s7_load_from_max, 1, 0, false, "load files from the max path");
+
+    s7_define_function(x->s7, "scan", s7_scan, 0, 0, false, "call the patcher scan");
 
     // table i/o
     s7_define_function(x->s7, "table?", s7_is_table, 1, 0, false, "(table? table-name) returns true if table-name is a Max table");
@@ -575,6 +578,7 @@ void s4m_reset(t_s4m *x){
     hashtab_clear(x->clocks); 
     hashtab_clear(x->clocks_quant); 
 
+    s4m_scan(x);
     // reset the interpreter
     s4m_init_s7(x);
     post("s4m re-initialized");
@@ -656,7 +660,7 @@ long s4m_edsave(t_s4m *x, char **ht, long size){
 // traverse the patch, registering all objects that have a scripting name set
 // should be called again whenever scripting names change 
 void s4m_scan(t_s4m *x){
-    post("scanning patcher for varnames");
+    post("patcher scanned for varnames");
     long result = 0;
     t_max_err err = NULL;
     t_object *patcher;
@@ -681,6 +685,15 @@ long s4m_scan_iterator(t_s4m *x, t_object *b){
     }
     return 0;
 }
+
+// scheme function to call scan, just wraps call to s4m_scan
+static s7_pointer s7_scan(s7_scheme *s7, s7_pointer args){
+    post("s7_scan()");
+    t_s4m *x = get_max_obj(s7);
+    s4m_scan(x);
+    return s7_nil(s7); 
+}
+
 
 t_max_err s4m_inlets_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     //post("s4m_inlets_set()");
@@ -1518,6 +1531,7 @@ void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *arg
         // add the first message to the arg list (it's always a symbol)
         s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, s->s_name), s7_args); 
         // call the s7 eval function, sending in all args as an s7 list
+        //post("calling s4m-eval on s7_args: %s", s7_object_to_c_string(x->s7, s7_args));
         s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-eval"), s7_args);
     }
     // messages to non-zero inlets (handled by dispatch)
@@ -1777,6 +1791,7 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
 
 // function to send generic output out an outlet
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
+    //post("s7_max_output()");
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     int outlet_num = s7_integer( s7_car(args) );
     //post("s7_max_output, outlet: %i", outlet_num);
@@ -1794,6 +1809,7 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
     t_max_err *err;
 
     // whole bunch of branching based on output type
+    //post("  - s7_out_val: %s", s7_object_to_c_string(s7, s7_out_val));
 
     // bools and ints get converted to max int messages
     if( s7_is_integer(s7_out_val) || s7_is_boolean(s7_out_val) ){
@@ -1807,6 +1823,7 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
     }
     // symbols, keywords, chars, and strings all become Max symbols
     else if( s7_is_string(s7_out_val) || s7_is_symbol(s7_out_val) || s7_is_character(s7_out_val) ){
+        //post("s7_max_output, s7_out_val caught as symbol");
         // note that symbol catches keywords as well
         err = s7_obj_to_max_atom(s7, s7_out_val, &output_atom);
         outlet_anything( x->outlets[outlet_num], atom_getsym(&output_atom), 0, NULL);
