@@ -2,6 +2,10 @@
 ;; scheme functions ported from other implementations such as Racket, Clojure, R6RS, etc
 ;; Racket's dec and inc functions
 
+; save some parens
+(define (not-null? expr)
+  (not (null? expr)))
+
 ; return arg incremented by
 (define (inc arg)
   (+ 1 arg))

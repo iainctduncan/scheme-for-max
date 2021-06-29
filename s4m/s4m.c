@@ -64,7 +64,7 @@ typedef struct _s4m {
     t_object *test_obj; 
 
     bool initialized;                   // gets set to true after object initialization complete
-    char log_repl;             // whether to post the return values of evaluating scheme functions
+    char log_repl;                // whether to post the return values of evaluating scheme functions
     char log_null;                // whether to post the return value of nil to the console
 
 } t_s4m;
@@ -3797,7 +3797,7 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     // NB: the Max SDK docs say one should not be creating clocks outside of the main thread
     // Even under load testing this seems to be OK. But I could be wrong....
     // (btw, surrounding the clock_new code in a critical region crashes it)
-    // FUTURE: make a clock pool and allocate from that
+    // FUTURE: we could make a clock pool and allocate from that, but hasn't seemed necessary
     
     // dynmamically allocate memory for our struct that holds the symbol and the ref to the s4m obj
     // NB: this gets cleaned up by the receiver in the clock callback above
@@ -3987,10 +3987,6 @@ static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args){
     // return the handle on success
     return s7_make_symbol(s7, cb_handle_str);
 }
-
-
-
-
 
 /* End of schedule/itm related functions 
 ********************************************************************************/
