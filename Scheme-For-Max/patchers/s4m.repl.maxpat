@@ -4,13 +4,13 @@
 		"appversion" : 		{
 			"major" : 8,
 			"minor" : 1,
-			"revision" : 8,
+			"revision" : 11,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ -139.0, -778.0, 827.0, 744.0 ],
+		"rect" : [ -697.0, -931.0, 651.0, 558.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 1,
 		"default_fontsize" : 12.0,
@@ -411,7 +411,8 @@
 			}
 , 			{
 				"box" : 				{
-					"fontsize" : 12.0,
+					"fontname" : "Arial Bold",
+					"fontsize" : 14.0,
 					"id" : "obj-3",
 					"maxclass" : "textedit",
 					"numinlets" : 1,
@@ -419,9 +420,9 @@
 					"outlettype" : [ "", "int", "", "" ],
 					"outputmode" : 1,
 					"parameter_enable" : 0,
-					"patching_rect" : [ 76.5, 72.5, 470.0, 105.0 ],
+					"patching_rect" : [ 76.5, 72.5, 524.0, 105.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 4.5, 30.5, 476.625, 122.0 ],
+					"presentation_rect" : [ 4.5, 30.5, 537.0, 119.0 ],
 					"tabmode" : 0,
 					"varname" : "repl-box"
 				}
