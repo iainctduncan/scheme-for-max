@@ -56,6 +56,7 @@ typedef struct _s4m {
 
     t_object *time_listen_ms;            // time obj used for listen-ms-t (uses transport)
     t_object *clock_listen_ms;           // clock obj used for listen-ms (no attached transport)
+    t_object *clock_listen_ms_low;       // version of the above for use from low thread s4m instances
     double clock_listen_ms_interval;     // time in ms for the listen-ms clock  
     double clock_listen_ms_t_interval;   // time in ms for the listen-ms-t clock  
 
@@ -64,14 +65,15 @@ typedef struct _s4m {
     t_object *test_obj; 
 
     bool initialized;                   // gets set to true after object initialization complete
-    char log_repl;                // whether to post the return values of evaluating scheme functions
-    char log_null;                // whether to post the return value of nil to the console
+    char log_repl;                      // whether to post the return values of evaluating scheme functions
+    char log_null;                      // whether to post the return value of nil to the console
 
 } t_s4m;
 
 typedef struct _s4m_clock_callbacks {
    t_s4m obj;
-   t_symbol *handle; 
+   t_symbol *handle;
+   bool in_isr; 
 } t_s4m_clock_callback;
 
 
@@ -211,19 +213,24 @@ static s7_pointer s7_itm_bbu_to_ms(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_cancel_itm_listen_ticks(s7_scheme *s7, s7_pointer args);
 void s4m_itm_listen_ticks_cb(t_s4m *x);
+void s4m_itm_listen_ticks_cb_deferred(void *arg, t_symbol *s, int argc, t_atom *argv);
 
 static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args);
-void   s4m_itm_listen_ms_cb(t_s4m *x);
+void s4m_itm_listen_ms_cb(t_s4m *x);
+void s4m_deferred_itm_listen_ms_cb(void *x, t_symbol *s, int argc, t_atom *argv);
 
 static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_cancel_listen_ms(s7_scheme *s7, s7_pointer args);
-void   s4m_listen_ms_cb(t_s4m *x);
+void s4m_listen_ms_cb(t_s4m *x);
+void s4m_listen_ms_cb_low(t_s4m *x);
+void s4m_deferred_listen_ms_cb(void *x, t_symbol *s, int argc, t_atom *argv);
 
 static s7_pointer s7_isr(s7_scheme *s7, s7_pointer args);
 
 void s4m_cancel_clock_entry(t_hashtab_entry *e, void *arg);
 void s4m_clock_callback(void *arg);
+void s4m_deferred_clock_callback(void *arg, t_symbol *s, int argc, t_atom *argv);
 
 
 /********************************************************************************
@@ -364,8 +371,11 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     x->time_listen_ticks_q = (t_object *) time_new((t_object *)x, gensym("_listen_ticks_q"), NULL, TIME_FLAGS_TICKSONLY );
     // time object for the itm_listen_ms function
     x->time_listen_ms = (t_object *) time_new((t_object *)x, gensym("_listen_ms_t"), (method) s4m_itm_listen_ms_cb, TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK);
+    
     // clock object used for the listen_ms no transport function
     x->clock_listen_ms = (t_object *) clock_new((t_object *)x, (method) s4m_listen_ms_cb); 
+    // separate clock for the low priority thread to use
+    x->clock_listen_ms_low = (t_object *) clock_new((t_object *)x, (method) s4m_listen_ms_cb_low); 
 
     // setup internal member defaults 
     x->num_inlets = 1;
@@ -3588,14 +3598,10 @@ static s7_pointer s7_itm_set_ticks(s7_scheme *s7, s7_pointer args){
 * SECTION SCHEDULE Schedule, delay, and tempo related functions
 */
 
-// functions for (listen-ms) - run a callback every MS seconds
-// non-itm: runs regardless of transport, can be used to run once a scheduler pass
+// functions for (clock-ms) - run a callback every MS seconds
+// non-itm: runs regardless of transport state
 static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args){
     //post("s7_listen_ms");
-    if(! isr() ){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "listen-ms can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
-    }
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
 
@@ -3608,24 +3614,29 @@ static s7_pointer s7_listen_ms(s7_scheme *s7, s7_pointer args){
     }
     double time_ms = (double) s7_real( s7_time_ms );
     x->clock_listen_ms_interval = time_ms;
-    clock_fdelay(x->clock_listen_ms, x->clock_listen_ms_interval);
+    if( x->thread == 'l' ){
+        clock_fdelay(x->clock_listen_ms_low, x->clock_listen_ms_interval);
+    }else{
+        clock_fdelay(x->clock_listen_ms, x->clock_listen_ms_interval);
+    }
     // return nil
     return s7_nil(s7);
 }
-// cancel listen-ms callback 
+// cancel listen-ms  
 static s7_pointer s7_cancel_listen_ms(s7_scheme *s7, s7_pointer args){
     //post("s7_cancel_listen_ms()");
-    if(! isr() ){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "cancel-listen-ms can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
-    }
     t_s4m *x = get_max_obj(s7);
-    clock_unset(x->clock_listen_ms);
+    if( x->thread == 'l'){
+      clock_unset(x->clock_listen_ms_low);
+    }else{
+      clock_unset(x->clock_listen_ms);
+    }
     return s7_nil(s7);
 }
+
 // call back for the above
 void s4m_listen_ms_cb(t_s4m *x){
-    //post("s4m_listen_ms_cb");
+    // post("s4m_listen_ms_cb");
     // call into scheme to execute the scheme function registered under this handle
     s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ms-callback"), s7_nil(x->s7) );   
     // and schedule the next interation
@@ -3633,15 +3644,31 @@ void s4m_listen_ms_cb(t_s4m *x){
     clock_fdelay(x->clock_listen_ms, x->clock_listen_ms_interval);
 }
 
+// callback that runs when listen-ms is called from the and s4m low
+// this will always run in isr, but is safe as it never touches s7 and just defers
+void s4m_listen_ms_cb_low(t_s4m *x){
+    // post("s4m_listen_ms_cb_low");
+    // schedule the next interation (this is always running in the high thread)
+    clock_fdelay(x->clock_listen_ms_low, x->clock_listen_ms_interval);
+    // defer actual execution to the low thread callback for s7 access
+    defer((void *)x, (method)s4m_deferred_listen_ms_cb, NULL, 0, NULL);
+}
+
+// callback that runs from the defer call above
+void s4m_deferred_listen_ms_cb(void *arg, t_symbol *s, int argc, t_atom *argv){
+    // post("s4m_deferred_listen_ms_cb");
+    // call into scheme to execute the scheme function registered under this handle
+    t_s4m *x = (t_s4m *)arg;
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ms-callback"), s7_nil(x->s7) );   
+}
+
+
+// ITM versions of the above, which only run if the transport is running
 
 // ask to start listening to an itm tick callback
-// used in (listen-ticks)
+// used by (clock-ticks)
 static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
-    //post("s7_itm_listen_ticks");
-    if(! isr() ){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "listen-ticks can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
-    }
+    // post("s7_itm_listen_ticks");
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
 
@@ -3659,6 +3686,7 @@ static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
     atom_setfloat(&a, num_ticks);
     time_setvalue(x->time_listen_ticks, NULL, 1, &a);
     time_setvalue(x->time_listen_ticks_q, NULL, 1, &a);
+    // schedule it, cb is set to s4m_itm_listen_ticks_cb in s4m_new
     time_schedule(x->time_listen_ticks, x->time_listen_ticks_q);
     // return nil
     return s7_nil(s7);
@@ -3666,11 +3694,7 @@ static s7_pointer s7_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
 
 // cancel tick listening 
 static s7_pointer s7_cancel_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
-    //post("s7_itm_cancel_listen_ticks");
-    if(! isr() ){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "cancel-listen-ticks can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
-    }
+    // post("s7_itm_cancel_listen_ticks");
     t_s4m *x = get_max_obj(s7);
     time_stop(x->time_listen_ticks);
     return s7_nil(s7);
@@ -3678,30 +3702,48 @@ static s7_pointer s7_cancel_itm_listen_ticks(s7_scheme *s7, s7_pointer args){
 
 // call back for the above, sends ticks as arg to scheme
 void s4m_itm_listen_ticks_cb(t_s4m *x){
-    //post("s4m_itm_listen_ticks_cb");
+    // post("s4m_itm_listen_ticks_cb. isr: %i", isr() );
     t_itm *itm = itm_getglobal();
     itm_reference(itm);
     double curr_ticks = itm_getticks(itm);
     itm_dereference(itm);
-    // call into scheme to execute the scheme function registered under this handle
-    // pass current tick number of global transport as arg
-    s7_pointer *s7_args = s7_nil(x->s7);
-    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, curr_ticks), s7_args); 
-    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ticks-callback"), s7_args);   
+    if( x->thread == 'h' ){
+        // call into scheme to execute the scheme function registered under this handle
+        // pass current tick number of global transport as arg
+        s7_pointer *s7_args = s7_nil(x->s7);
+        s7_args = s7_cons(x->s7, s7_make_integer(x->s7, curr_ticks), s7_args); 
+        s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ticks-callback"), s7_args);   
+    }else{
+        //post(" deferring...");
+        t_atom *ap = (t_atom *) sysmem_newptr( sizeof( t_atom ) );
+        atom_setfloat(ap, curr_ticks);
+        defer( (void *)x, (method)s4m_itm_listen_ticks_cb_deferred, NULL, 1, ap);
+    }
     // and schedule next tick
     // NB: values for the ticker and quant are only set by calls to listen
     time_schedule(x->time_listen_ticks, x->time_listen_ticks_q);
 }
 
-// (listen-ms-t) ms based timer but dependant on transport  
+void s4m_itm_listen_ticks_cb_deferred(void *arg, t_symbol *s, int argc, t_atom *argv){
+    //post("s4m_itm_listen_ticks_cb_deferred. isr: %i", isr() );
+    t_s4m *x = (t_s4m *)arg;
+    double curr_ticks = atom_getfloat(argv);
+    sysmem_freeptr(argv); 
+
+    s7_pointer *s7_args = s7_nil(x->s7);
+    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, curr_ticks), s7_args); 
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-listen-ticks-callback"), s7_args);   
+}
+
+// (clock-ms-t) ms based timer but dependant on transport  
 // has some special logic to set the first callback to go at time zero
 // because presumably when you hit play, you want the first one firing 
 static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
-    // post("s7_itm_listen_ms");
-    if(! isr() ){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "listen-ms-t can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
-    }
+    //post("s7_itm_listen_ms");
+    //if(! isr() ){
+    //    return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
+    //        "listen-ms-t can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
+    //}
     t_s4m *x = get_max_obj(s7);
     char err_msg[128]; 
     // get number of ms as a double
@@ -3733,33 +3775,82 @@ static s7_pointer s7_itm_listen_ms(s7_scheme *s7, s7_pointer args){
 }
 // call back for the above
 void s4m_itm_listen_ms_cb(t_s4m *x){
-    //post("s4m_itm_listen_ms_cb");
-    // call into scheme to execute the scheme function registered under this handle
-    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-itm-listen-ms-callback"), s7_nil(x->s7));   
-    // and schedule next tick
+    //post("s4m_itm_listen_ms_cb, in isr: %i", isr());
+    // schedule next tick
     time_schedule(x->time_listen_ms, NULL);
+    
+    if( x->thread == 'h' ){
+        // call into scheme to execute the scheme function registered under this handle
+        s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-itm-listen-ms-callback"), s7_nil(x->s7));   
+    }else{
+        defer( (void *)x, (method)s4m_deferred_itm_listen_ms_cb, NULL, 0, NULL);
+    }
 }
+// deferred version of the above
+void s4m_deferred_itm_listen_ms_cb(void *arg, t_symbol *s, int argc, t_atom *argv){
+    t_s4m *x = (t_s4m *)arg;
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-exec-itm-listen-ms-callback"), s7_nil(x->s7));   
+}
+
 // cancel time listen 
 static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args){
-    // post("s7_cancel_itm_listen_ms()");
-    if(! isr() ){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "cancel-listen-ms-t can only be called from the high-priority scheduler thread, is Overdrive enabled?"));
-    }
+    //post("s7_cancel_itm_listen_ms()");
     t_s4m *x = get_max_obj(s7);
     time_stop(x->time_listen_ms);
     return s7_nil(s7);
 }
+// end of timer based clocking methods
+
+
+// one-off delay stuff below
 
 // generic clock callback, this fires after being scheduled with clock_fdelay 
 // gets access to the handle and s4m obj through the clock_callback struct that it 
 // as a a void pointer to a struct with the the s4m object and the cb handle 
+// Note: this will *always* be in the high thread, so for s4m low instances, we need to 
+// defer before accessing anything s7 related 
 void s4m_clock_callback(void *arg){
-    //post("clock_callback()");
+    //post("s4m_clock_callback()");
     t_s4m_clock_callback *ccb = (t_s4m_clock_callback *) arg;
     t_s4m *x = &(ccb->obj);
     t_symbol handle = *ccb->handle; 
     //post(" - handle %s", handle);
+    //post(" - originated in isr: %i", ccb->in_isr);
+    //post("  - x->thread: %c", x->thread);
+
+    // if the scheduling orginated in a low thread, we need to defer and abort
+    if( x->thread == 'l'){
+        //post("calling defer..");
+        // this will be at the front of the low priority queue
+        defer( (void *)arg, (method)s4m_deferred_clock_callback, NULL, 0, NULL); 
+        return;
+    }
+    // call into scheme with the handle, where scheme will call the registered delayed function
+    s7_pointer *s7_args = s7_nil(x->s7);
+    s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, handle.s_name), s7_args); 
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-execute-callback"), s7_args);   
+    
+    // clean up the clock_callback info struct that was dynamically allocated when this was scheduled:
+    // remove the clock(s) from the clock (and quant) registry and free the cb struct
+    hashtab_delete(x->clocks, &handle);
+    hashtab_delete(x->clocks_quant, &handle);
+    // free the memory for the clock callback struct 
+    sysmem_freeptr(arg);
+}
+
+// version of the above for calling from defer. 
+// really only exists to meet the signature requirements of defer
+// this will only run in an s4m low instance after a delay callback is deferred
+void s4m_deferred_clock_callback(void *arg, t_symbol *s, int argc, t_atom *argv){
+    //post("s4m_deferred_clock_callback()");
+    t_s4m_clock_callback *ccb = (t_s4m_clock_callback *) arg;
+    t_s4m *x = &(ccb->obj);
+    t_symbol handle = *ccb->handle; 
+    //post(" - handle %s", handle);
+    //post(" - originated in isr: %i", ccb->in_isr);
+    //post(" - x->thread: %c", x->thread);
+    //post(" - in_isr: %i", isr());
+
     // call into scheme with the handle, where scheme will call the registered delayed function
     s7_pointer *s7_args = s7_nil(x->s7);
     s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, handle.s_name), s7_args); 
@@ -3777,15 +3868,6 @@ void s4m_clock_callback(void *arg){
 static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     //post("s7_schedule_delay()");
     t_s4m *x = get_max_obj(s7);
-    if(x->thread == 'l'){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "delay functions can currently only be called from @thread high s4m objects"));
-    }
-    if(! isr() ){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "delay can only be called from the high-priority scheduler thread. Is Overdrive enabled?"));
-    }
-
     char *cb_handle_str;
     // first arg is float of time in ms 
     double delay_time = s7_real( s7_car(args) );
@@ -3795,7 +3877,7 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     //post("s7_schedule_delay() time: %5.2f handle: '%s'", delay_time, cb_handle_str);
 
     // NB: the Max SDK docs say one should not be creating clocks outside of the main thread
-    // Even under load testing this seems to be OK. But I could be wrong....
+    // Even under load testing, doing this anyway appears fine.
     // (btw, surrounding the clock_new code in a critical region crashes it)
     // FUTURE: we could make a clock pool and allocate from that, but hasn't seemed necessary
     
@@ -3804,6 +3886,9 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
     t_s4m_clock_callback *clock_cb_info = (t_s4m_clock_callback *)sysmem_newptr(sizeof(t_s4m_clock_callback));
     clock_cb_info->obj = *x;
     clock_cb_info->handle = gensym(cb_handle_str);
+    // add indicator of which thread we were in
+    clock_cb_info->in_isr = (x->thread == 'l' ? false : true);
+
     // make a clock, setting our callback info struct as the owner, as void pointer
     // when the callback method fires, it will retrieve this pointer as an arg 
     // and use it to get the handle for calling into scheme  
@@ -3823,15 +3908,6 @@ static s7_pointer s7_schedule_delay(s7_scheme *s7, s7_pointer args){
 static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
     //post("s7_schedule_delay_itm()");
     t_s4m *x = get_max_obj(s7);
-    if(x->thread == 'l'){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "delay functions can currently only be called from @thread high s4m objects"));
-    }
-    if(! isr() ){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "delay can only be called from the high-priority scheduler thread. Is Overdrive enabled?"));
-    }
-
     double ms, tix;
     char *cb_handle_str;
 
@@ -3884,14 +3960,6 @@ static s7_pointer s7_schedule_delay_itm(s7_scheme *s7, s7_pointer args){
 static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args){
     //post("s7_schedule_delay_itm_quant()");
     t_s4m *x = get_max_obj(s7);
-    if(x->thread == 'l'){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "delay functions can currently only be called from @thread high s4m objects"));
-    }
-    if(! isr() ){
-        return s7_error(s7, s7_make_symbol(s7, "thread-error"), s7_make_string(s7, 
-            "delay can only be called from the high-priority scheduler thread. Is Overdrive enabled?"));
-    }
     double ms, tix, ms_q, tix_q;
     char *cb_handle_str;
 
