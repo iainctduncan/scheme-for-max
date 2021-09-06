@@ -1,0 +1,6 @@
+Notes on running one liners as expr in the s4m box
+
+- will need an sexpr version of the dispatcher
+
+- working for ints and floats, but not for lists, dispatcher needs overhaul
+- shelving this for now in a branch, more complex than I though
