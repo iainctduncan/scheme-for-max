@@ -67,21 +67,34 @@
 (define f-list (lambda args (post "Error: no f-list function defined for list messages")))
 
 
+; temp code for s4m-expr, will get moved to the c handler
+; we only need one for each inlet in the s4m-expr (the inX)
+;(define in1 #f)
+;(define in2 #f)
+;(define in3 #f)
+;(define in4 #f)
+;(define in5 #f)
+;(define in6 #f)
+;(define in6 #f)
+;(define in7 #f)
+
+
 ;; the listeners registry is a nested hash-table of inlet number and listen keyword/symbol 
 (define s4m-listeners (make-hash-table))
 
 ;; the listen function, used to register listeners for inlet > 0
 (define (listen inlet keyword fun)
-   ;; (post "adding listener on inlet " inlet " with keyword " keyword) 
-   ;; create nested hash at key {inlet-num} if not there already
-   (if (not (s4m-listeners inlet)) 
-       (set! (s4m-listeners inlet) (make-hash-table)))
-   (set! ((s4m-listeners inlet) keyword) fun))
+  ;; (post "adding listener on inlet " inlet " with keyword " keyword) 
+  ;; create nested hash at key {inlet-num} if not there already
+  (if (not (s4m-listeners inlet)) 
+    (set! (s4m-listeners inlet) (make-hash-table)))
+  (set! ((s4m-listeners inlet) keyword) fun))
 
 ;; dispatch is called from C, and is passed a list of:
 ;; ({inlet} {keyword} .. args...)
 (define s4m-dispatch
   (lambda args
+    (post "s4m-dispatch" args)
     (letrec* ( (inlet (car args))
                (keyword (cadr args))
                (func-args (cddr args)) 
