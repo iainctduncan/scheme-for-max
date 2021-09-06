@@ -1,0 +1,8 @@
+Notes on getting clocks going in the low thread
+
+To Try:
+- can I make high priorty clocks, but then have them call defer on the function when
+  they wake up, so that the code executing in the scheduler is thread safe??
+
+Implementation notes:
+- add a thread flag to the clock callback I think
