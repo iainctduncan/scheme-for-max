@@ -60,7 +60,6 @@ typedef struct _s4m {
     double clock_listen_ms_t_interval;   // time in ms for the listen-ms-t clock  
 
     t_object *m_editor;                  // text editor
-     
     t_object *test_obj; 
 
     bool initialized;                   // gets set to true after object initialization complete
@@ -90,6 +89,7 @@ t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
 
 // helpers to do s7 calls with error loggging
 void s4m_post_s7_res(t_s4m *x, s7_pointer res);
+void s4m_s7_eval_c_string(t_s4m *x, char *code_str);
 void s4m_s7_eval_string(t_s4m *x, t_symbol *s);
 void s4m_s7_load(t_s4m *x, char *full_path);
 void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args);
@@ -372,6 +372,7 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     x->num_outlets = 1;
     x->thread = 'h';
 
+
     // process @ args, which will possibly override the above
     attr_args_process(x, argc, argv);
 
@@ -610,7 +611,36 @@ void s4m_make(t_s4m *x){
     //    object_error((t_object *)x, "s4m: (send) error sending message");
     //}
     post("did we get a new table named foobar?");
+}
 
+void s4m_eval_atoms_as_string(t_s4m *x, t_symbol *sym, long argc, t_atom *argv){
+    //post("s4m_eval_atoms_as_string");
+    char *token_1 = sym->s_name;
+    int token_1_size = strlen(token_1);
+    long size = 0;
+    char *atoms_as_text = NULL;
+
+    t_max_err err = atom_gettext(argc, argv, &size, &atoms_as_text, OBEX_UTIL_ATOM_GETTEXT_DEFAULT);
+    if (err == MAX_ERR_NONE && size && atoms_as_text) {
+        int code_str_size = token_1_size + size + 1;
+        char *code_str = (char *)sysmem_newptr( sizeof( char ) * code_str_size);
+        sprintf(code_str, "%s %s", token_1, atoms_as_text);
+        // now we have code, but we need to clean up Max escape chars
+        char *code_str_clean = (char *)sysmem_newptr( sizeof( char ) * code_str_size);
+        for(int i=0, j=0; i < code_str_size; i++, j++){
+            if(code_str[j] == '\\') code_str_clean[i] = code_str[++j];
+            else code_str_clean[i] = code_str[j];
+        }
+        // call s4m
+        s4m_s7_eval_c_string(x, code_str_clean);
+        sysmem_freeptr(code_str);
+        sysmem_freeptr(code_str_clean);
+    }else{
+       object_error((t_object *)x, "s4m: Error parsing input");
+    }
+    if (atoms_as_text) {
+        sysmem_freeptr(atoms_as_text);
+    }
 }
 
 void s4m_dblclick(t_s4m *x){
@@ -1103,13 +1133,9 @@ void s4m_s7_load(t_s4m *x, char *full_path){
     }
 }
 
-// eval string  with error logging
-void s4m_s7_eval_string(t_s4m *x, t_symbol *s){
-    //post("s4m_s7_eval_string()");
-
-    // convert max symbol to char string
-    char *string_to_eval = s->s_name; 
-
+// eval from c string with error logging
+void s4m_s7_eval_c_string(t_s4m *x, char *code_str){
+    //post("s4m_s7_eval_c_string()");
     int gc_loc;
     s7_pointer old_port;
     const char *errmsg = NULL;
@@ -1117,7 +1143,7 @@ void s4m_s7_eval_string(t_s4m *x, t_symbol *s){
     old_port = s7_set_current_error_port(x->s7, s7_open_output_string(x->s7));
     gc_loc = s7_gc_protect(x->s7, old_port);
     //post("calling s7_eval_c_string");
-    s7_pointer res = s7_eval_c_string(x->s7, string_to_eval);
+    s7_pointer res = s7_eval_c_string(x->s7, code_str);
     errmsg = s7_get_output_string(x->s7, s7_current_error_port(x->s7));
     if ((errmsg) && (*errmsg)){
         msg = (char *)calloc(strlen(errmsg) + 1, sizeof(char));
@@ -1137,6 +1163,13 @@ void s4m_s7_eval_string(t_s4m *x, t_symbol *s){
     }
 }
 
+// eval string  with error logging
+void s4m_s7_eval_string(t_s4m *x, t_symbol *s){
+    //post("s4m_s7_eval_string()");
+    // convert max symbol to char string
+    char *string_to_eval = s->s_name; 
+    s4m_s7_eval_c_string(x, string_to_eval);
+}
 
 void s4m_callback_bang(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     //post("s4m_callback_bang()");
@@ -1517,6 +1550,14 @@ void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
 void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv){
     //post("s4m_handle_msg(): inlet_num: %i arguments: %ld isr: %i", inlet_num, argc, isr());
     t_atom *ap;
+
+
+    // IN PROGRESS
+    if(inlet_num == 0 && s->s_name[0] == '('){
+      //post("caught raw code, first sym: %s", s->s_name);
+      s4m_eval_atoms_as_string(x, s, argc, argv);
+      return;
+    }
 
     // treat input to inlet 0 as a list of atoms that should be evaluated as a scheme expression
     // as if the list were encloded in parens
