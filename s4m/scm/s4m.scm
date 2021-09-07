@@ -94,7 +94,6 @@
 ;; ({inlet} {keyword} .. args...)
 (define s4m-dispatch
   (lambda args
-    (post "s4m-dispatch" args)
     (letrec* ( (inlet (car args))
                (keyword (cadr args))
                (func-args (cddr args)) 
