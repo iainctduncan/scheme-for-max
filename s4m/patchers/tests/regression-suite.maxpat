@@ -4,13 +4,13 @@
 		"appversion" : 		{
 			"major" : 8,
 			"minor" : 1,
-			"revision" : 8,
+			"revision" : 11,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ -301.0, -1001.0, 1205.0, 964.0 ],
+		"rect" : [ 34.0, 79.0, 1205.0, 964.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 1,
 		"default_fontsize" : 12.0,
@@ -43,15 +43,15 @@
 					"fontface" : 1,
 					"fontsize" : 14.0,
 					"id" : "obj-116",
-					"linecount" : 17,
+					"linecount" : 22,
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 343.0, 40.0, 182.0, 288.0 ],
+					"patching_rect" : [ 343.0, 40.0, 185.0, 366.0 ],
 					"presentation" : 1,
-					"presentation_linecount" : 5,
-					"presentation_rect" : [ 344.0, 25.5, 760.0, 100.0 ],
-					"text" : "NOTES:\n- some of these take a while, it's not done until there is no more log output in the console (i.e. tests-listen)\n- Overdrive must be enabled or some will fail\n- Sometimes you get false failures if your machine just doesn't get through them all in time, try running each\n  sub-suite individually, or just retrying. If they all pass sometimes, we're good.\n"
+					"presentation_linecount" : 6,
+					"presentation_rect" : [ 344.0, 25.5, 760.0, 116.0 ],
+					"text" : "NOTES:\n- some of these take a while, it's not done until there is no more log output in the console (i.e. tests-listen)\n- Overdrive must be enabled or some will fail\n- Sometimes you get false failures if your machine just doesn't get through them all in time, try running each\n  sub-suite individually, or just retrying. If they all pass sometimes, we're good.\n- there is patch for the low priority thread delays, tests-delay-low, that should be opened and run separately\n"
 				}
 
 			}
@@ -945,7 +945,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 354.5, 703.0, 24.0, 24.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 144.0, 563.5, 24.0, 24.0 ]
+					"presentation_rect" : [ 30.0, 559.5, 24.0, 24.0 ]
 				}
 
 			}
@@ -1009,7 +1009,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 349.5, 864.5, 31.0, 31.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 144.0, 613.0, 31.0, 31.0 ],
+					"presentation_rect" : [ 30.0, 609.0, 31.0, 31.0 ],
 					"style" : "chiba",
 					"uncheckedcolor" : [ 0.811764705882353, 0.035294117647059, 0.035294117647059, 1.0 ]
 				}
@@ -1024,7 +1024,7 @@
 					"outlettype" : [ "int" ],
 					"patching_rect" : [ 349.5, 836.5, 77.0, 22.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 144.0, 589.5, 87.0, 22.0 ],
+					"presentation_rect" : [ 30.0, 585.5, 87.0, 22.0 ],
 					"text" : "tests-table-io"
 				}
 
@@ -1063,7 +1063,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 193.5, 703.0, 24.0, 24.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 25.0, 563.5, 24.0, 24.0 ]
+					"presentation_rect" : [ 416.0, 424.5, 24.0, 24.0 ]
 				}
 
 			}
@@ -1127,7 +1127,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 188.5, 864.5, 31.0, 31.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 25.0, 613.0, 31.0, 31.0 ],
+					"presentation_rect" : [ 416.0, 474.0, 31.0, 31.0 ],
 					"style" : "chiba",
 					"uncheckedcolor" : [ 0.811764705882353, 0.035294117647059, 0.035294117647059, 1.0 ]
 				}
@@ -1142,7 +1142,7 @@
 					"outlettype" : [ "int" ],
 					"patching_rect" : [ 188.5, 836.5, 82.0, 22.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 25.0, 589.5, 85.0, 22.0 ],
+					"presentation_rect" : [ 416.0, 450.5, 85.0, 22.0 ],
 					"text" : "tests-buffer-io"
 				}
 
@@ -1205,7 +1205,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 356.5, 939.0, 24.0, 24.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 458.0, 563.5, 24.0, 24.0 ]
+					"presentation_rect" : [ 344.0, 559.5, 24.0, 24.0 ]
 				}
 
 			}
@@ -1256,7 +1256,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 31.5, 944.0, 24.0, 24.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 259.0, 563.5, 24.0, 24.0 ]
+					"presentation_rect" : [ 145.0, 559.5, 24.0, 24.0 ]
 				}
 
 			}
@@ -1307,7 +1307,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 181.5, 944.0, 24.0, 24.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 348.0, 563.5, 24.0, 24.0 ]
+					"presentation_rect" : [ 234.0, 559.5, 24.0, 24.0 ]
 				}
 
 			}
@@ -1359,7 +1359,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 360.5, 1110.0, 31.0, 31.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 458.0, 616.5, 31.0, 31.0 ],
+					"presentation_rect" : [ 344.0, 612.5, 31.0, 31.0 ],
 					"style" : "chiba",
 					"uncheckedcolor" : [ 0.811764705882353, 0.035294117647059, 0.035294117647059, 1.0 ]
 				}
@@ -1375,7 +1375,7 @@
 					"outlettype" : [ "int" ],
 					"patching_rect" : [ 360.5, 1082.0, 66.0, 35.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 458.0, 589.5, 71.0, 22.0 ],
+					"presentation_rect" : [ 344.0, 585.5, 71.0, 22.0 ],
 					"text" : "tests-clocks"
 				}
 
@@ -1415,7 +1415,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 193.5, 1105.5, 31.0, 31.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 348.0, 616.5, 31.0, 31.0 ],
+					"presentation_rect" : [ 234.0, 612.5, 31.0, 31.0 ],
 					"style" : "chiba",
 					"uncheckedcolor" : [ 0.811764705882353, 0.035294117647059, 0.035294117647059, 1.0 ]
 				}
@@ -1442,7 +1442,7 @@
 					"outlettype" : [ "int" ],
 					"patching_rect" : [ 193.5, 1077.5, 85.0, 22.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 348.0, 589.5, 85.0, 22.0 ],
+					"presentation_rect" : [ 234.0, 585.5, 85.0, 22.0 ],
 					"text" : "tests-transport"
 				}
 
@@ -1519,7 +1519,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 26.5, 1105.5, 31.0, 31.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 259.0, 616.5, 31.0, 31.0 ],
+					"presentation_rect" : [ 145.0, 612.5, 31.0, 31.0 ],
 					"style" : "chiba",
 					"uncheckedcolor" : [ 0.811764705882353, 0.035294117647059, 0.035294117647059, 1.0 ]
 				}
@@ -1549,7 +1549,7 @@
 					"outlettype" : [ "int" ],
 					"patching_rect" : [ 26.5, 1077.5, 67.0, 22.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 259.0, 589.5, 67.0, 22.0 ],
+					"presentation_rect" : [ 145.0, 585.5, 67.0, 22.0 ],
 					"text" : "tests-delay"
 				}
 
@@ -2268,91 +2268,91 @@
  ],
 		"dependency_cache" : [ 			{
 				"name" : "tests-delay.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "tests-transport.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "s4m.repl.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/Scheme-For-Max/patchers",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/Scheme-For-Max/patchers",
 				"patcherrelativepath" : "../../../Scheme-For-Max/patchers",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "tests-clocks.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "tests-buffer-io.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "tests-table-io.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "tests-thread.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "tests-input-in-0.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "tests-input-in-1.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "tests-basic-output.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "tests-read.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "tests-scan-send.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
 			}
 , 			{
 				"name" : "tests-dict.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/s4m/patchers/tests",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/s4m/patchers/tests",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
