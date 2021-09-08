@@ -6,6 +6,9 @@
 (define (not-null? expr)
   (not (null? expr)))
 
+(define (not-eq? a b)
+  (not (eq? a b)))
+
 ; return arg incremented by
 (define (inc arg)
   (+ 1 arg))
@@ -57,6 +60,29 @@
 (define (hash-table-values ht)
   (map (lambda (pair) (cdr pair)) ht))
 
+;; Thread Macro, Jon
+(define-macro (~> object . functions)
+  (let ((hole :$))
+    (define (plug-hole expression cork)
+      (let iter ((expression expression))
+        (cond
+         ((null? expression) expression)
+         ((eq? hole (car expression)) (cons cork
+                                            (iter (cdr expression))))
+         (else
+          (cons (car expression) (iter (cdr expression)))))))
+    (let thread-transform-loop
+        ((needle object)
+         (fns functions))
+      (if (null? fns)
+          needle
+          (append (thread-transform-loop (plug-hole (car fns) needle)
+                                         (cdr fns)))))))
+
+
+(define (string->sexp text)
+  "convert a string of an sexp to an sexp"
+  (read (open-input-string text)))
 
 ;; test code for the dict getter
 ;; leaving for reference

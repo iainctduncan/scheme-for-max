@@ -1,11 +1,13 @@
-(post :hello)
+(run-expr (post %1 %2 %3) (list 11 22 33))
 
-(delay 1000 (lambda()(post "Delay firing, in isr:" (isr?))))
-(clock-ms 10
-  (lambda()(post "listen callback, in isr:" (isr?))))
-(cancel-clock-ms)
+(s4m-run-expr "(+ %1 %2 %3)")
+(s4m-run-expr "(+ 9 %1 %2 %3)")
 
+(s4m-run-expr "(post (+ 1 (+ %1 %2 %3)))")
 
-(clock-ticks 480
-  (lambda(tick)(post "clock-ticks callback, tick:" tick " in isr:" (isr?))))
-(cancel-clock-ticks)
+(for-each 
+  (lambda(t)(post "token" t "is sequence:" (sequence? t)))
+  (string->sexp "(+ 1 (+ %1 %2 %3))"))
+
+(list? (s4m-expr-inputs 2))
+(s4m-expr-inputs 1)

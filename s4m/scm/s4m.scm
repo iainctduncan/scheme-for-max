@@ -66,19 +66,6 @@
 (define (f-float arg) (post "Error: no f-float function defined for float messages"))
 (define f-list (lambda args (post "Error: no f-list function defined for list messages")))
 
-
-; temp code for s4m-expr, will get moved to the c handler
-; we only need one for each inlet in the s4m-expr (the inX)
-;(define in1 #f)
-;(define in2 #f)
-;(define in3 #f)
-;(define in4 #f)
-;(define in5 #f)
-;(define in6 #f)
-;(define in6 #f)
-;(define in7 #f)
-
-
 ;; the listeners registry is a nested hash-table of inlet number and listen keyword/symbol 
 (define s4m-listeners (make-hash-table))
 
@@ -114,6 +101,59 @@
   (lambda args
     ;(post "s4m-eval :" args)
     (eval args (rootlet))))
+
+;********************************************************************************
+;; code for processing input expressions from the s4m box 
+; temp code for s4m-expr, will get moved to the c handler
+; we only need one for each inlet in the s4m-expr (the inX)
+(define s4m-expr-inputs #f)
+(define s4m-expr-num-inputs #f)
+(define s4m-expr-code-str #f)
+
+(define (s4m-expr-init num_ins expr_str)
+  (post "s4m-expr-init, num_ins:" num_ins "expr: " expr_str)
+  ; make one extra in size so can just use inlet number for indexing
+  (set! s4m-expr-inputs (make-vector (inc num_ins) #f))
+  (set! s4m-expr-num-inputs num_ins)
+  (set! s4m-expr-code-str expr_str)
+)
+
+; recursive iterator for processing an sexp for %X args
+(define (s4m-process-sexp sexp)
+  (map
+    (lambda(token)
+      (cond 
+        ((and (symbol? token) (eq? ((symbol->string token) 0) #\%))
+          `(s4m-expr-inputs ,(string->number (substring (symbol->string token) 1))))
+        ((list? token)
+          (s4m-process-sexp token))
+        (else token)))
+     sexp))
+
+; function to kick it off
+(define (s4m-run-expr sexp-str)
+  (let* ((input-sexp (string->sexp sexp-str))
+        (processed-sexp (s4m-process-sexp input-sexp)))
+    (post "processed-sexp:" processed-sexp)
+    (eval '(eval processed-sexp)))) 
+
+
+; function that is called on any input to an inlet > 0 if an x->expr_code
+; if inlet >= 1, stores value in s4m-expr-inputs
+; if inlet == 1, also evaluates expression
+(define (s4m-expr-handler inlet arg)
+  (post "s4m-expr-handler (scm)" inlet arg)
+  (if (not-eq? arg :bang) 
+    (begin (post "setting inlet" inlet arg)
+           (set! (s4m-expr-inputs inlet) arg)))
+  (cond 
+    ((= 1 inlet)  
+      (post "  - running, inputs:" s4m-expr-inputs)
+      (let ((res (s4m-run-expr s4m-expr-code-str)))
+        (post "res:" res)
+        res))
+    (else '())))
+
 
 
 ;; roll all this in later

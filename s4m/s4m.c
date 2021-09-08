@@ -240,6 +240,7 @@ void s4m_cancel_clock_entry(t_hashtab_entry *e, void *arg);
 void s4m_clock_callback(void *arg);
 void s4m_deferred_clock_callback(void *arg, t_symbol *s, int argc, t_atom *argv);
 
+void s4m_expr_handler(t_s4m *x, int inlet, s7_pointer *arg);
 
 /********************************************************************************
 / some helpers */
@@ -310,6 +311,10 @@ void ext_main(void *r){
     class_addmethod(c, (method)s4m_list, "list", A_GIMME, 0);
     class_addmethod(c, (method)s4m_msg, "anything", A_GIMME, 0);
 
+    CLASS_ATTR_ATOM_VARSIZE(c, "expr", 0, t_s4m, expr_argv, expr_argc, 128);
+    CLASS_ATTR_ACCESSORS(c, "expr", NULL, s4m_expr_set);
+    CLASS_ATTR_INVISIBLE(c, "expr", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
+    //CLASS_ATTR_SAVE(c, "expr", 0);   // save with patcher
 
     // one time attrs for number of ins and outs and the thread
     // invisible means it does not show up in inspector, and can't get set from a realtime message
@@ -329,10 +334,6 @@ void ext_main(void *r){
     CLASS_ATTR_INVISIBLE(c, "thread", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
     CLASS_ATTR_SAVE(c, "thread", 0);   // save with patcher
 
-    CLASS_ATTR_ATOM_VARSIZE(c, "expr", 0, t_s4m, expr_argv, expr_argc, 128);
-    CLASS_ATTR_ACCESSORS(c, "expr", NULL, s4m_expr_set);
-    CLASS_ATTR_INVISIBLE(c, "expr", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
-    //CLASS_ATTR_SAVE(c, "expr", 0);   // save with patcher
 
     // attrs for the internal time and quantize objects
     // we set them to not be settable from the patcher or to appear in the inspector
@@ -403,6 +404,9 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
 
     // process @ args, which will possibly override the above
     attr_args_process(x, argc, argv);
+
+    // if s4m-expr uses more inputs than inlets, bump up inlet num
+    if(x->num_expr_inputs >= x->num_inlets) x->num_inlets = x->num_expr_inputs + 1;
 
     // create generic outlets (from right to left)
     if( x->num_outlets > MAX_NUM_OUTLETS ){
@@ -573,6 +577,16 @@ void s4m_init_s7(t_s4m *x){
     if( x->source_file != _sym_nothing){
         s4m_doread(x, x->source_file, true, false);
     }
+
+    // if this is an s4m-expr case, call the init function 
+    if(x->expr_code){
+        s7_pointer *res;
+        s7_pointer s7_args = s7_nil(x->s7); 
+        s7_args = s7_cons(x->s7, s7_make_string(x->s7, x->expr_code), s7_args); 
+        s7_args = s7_cons(x->s7, s7_make_integer(x->s7, x->num_expr_inputs), s7_args); 
+        s7_call(x->s7, s7_name_to_value(x->s7, "s4m-expr-init"), s7_args);
+    }
+
     //post("s4m_init_s7 complete");
 }
 
@@ -639,6 +653,16 @@ void s4m_make(t_s4m *x){
     //    object_error((t_object *)x, "s4m: (send) error sending message");
     //}
     post("did we get a new table named foobar?");
+}
+
+// function to run the @e expr if one is present
+void s4m_expr_handler(t_s4m *x, int inlet, s7_pointer *s7_input_arg){
+    post("s4m_expr_handler(), inlet: %i", inlet);
+    s7_pointer s7_args = s7_nil(x->s7); 
+    s7_args = s7_cons(x->s7, s7_input_arg, s7_args); 
+    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet), s7_args); 
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-expr-handler"), s7_args);
+    post("  - done");
 }
 
 void s4m_eval_atoms_as_string(t_s4m *x, t_symbol *sym, long argc, t_atom *argv){
@@ -798,7 +822,7 @@ t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     return 0;
 }
 
-// setter for the object thread, only does anything at start up time
+// setter for the expr attribute, only does anything at start up time
 t_max_err s4m_expr_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     post("s4m_expr_set() argc: %i", argc);
     long size = 0;
@@ -1237,7 +1261,6 @@ void s4m_callback_bang(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     long inlet_num = atom_getlong( argv );
     long arg = atom_getlong( argv + 1 );
     //post(" - inlet_num: %i arg: %i", inlet_num, arg);
-    sysmem_freeptr(argv); 
     return s4m_handle_bang(x, inlet_num);
 }
 
@@ -1260,12 +1283,17 @@ void s4m_bang(t_s4m *x){
 }
 
 void s4m_handle_bang(t_s4m *x, int inlet_num){
-    //post("s4m_bang() message from inlet %i", inlet_num);
+    post("s4m_bang() message from inlet %i", inlet_num);
     s7_pointer s7_args = s7_nil(x->s7); 
     // if on inlet 0, call to s7 should be (bang)
     if( inlet_num == 0 ){
         s4m_s7_call(x, s7_name_to_value(x->s7, "f-bang"), s7_args);
-    }else{        
+    }
+    else if(x->expr_code){        
+        s7_args = s7_cons(x->s7, s7_make_keyword(x->s7, "bang"), s7_args);
+        s4m_expr_handler(x, inlet_num,s7_make_keyword(x->s7, "bang"));
+    }
+    else{        
     // inlet > 0 means it goes through inlet dispatch and is sent to s7 as a list 
     // of (s4m-dispatch {inlet} :bang)
         s7_args = s7_cons(x->s7, s7_make_keyword(x->s7, "bang"), s7_args);
@@ -1308,32 +1336,26 @@ void s4m_callback_int(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     long inlet_num = atom_getlong( argv );
     long arg = atom_getlong( argv + 1 );
     //post(" - inlet_num: %i arg: %i", inlet_num, arg);
-    sysmem_freeptr(argv); 
     return s4m_handle_int(x, inlet_num, arg);
 }
 
 // function that does the dispatching to scheme
 void s4m_handle_int(t_s4m *x, int inlet_num, long arg){
     s7_pointer s7_args = s7_nil(x->s7); 
-    s7_args = s7_cons(x->s7, s7_make_integer(x->s7, arg), s7_args); 
+    s7_pointer s7_arg = s7_make_integer(x->s7, arg);
     // if on inlet 0, call to s7 should be (int number)
     if( inlet_num == 0 ){
         //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        s7_args = s7_cons(x->s7, s7_arg, s7_args); 
         s4m_s7_call(x, s7_name_to_value(x->s7, "f-int"), s7_args);
     }
-    //else if(x->expr_code){        
-    //    // s4m expr handling
-    //    char code[128];
-    //    sprintf(code, "(set! in%i %i)", inlet_num, arg);
-    //    s4m_s7_eval_c_string(x, code);
-    //    // if this was inlet 1 (hot) we also eval the expression
-    //    if(inlet_num == 1){
-    //        s4m_s7_eval_c_string(x, x->expr_code);
-    //    } 
-    //}
+    else if(x->expr_code){        
+        s4m_expr_handler(x, inlet_num, s7_arg);
+    }
     else{
     // inlet > 0 means it goes through inlet dispatch and is sent to s7 as a list 
     // of (s4m-dispatch {inlet} :int {arg})
+        s7_args = s7_cons(x->s7, s7_arg, s7_args); 
         s7_args = s7_cons(x->s7, s7_make_keyword(x->s7, "int"), s7_args);
         s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args);
         //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
@@ -1368,7 +1390,6 @@ void s4m_callback_float(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     //post("s4m_callback_float()");
     long inlet_num = atom_getlong( argv );
     double arg = atom_getfloat( argv + 1 );
-    sysmem_freeptr(argv); 
     return s4m_handle_float(x, inlet_num, arg);
 }
 
@@ -1376,24 +1397,20 @@ void s4m_callback_float(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
 void s4m_handle_float(t_s4m *x, int inlet_num, double arg){
     //post("s4m_handle_float() message from inlet %i, arg: %5.2f", inlet_num, arg);
     s7_pointer s7_args = s7_nil(x->s7); 
-    s7_args = s7_cons(x->s7, s7_make_real(x->s7, arg), s7_args); 
+    s7_pointer s7_arg = s7_make_real(x->s7, arg);
     // if on inlet 0, call to s7 should be (float number)
     if( inlet_num == 0 ){
         //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
+        s7_args = s7_cons(x->s7, s7_arg, s7_args); 
         s4m_s7_call(x, s7_name_to_value(x->s7, "f-float"), s7_args);
     }
-    //else if(x->expr_code){        
-    //    // s4m expr handling
-    //    char code[128];
-    //    sprintf(code, "(set! in%i %f)", inlet_num, arg);
-    //    s4m_s7_eval_c_string(x, code);
-    //    // if this was inlet 1 (hot) we also eval the expression
-    //    if(inlet_num == 1){
-    //        s4m_s7_eval_c_string(x, x->expr_code);
-    //    }
+    else if(x->expr_code){        
+        s4m_expr_handler(x, inlet_num, s7_arg);
+    } 
     else{        
     // inlet > 0 means it goes through inlet dispatch and is sent to s7 as a list 
     // of (s4m-dispatch {inlet} :int {arg})
+        s7_args = s7_cons(x->s7, s7_arg, s7_args); 
         s7_args = s7_cons(x->s7, s7_make_keyword(x->s7, "float"), s7_args);
         s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args);
         //post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
@@ -1408,7 +1425,6 @@ void s4m_callback_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     long inlet_num = atom_getlong( argv );
     //post("inlet_num: %i", inlet_num);
     s4m_handle_list(x, inlet_num, s, argc - 1, argv + 1);
-    sysmem_freeptr(argv);
 }
 
 // the list message handler, will handle any messages that are internally
@@ -1463,20 +1479,9 @@ void s4m_handle_list(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *ar
         //post("s7-top-args: %s", s7_object_to_c_string(x->s7, s7_top_args) ); 
         s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-eval"), s7_top_args);
     }
-    // xxx: this is not actually running
-    //else if(x->expr_code){        
-    //    // s4m expr handling, need to build expression to set the inX arg
-    //    // s7_args is already the list
-    //    s7_pointer s7_top_args = s7_nil(x->s7);
-    //    s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, "list"), s7_args);
-    //    s7_top_args = s7_cons(x->s7, s7_args, s7_top_args);
-    //    s7_top_args = s7_cons(x->s7,s7_make_symbol(x->s7, "post"), s7_top_args);
-    //    post("s7-args: %s", s7_object_to_c_string(x->s7, s7_args) ); 
-    //    post("s7-top-args: %s", s7_object_to_c_string(x->s7, s7_top_args) ); 
-    //    // if this was inlet 1 (hot) we also eval the expression
-    //    if(inlet_num == 1){
-    //        s4m_s7_eval_c_string(x, x->expr_code);
-    //    }
+    else if(x->expr_code){        
+        s4m_expr_handler(x, inlet_num, s7_args);
+    } 
     else{
         s7_args = s7_cons(x->s7, s7_make_keyword(x->s7, "list"), s7_args); 
         s7_args = s7_cons(x->s7, s7_make_integer(x->s7, inlet_num), s7_args); 

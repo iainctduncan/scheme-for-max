@@ -4,3 +4,29 @@ Notes on running one liners as expr in the s4m box
 
 - working for ints and floats, but not for lists, dispatcher needs overhaul
 - shelving this for now in a branch, more complex than I though
+
+s4m expr requirements
+- DONE figure out how many ins to make based on the number of inX arguments in the string
+- Vector with all the inputs now exits
+
+- dispatcher needs to deal correctly with ins for all types:
+  D int 
+  D float
+  D list - but has issues
+  symbol
+  D bang
+
+BUGS:
+- building inlets fucked when an input num used more than once
+- bug with bootup, when I recover work it seems the expr hasn't loaded sometimes
+  (out of order processing maybe?, doesn't run the init function)
+- can't handle symbol lists yet
+- cons a number to a list, but not a list to a list,
+  I get a unhandled conversion error
+
+LEFT OFF: 2021-09-8
+- it's basically working but chokes on some input types, esp when lists
+  go in the wrong places
+- building inlets fucked when an input num used more than once
+- trying to cons a list to a list crashes it, can't figure out why
+- need to back burner this for a while
