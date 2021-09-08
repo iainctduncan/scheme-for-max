@@ -72,3 +72,33 @@
 ;;(catch #t (lambda () (/ 1.0 0)) (lambda args (post :foobar)))
 
 
+;; Unfortunatly you cant use +documentation+ on a macro. BOOO.
+;; OH well, it's here anyway. 
+(define-macro (~> object . functions)
+  (let* ((hole :$)
+         (+documentation+
+          (format #f
+                  "A threading operator similar to Clojure.
+Takes an object as a starting value, then executes every form thereafter with the value of one operation feeding into the next.
+You can use ~A as the value of the previous operation.
+
+For instance: (~~> '(1 2 23) (cdr ~A) (car ~A) (+ ~A 3))
+Would return 5"
+                  hole    ; there has to be a better way to do this.
+                  hole hole hole))) ; head like a hole....
+    (define (plug-hole expression cork)
+      (let iter ((expression expression))
+        (cond
+         ((null? expression) expression)
+         ((eq? hole (car expression)) (cons cork
+                                            (iter (cdr expression))))
+         (else
+          (cons (car expression) (iter (cdr expression)))))))
+    (let thread-transform-loop
+        ((needle object)
+         (fns functions))
+      (if (null? fns)
+          needle
+          (append (thread-transform-loop (plug-hole (car fns) needle)
+                                         (cdr fns)))))))
+
