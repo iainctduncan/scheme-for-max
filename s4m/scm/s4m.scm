@@ -18,6 +18,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; From here down, you should not change things unless you know what it's going to do
 
+;; gc functions
+;; wrapper for debugging only
+
+(define (gc*)
+  (post "(gc*) running (gc)")
+  (gc))
+
+
+
+
+
+
 ;; helper for building string reps for posting to console
 (define (str-repr . args) 
  (let ((repr (lambda x (string-append (object->string x) " "))))
