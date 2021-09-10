@@ -52,9 +52,6 @@ There is also a small cookbook with some examples available here: https://github
 ## Support Development
 If you enjoy Scheme for Max, please consider supporting development on my patreon account. Every bit helps me spend more time on Lisp music projects and less on regular work! There are no real perks though, all Scheme For Max releases, docs, and examples are free for everyone.
 
-## Download Releases
-Releases are posted here https://github.com/iainctduncan/scheme-for-max/releases
-
 ## Releases and Installation
 Binary packages are available for OSX and Windows: https://github.com/iainctduncan/scheme-for-max/releases
 Download the Scheme-For-Max tar file and untar it in your Max Packages directory. 
@@ -63,6 +60,8 @@ The Package manager should detect the Scheme For Max package and enable you to l
 Currently tested on Max 8, with OSX High Sierra and Windows 10. 
 Please report problems installing to the google group, as well as any fixes
 or workarounds that could be added here.
+
+The current "production beta" is 0.2.0 beta. Subsequent releases should be considered experimental for testing.
 
 ## Documentation and Community
 An extensive help file demonstrating all official features of the release is included, with
@@ -81,7 +80,7 @@ To file tickets about errors or improvement suggestions for the docs, use the do
 The S7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html
 
 For release and tutorial announcements, questions, suggestions, installation issues, and bug reports, 
-please join the scheme-for-max google group.
+please join the scheme-for-max google group and check the discussion board on this github page.
 
 https://groups.google.com/forum/#!forum/scheme-for-max
 
