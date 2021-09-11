@@ -1,0 +1,29 @@
+Notes on implementing the optional gc lockout features
+
+- finished the functions, they seem to be working except the gc-run is not working right in the load test ensemble
+- will need to test with audio in the patch so I hear drop outs properly
+
+- issue, running the (gc) function won't renable the flag eh, but does renable the gc oops.
+
+- in the load test file, I was able to lock out the gc without a crash for 13 minutes (I stopped it, could probably do more)
+ - when I ran it, it did take 0.2 seconds and caused a drop out
+ - what I don't know is if there would have been an underrun when the heap got resized
+ - worth asking about that. - no one knows, need to test
+
+Next:
+- need to try testing with audio recording. 
+
+TESTING:
+Testing locking out the gc to see how big the heap should be with seq-loadtest-midi
+- starting heapsize is 128000
+- resizing the heap back down requires recreating the s4m object, not just reset
+- hmm, not seeing the heap resize in the console, weird
+- ran seq-loadtest-midi for 5 min: heapsize was 8,192,000 (64 times bigger than original)
+- tried setting the heap to 8192000 and running the gc every second, and it couldn't keep in realtime 
+  - each gc run was taking 0.06 seconds to run up from 0.002 to 0.003 (with outliers up to 0.005)
+  - what I don't know is if that is solid calculation time, or if it includes the fact that Max did a thread switch
+
+testing with Ableton results:
+- locking out the GC works fine, does result in being able to run with lower latency
+- running the gc very frequently seems to be more work and not necessary
+  - though this might be different with a smaller heap size, default is 128k 
