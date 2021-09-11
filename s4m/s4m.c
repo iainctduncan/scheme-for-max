@@ -29,9 +29,9 @@ typedef struct _s4m {
     s7_scheme *s7;
 
     t_symbol *source_file;              // main source file name (if one passed as object arg)
+    t_symbol *source_file_full_path;    // full path to show users where the file is
     short *source_file_path_id;         // path to source file
     t_filehandle source_file_handle;    // file handle for the source file
-    char **source_text_handle;          // string handle for the source file
     
     char thread;                        // can be 'h', 'l', or 'a' for high, low, any
 
@@ -60,7 +60,6 @@ typedef struct _s4m {
     double clock_listen_ms_interval;     // time in ms for the listen-ms clock  
     double clock_listen_ms_t_interval;   // time in ms for the listen-ms-t clock  
 
-    t_object *m_editor;                  // text editor
     t_object *test_obj; 
 
     // array of atoms when using @expr
@@ -110,7 +109,6 @@ void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args);
 
 void s4m_reset(t_s4m *x);
 void s4m_dblclick(t_s4m *x);
-void s4m_edclose(t_s4m *x, char **ht, long size);
 void s4m_read(t_s4m *x, t_symbol *s);
 void s4m_eval_string(t_s4m *x, t_symbol *s);
 
@@ -130,16 +128,10 @@ void s4m_callback_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
 void s4m_handle_list(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv);
 
 void s4m_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
-//void s4m_callback_msg(t_s4m *x, t_symbol *s, long argc, t_atom *argv);
 void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv);
 
-
-void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file, bool skip_s7_load);
-void s4m_openfile(t_s4m *x, char *filename, short path);
-
+void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file);
 void s4m_dblclick(t_s4m *x);
-void s4m_edclose(t_s4m *x, char **ht, long size);
-long s4m_edsave(t_s4m *x, char **ht, long size);
 // IN PROG
 void s4m_make(t_s4m *x);
 
@@ -305,8 +297,6 @@ void ext_main(void *r){
     class_addmethod(c, (method)s4m_read, "read", A_DEFSYM, 0);
     class_addmethod(c, (method)s4m_scan, "scan", NULL, 0);
     class_addmethod(c, (method)s4m_dblclick, "dblclick", A_CANT, 0);
-    class_addmethod(c, (method)s4m_edclose, "edclose", A_CANT, 0);
-    class_addmethod(c, (method)s4m_edsave, "edsave", A_CANT, 0);
 
     // IN PROGRESS
     // test of making things with this patcher 
@@ -375,10 +365,9 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
 
     x->s7 = NULL;
     x->source_file = NULL;
+    x->source_file_full_path = NULL;
     x->source_file_path_id = NULL;
     x->source_file_handle = NULL;
-    x->source_text_handle = sysmem_newhandle(0);
-    x->m_editor = NULL;
 
     // by default we log return values
     // if I set it to true here, then the attribute does not get saved with the patcher
@@ -452,8 +441,7 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     // save the patcher object (equiv of thispatcher)
     object_obex_lookup(x, gensym("#P"), &x->patcher);
 
-    // this block of code is crashing on windows
-    x->source_file = gensym("");
+    // init source file from argument
     x->source_file = _sym_nothing;
     if(argc){
         atom_arg_getsym(&x->source_file, 0, argc, argv);
@@ -587,13 +575,13 @@ void s4m_init_s7(t_s4m *x){
     s7_define_variable(x->s7, "maxobj", s7_make_integer(x->s7, max_obj_ptr));  
    
     // bootstrap the scheme code
-    s4m_doread(x, gensym( BOOTSTRAP_FILE ), false, false);
+    s4m_doread(x, gensym( BOOTSTRAP_FILE ), false);
 
     // load a file given from a user arg, and save filename
     // the convoluted stuff below is to prevent saving @ins or something
     // as the sourcefile name if object used with param args but no sourcefile 
     if( x->source_file != _sym_nothing){
-        s4m_doread(x, x->source_file, true, false);
+        s4m_doread(x, x->source_file, true);
     }
     post("s4m_init_s7 complete");
 }
@@ -693,48 +681,15 @@ void s4m_eval_atoms_as_string(t_s4m *x, t_symbol *sym, long argc, t_atom *argv){
     }
 }
 
+// we could instead show the full path on a double click??
 void s4m_dblclick(t_s4m *x){
     //post("s4m_dblclick()");
-    // open editor here
-    if (!x->m_editor){
-        //post("creating new editor");
-        x->m_editor = object_new(CLASS_NOBOX, gensym("jed"), (t_object *)x, 0);
-        object_method(x->m_editor, gensym("filename"), x->source_file->s_name, x->source_file_path_id);
-        //post("  - set filename to: %s", x->source_file->s_name);
+    //post("s4m 0.3: Popup editor deprecated");
+    if(x->source_file_full_path){
+      post("Main file: %s", x->source_file_full_path->s_name);
     }else{
-        //post("setting editor to visible");
-        object_attr_setchar(x->m_editor, gensym("visible"), 1);
+      post("No main file argument");
     }
-    // we always re-read the file so that it picks up any changes made from an editor
-    // TODO: should go to read method so it can be deferred
-    // passing is_source_file=true and skip_s7_load=true because we just want to load the buffer
-    // actual loading of the file into s7 should only happen on editor save
-    s4m_doread(x, x->source_file, true, true);
-    // load the editors buffer with the file contents
-    object_method(x->m_editor, gensym("settext"), *x->source_text_handle, gensym("utf-8"));
-
-    #ifdef _MSC_VER
-        object_error((t_object *)x, "WARNING: saving from editor not working yet on Windows");
-    #endif
-}
-
-void s4m_edclose(t_s4m *x, char **ht, long size){
-    // do something with the text
-    // post("s4m_edclose()");
-    // the work is done in edsave, we don't want to eval content if cancelled
-    x->m_editor = NULL;
-}
-
-long s4m_edsave(t_s4m *x, char **ht, long size){
-    //post("s4m_edsave(), returning 0 to save");
-    // eval the text
-    
-    s7_pointer res; 
-    res = s7_eval_c_string(x->s7, *ht); 
-    //post("s4m: file contents reloaded, result: %s", s7_object_to_c_string(x->s7, res) ); 
-    // return 0 to tell editor to save the text
-    // XXX: 2020-05 this is not working on windows.
-    return 0;       
 }
 
 // traverse the patch, registering all objects that have a scripting name set
@@ -851,6 +806,7 @@ t_max_err s4m_expr_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     return 0;
 }
 
+// message handler for the 'read' message
 // find a file on the max path, get its full path, and delegate to s4m_s7_load
 void s4m_read(t_s4m *x, t_symbol *s){
     //post("s4m_read()");
@@ -877,9 +833,9 @@ void s4m_read(t_s4m *x, t_symbol *s){
     s4m_s7_load(x, full_path);
 }
 
-// read function to either pass on a filename or open the file selector box
-// skip_s7_load indicates to load the file from disk but not into s7. (prob should be refactored)
-void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file, bool skip_s7_load){
+// internal method to read in a source file
+// is_main_source_file is whether it's the box argument 
+void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file){
     //post("s4m_doread()");
     t_fourcc filetype = 'TEXT', outtype;
     char filename[MAX_PATH_CHARS];
@@ -894,31 +850,14 @@ void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file, bool skip_s7_lo
             return;
         }
     }
-    //post("filename: %s", filename);
-    // block for copying file contents into the buffer for filling the editor
-    // only want this to happen if we're calling doread for the main source file
-    if( is_main_source_file ){
-        //post("s4m: locally loading main source file %s", filename);
-        if(path_opensysfile(filename, path_id, &x->source_file_handle, READ_PERM)){
-            object_error((t_object *)x, "s4m: error opening %s", filename);
-            return;
-        }    
-        sysfile_readtextfile(x->source_file_handle, x->source_text_handle, 0, TEXT_NULL_TERMINATE);     
-    }
-    // now read into S7 using s7_load(fullpath)
-    
     // we have a file and a path short, need to convert it to abs path for scheme load
     char full_path[1024]; 
     path_toabsolutesystempath(path_id, filename, full_path);
-
-    // save the full path for using with text editor opening
+    // save the full path so we can show users where the file is on double click
     x->source_file_path_id = path_id;
-
-    // This is where we load the actual file into S7, which we don't always do 
-    // because we could be reading it into the text editor buffer
-    if( ! skip_s7_load ){
-        s4m_s7_load(x, full_path);
-    }
+    if(is_main_source_file) x->source_file_full_path = gensym(full_path);
+    // now read into S7 using s7_load(fullpath)
+    s4m_s7_load(x, full_path);
 }
 
 void s4m_assist(t_s4m *x, void *b, long m, long a, char *s){
@@ -1989,7 +1928,7 @@ static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args) {
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
     char *file_name = s7_string( s7_car(args) );
     t_s4m *x = get_max_obj(s7);
-    s4m_doread(x, gensym(file_name), false, false);    
+    s4m_doread(x, gensym(file_name), false);    
     return s7_nil(s7);
 }
 
