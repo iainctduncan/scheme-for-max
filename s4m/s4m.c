@@ -68,7 +68,11 @@ typedef struct _s4m {
     long    expr_argc;
     int     num_expr_inputs;
     char    *expr_code;
-    
+
+    bool  gc_enabled;
+    int   gc_delay_ms;
+    int   gc_delay_ticks;
+    long  heap_size;                    // initial heapsize   
 
     bool initialized;                   // gets set to true after object initialization complete
     char log_repl;                      // whether to post the return values of evaluating scheme functions
@@ -240,6 +244,11 @@ void s4m_cancel_clock_entry(t_hashtab_entry *e, void *arg);
 void s4m_clock_callback(void *arg);
 void s4m_deferred_clock_callback(void *arg, t_symbol *s, int argc, t_atom *argv);
 
+static s7_pointer s7_gc_is_enabled(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_gc_enable(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_gc_disable(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_gc_run(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args);
 
 /********************************************************************************
 / some helpers */
@@ -395,6 +404,11 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     x->num_inlets = 1;
     x->num_outlets = 1;
     x->thread = 'h';
+
+    //  TODO: add gc delay inits with attrs
+    x->gc_enabled = true;
+    x->gc_delay_ms = 50;
+    x->gc_delay_ticks = NULL;
 
     x->expr_argv = NULL;
     x->expr_argc = 0;
@@ -559,6 +573,14 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "s4m-listen-ms", s7_listen_ms, 1, 0, true, "(s4m-listen_ms ms cb-handle)");
     s7_define_function(x->s7, "s4m-cancel-listen-ms", s7_cancel_listen_ms, 0, 0, true, "(s4m-cancel-listen-ms)");
 
+    // application level gc functions
+    s7_define_function(x->s7, "gc-enabled?", s7_gc_is_enabled, 0, 0, true, "(gc-enabled?)");
+    s7_define_function(x->s7, "gc-enable", s7_gc_enable, 0, 0, true, "(gc-enable)");
+    s7_define_function(x->s7, "gc-disable", s7_gc_disable, 0, 0, true, "(gc-disable)");
+    s7_define_function(x->s7, "gc-run", s7_gc_run, 0, 0, true, "(gc-run)");
+    s7_define_function(x->s7, "gc-try", s7_gc_try, 0, 0, true, "(gc-try)");
+
+
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
     uintptr_t max_obj_ptr = (uintptr_t)x;
@@ -573,7 +595,7 @@ void s4m_init_s7(t_s4m *x){
     if( x->source_file != _sym_nothing){
         s4m_doread(x, x->source_file, true, false);
     }
-    //post("s4m_init_s7 complete");
+    post("s4m_init_s7 complete");
 }
 
 // wipe the scheme interpreter and reset any state
@@ -1906,6 +1928,61 @@ static s7_pointer s7_isr(s7_scheme *s7, s7_pointer args){
         return s7_make_boolean(s7, false);
     };
 }
+
+// gc functions (s4m 0.3)
+static s7_pointer s7_gc_is_enabled(s7_scheme *s7, s7_pointer args){
+    //post("s7_gc_is_enabled()");
+    t_s4m *x = get_max_obj(s7);
+    return s7_make_boolean(s7, x->gc_enabled);
+}
+static s7_pointer s7_gc_enable(s7_scheme *s7, s7_pointer args){
+    //post("s7_gc_enable()");
+    t_s4m *x = get_max_obj(s7);
+    x->gc_enabled = true;
+    // note: unlike (gc), this does not *trigger* the gc to run
+    s7_gc_on(s7, true);    
+    return s7_make_boolean(s7, true);
+}
+static s7_pointer s7_gc_disable(s7_scheme *s7, s7_pointer args){
+    //post("s7_gc_disable()");
+    t_s4m *x = get_max_obj(s7);
+    x->gc_enabled = false;
+    s7_gc_on(s7, false);    
+    return s7_make_boolean(s7, false);
+}
+// run forces the gc to run, whether or not enabled
+// does not change enabled status, returns enabled status
+static s7_pointer s7_gc_run(s7_scheme *s7, s7_pointer args){
+    //post("s7_gc_run()");
+    t_s4m *x = get_max_obj(s7);
+    // need to call the scheme level function, as it does trigger the gc
+    s7_pointer s7_args = s7_nil(s7);
+    // call (gc) through our scheme wrapper, it always enables and runs it
+    s7_call(s7, s7_name_to_value(x->s7, "s4m-gc"), s7_args);
+    // as (gc) also enables, we must set it back to wherever it was
+    if(x->gc_enabled){
+      s7_gc_on(s7, true);    
+    }else{
+      s7_gc_on(s7, false);    
+    } 
+    return s7_make_boolean(s7, x->gc_enabled);
+}
+// run gc if enabled, don't if not, return enabled status
+static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args){
+    //post("s7_gc_try()");
+    t_s4m *x = get_max_obj(s7);
+    if(x->gc_enabled){
+      // call (gc)
+      //post(" - gc-enabled, running gc");
+      s7_pointer s7_args = s7_nil(s7);
+      s7_call(s7, s7_name_to_value(x->s7, "s4m-gc"), s7_args);
+      return s7_make_boolean(s7, true);
+    }else{
+      //post(" - gc-disabled, not running gc");
+      return s7_make_boolean(s7, false);
+    }
+}
+
 
 // load a scheme file, searching the max paths to find it
 static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args) {
@@ -3312,7 +3389,9 @@ static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args){
     s7_gc_on(s7, false);
     // max_atom_to_s7_obj will recurse for nested dicts and arrays
     s7_value = max_atom_to_s7_obj(s7, ap); 
-    s7_gc_on(s7, true);
+    
+    // turn gc back on, if it's enabled
+    if(x->gc_enabled) s7_gc_on(s7, true);
 
     sysmem_freeptr(ap);
     // when done with dicts, we must release the ref count

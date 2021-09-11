@@ -18,6 +18,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; From here down, you should not change things unless you know what it's going to do
 
+;; gc functions
+;; wrapper for debugging only
+
+;; a wrapper that you can interfere with
+;; called from gc-try and gc-run, runs gc
+(define (s4m-gc)
+  ;;(post "(s4m-gc) running (gc)")
+  ;; gc both runs and enables the gc, if this is called from gc-run or gc-try
+  ;; the gc will get set back to where it should be in the C code
+  (gc))
+
+
+
 ;; helper for building string reps for posting to console
 (define (str-repr . args) 
  (let ((repr (lambda x (string-append (object->string x) " "))))
