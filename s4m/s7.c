@@ -136,7 +136,7 @@
 #ifndef INITIAL_HEAP_SIZE
   /* #define INITIAL_HEAP_SIZE 128000 */
   // #define INITIAL_HEAP_SIZE 64000         /* 29-Jul-21 -- seems faster */
-  #define INITIAL_HEAP_SIZE 16000         /* ICTD: setting low here, but with default at 64000 in s4m */
+  #define INITIAL_HEAP_SIZE 8000         /* ICTD: setting low here, but with default at 64000 in s4m */
 #endif
 /* the heap grows as needed, this is its initial size. If the initial heap is small, s7 can run in about 2.5 Mbytes of memory.
  * There are many cases where a bigger heap is faster (but harware cache size probably matters more).
