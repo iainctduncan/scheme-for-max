@@ -22,6 +22,8 @@
 #define MAX_ATOMS_PER_MESSAGE 1024
 #define MAX_ATOMS_PER_OUTPUT_LIST 1024
 #define BOOTSTRAP_FILE "s4m.scm"
+#define MIN_HEAP_KB 8
+#define DEFAULT_HEAP_KB 64
 
 // object struct
 typedef struct _s4m {
@@ -71,7 +73,7 @@ typedef struct _s4m {
     bool  gc_enabled;
     int   gc_delay_ms;
     int   gc_delay_ticks;
-    long  heap_size;                    // initial heapsize   
+    long  s7_heap_size;                    // initial heapsize   
 
     bool initialized;                   // gets set to true after object initialization complete
     char log_repl;                      // whether to post the return values of evaluating scheme functions
@@ -96,6 +98,7 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv);
 void s4m_free(t_s4m *x);
 void s4m_init_s7(t_s4m *x);
 void s4m_assist(t_s4m *x, void *b, long m, long a, char *s);
+t_max_err s4m_heap_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
 t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
 t_max_err s4m_expr_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
 
@@ -328,6 +331,11 @@ void ext_main(void *r){
     CLASS_ATTR_INVISIBLE(c, "thread", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
     CLASS_ATTR_SAVE(c, "thread", 0);   // save with patcher
 
+    CLASS_ATTR_CHAR(c, "heap", 0, t_s4m, s7_heap_size);
+    CLASS_ATTR_ACCESSORS(c, "heap", NULL, s4m_heap_set);
+    CLASS_ATTR_INVISIBLE(c, "heap", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
+    CLASS_ATTR_SAVE(c, "heap", 0);   // save with patcher
+
     CLASS_ATTR_ATOM_VARSIZE(c, "expr", 0, t_s4m, expr_argv, expr_argc, 128);
     CLASS_ATTR_ACCESSORS(c, "expr", NULL, s4m_expr_set);
     CLASS_ATTR_INVISIBLE(c, "expr", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
@@ -364,6 +372,8 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     x = (t_s4m *)object_alloc(s4m_class);
 
     x->s7 = NULL;
+    x->s7_heap_size = DEFAULT_HEAP_KB;   // set in k
+
     x->source_file = NULL;
     x->source_file_full_path = NULL;
     x->source_file_path_id = NULL;
@@ -580,6 +590,14 @@ void s4m_init_s7(t_s4m *x){
     s7_hash_table_set(x->s7, s4m_attrs, s7_make_keyword(x->s7, "ins"), s7_make_integer(x->s7, x->num_inlets));
     s7_hash_table_set(x->s7, s4m_attrs, s7_make_keyword(x->s7, "outs"), s7_make_integer(x->s7, x->num_outlets));
     // TO DO: add heap-size, gc-enabled, source_file 
+
+    // set the heapsize to the default,
+    // it will otherwise start with the compiled heap, set at 16k
+    char heap_init[128]; 
+    sprintf(heap_init, "(set! (*s7* 'heap-size) %i)", (x->s7_heap_size * 1000));
+    s7_eval_c_string(x->s7, heap_init);
+    //post("s7 heap size: %i", x->s7_heap_size * 1000);
+    s7_hash_table_set(x->s7, s4m_attrs, s7_make_keyword(x->s7, "heap-size"), s7_make_integer(x->s7, x->s7_heap_size * 1000));
  
     // bootstrap the scheme code
     s4m_doread(x, gensym( BOOTSTRAP_FILE ), false);
@@ -590,7 +608,7 @@ void s4m_init_s7(t_s4m *x){
     if( x->source_file != _sym_nothing){
         s4m_doread(x, x->source_file, true);
     }
-    post("s4m_init_s7 complete");
+    //post("s4m_init_s7 complete");
 }
 
 // wipe the scheme interpreter and reset any state
@@ -702,7 +720,7 @@ void s4m_dblclick(t_s4m *x){
 // traverse the patch, registering all objects that have a scripting name set
 // should be called again whenever scripting names change 
 void s4m_scan(t_s4m *x){
-    post("patcher scanned for varnames");
+    //post("patcher scanned for varnames");
     long result = 0;
     t_max_err err = NULL;
     t_object *patcher;
@@ -778,6 +796,21 @@ t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
             object_error((t_object *)x, "invalid value for attribute 'thread'");
         } 
         //post("s4m->thread set to: '%c'", x->thread); 
+    }
+    return 0;
+}
+
+t_max_err s4m_heap_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
+    //post("s4m_heap_set()");
+    if( !x->initialized ){
+        long heap_kb = atom_getlong(argv);
+        if( heap_kb >= MIN_HEAP_KB){
+           x->s7_heap_size = heap_kb;
+        }else{
+          object_error((t_object *)x, "s4m: min heap size is %i KB", MIN_HEAP_KB);
+           x->s7_heap_size = MIN_HEAP_KB;
+        }
+        //post("s4m->s7_heap_size now %i", x->s7_heap_size); 
     }
     return 0;
 }
