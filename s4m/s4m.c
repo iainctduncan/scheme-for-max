@@ -573,7 +573,14 @@ void s4m_init_s7(t_s4m *x){
     // scheme functions can get access to our C functions
     uintptr_t max_obj_ptr = (uintptr_t)x;
     s7_define_variable(x->s7, "maxobj", s7_make_integer(x->s7, max_obj_ptr));  
-   
+
+    // private hash
+    s7_pointer s4m_attrs = s7_make_hash_table(x->s7, 8);
+    s7_define_variable(x->s7, "_s4m_", s4m_attrs);
+    s7_hash_table_set(x->s7, s4m_attrs, s7_make_keyword(x->s7, "ins"), s7_make_integer(x->s7, x->num_inlets));
+    s7_hash_table_set(x->s7, s4m_attrs, s7_make_keyword(x->s7, "outs"), s7_make_integer(x->s7, x->num_outlets));
+    // TO DO: add heap-size, gc-enabled, source_file 
+ 
     // bootstrap the scheme code
     s4m_doread(x, gensym( BOOTSTRAP_FILE ), false);
 

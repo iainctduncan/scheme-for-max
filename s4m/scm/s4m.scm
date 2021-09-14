@@ -15,8 +15,14 @@
 (load-from-max "loop.scm")
 (load-from-max "utilities.scm")
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; From here down, you should not change things unless you know what it's going to do
+
+; function for getting attributes from the s4m object
+; this is a function so that users won't try to set on the attr hash from scheme
+(define (*s4m* key)
+  (_s4m_ key))
 
 ;; gc functions
 ;; wrapper for debugging only
@@ -28,7 +34,6 @@
   ;; gc both runs and enables the gc, if this is called from gc-run or gc-try
   ;; the gc will get set back to where it should be in the C code
   (gc))
-
 
 
 ;; helper for building string reps for posting to console
@@ -132,7 +137,32 @@
 (load-from-max "schedule.scm")
 
 ;; convenience functions for output, sometimes you want a one arg function...
-(define (out outlet_num args) (max-output outlet_num args))
+(define (out outlet_num val) 
+  (max-output outlet_num val))
+
+; out* - special output 
+; sequences are spread out
+(define (out* val)
+  ;(post "out*" val)
+  (let ((outs (*s4m* :outs))
+        (num-vals (length val)))
+    (cond
+      ((not (sequence? val))
+        (out 0 val))
+      ((sequence? val)
+        ; loop through outs, if we're on the last out, send out rest of list
+        (let out-loop ((outlet 0) (left val))
+          (cond
+            ((null? left) '())
+            ((and (< outlet (- outs 1)) (not-null? val))
+              (out outlet (car left))  
+              (out-loop (inc outlet) (cdr left)))
+            (else 
+              (out outlet left)))))))
+  ; in all cases, out should return null
+  '()) 
+
+
 (define (out-0 args) (max-output 0 args))
 (define (out-1 args) (max-output 1 args))
 (define (out-2 args) (max-output 2 args))
