@@ -517,7 +517,7 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "hash-table->dict", s7_hashtable_to_dict, 2, 0, false, "populates and optionall creates a max dict from a hash-table");
     s7_define_function(x->s7, "h->d", s7_hashtable_to_dict, 2, 0, false, "populates and optionall creates a max dict from a hash-table");
    
-    s7_define_function(x->s7, "send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
+    s7_define_function(x->s7, "s4m-send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
     s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
 
     // transport fuctions, v0.2
@@ -4214,7 +4214,7 @@ static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args){
 // s7 function for sending a generic message to a max object
 // assumes the max object has a scripting name and has been found by a call to 'scan' to the s4m object
 static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
-    //post("s7_send_message()");
+    post("s7_send_message()");
     // table names could come in from s7 as either strings or symbols, if using keyword table names
     t_s4m *x = get_max_obj(s7);
     char *obj_name;

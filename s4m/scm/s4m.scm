@@ -24,6 +24,27 @@
 (define (*s4m* key)
   (_s4m_ key))
 
+(define (send . args)
+  (apply s4m-send args))
+
+; s4m-send expects flat args, flatten args
+(define (send* . args)
+  ;(post "send" args)
+  (apply s4m-send
+    (let myloop ((new-args '()) (left args))
+      ;(post "loop" new-args left)
+      (cond 
+        ((null? left)
+          new-args)
+        ((sequence? (car left))
+          ;(post "seq, calling loop" (append new-args (car left)) (cdr left))
+          (myloop (append new-args (car left)) (cdr left)))
+        (else
+          ;(post "not seq, calling loop" (append new-args (list (car left))) (cdr left))
+          (myloop (append new-args (list (car left))) (cdr left)))
+      ))))
+
+
 ;; gc functions
 ;; wrapper for debugging only
 
@@ -69,7 +90,7 @@
 (define (s4m-filter-result res)
   ;; if we replace what would be returned by :no-log, s4m will not print to console
   (cond 
-    ;; turn off loging of the null list if set to do so
+    ;; turn off logging of the null list if set to do so
     ((and (null? res) (not s4m-log-nulls)) :no-log)
     ;; use the same setting to mute logging lists of nulls: (() () ())
     ((and (list? res) (every? null? res) (not s4m-log-nulls)) :no-log)
@@ -161,7 +182,6 @@
               (out outlet left)))))))
   ; in all cases, out should return null
   '()) 
-
 
 (define (out-0 args) (max-output 0 args))
 (define (out-1 args) (max-output 1 args))
