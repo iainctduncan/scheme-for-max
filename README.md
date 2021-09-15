@@ -21,7 +21,6 @@ Scheme-For-Max provides two objects: s4m (the interpreter, formerly named s4m.sc
 Features of v0.2 include:
 
 * Hot reloading of scheme code
-* Text editor integration (similar to the JS object)
 * A built in REPL terminal editor for interactive coding 
 * Max messages on inlet 0 automatically execute as Scheme code 
 * Dynamically registered listener functions for Max messages on inlets 1+
