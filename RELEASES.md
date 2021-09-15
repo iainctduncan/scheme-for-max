@@ -1,5 +1,15 @@
 # Scheme-For-Max Release Log
 
+## 0.3.0 2021-09-15
+- delay possible from low thread
+- sending code to s4m no longer needs tosymbol and eval-string
+- new gc functions: gc-enable, gc-disable, gc-run, gc-try
+- set heap size with attr @heap
+- threading macro 
+- function send\* flattens list input
+- function out\* spreads lists over outlets 
+- sample Live API code to use
+
 ## 0.2.0 2021-01-13
 - thread lock to high or low thread
 - attributes for log-nulls and log-repl
