@@ -1812,7 +1812,7 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
 // todo, get this puppy working for arrays and dictionaries too
 t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
     //post("s7_obj_to_max_atom");
-
+    
     // s7 vectors get turned into atom arrays, with recursive calls
     if( s7_is_vector(s7_obj) ){
         // need to make a new atomarray and then set that on the atom
@@ -2022,7 +2022,8 @@ static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
         outlet_anything( x->outlets[outlet_num], atom_getsym(&output_atom), 0, NULL);
     }
     // lists
-    else if( s7_is_list(s7, s7_out_val) && !s7_is_null(s7, s7_out_val) ){
+    else if( s7_is_proper_list(s7, s7_out_val) && !s7_is_null(s7, s7_out_val) ){
+        //post("in the list branch");
         // array of atoms to output, we overallocate for now rather than do dynamic allocation 
         t_atom out_list[MAX_ATOMS_PER_OUTPUT_LIST];
         s7_pointer *first = s7_car(s7_out_val);
@@ -4247,7 +4248,7 @@ static s7_pointer s7_schedule_delay_itm_quant(s7_scheme *s7, s7_pointer args){
 // s7 function for sending a generic message to a max object
 // assumes the max object has a scripting name and has been found by a call to 'scan' to the s4m object
 static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
-    post("s7_send_message()");
+    //post("s7_send_message()");
     // table names could come in from s7 as either strings or symbols, if using keyword table names
     t_s4m *x = get_max_obj(s7);
     char *obj_name;
