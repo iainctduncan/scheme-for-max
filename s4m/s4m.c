@@ -1716,10 +1716,11 @@ void s4m_execute_callback(t_s4m *x, t_symbol *s, short ac, t_atom *av){
 
 
 // convert a max atom to the appropriate type of s7 pointer
-// TODO: this might need GC protection in it, I'm not sure
+// added top level protection, not sure if needs recursive protection
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
     //post("max_atom_to_s7_obj()");
     s7_pointer s7_obj;
+    s7_gc_protect(s7, s7_obj);
     
     // case for arrays of atoms, which will be turned into S7 vectors
     // pertinent docs: https://cycling74.com/sdk/max-sdk-8.0.3/html/group__atomarray.html
@@ -1733,11 +1734,9 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
             s7_vector_set(s7, s7_obj, i, 
                 max_atom_to_s7_obj(s7, inner_ap + i )); 
         }   
-        return s7_obj;
     }
-    
     // case for nested dicts, which get turned into hash-tables
-    if( atomisdictionary(ap) ){
+    else if( atomisdictionary(ap) ){
         t_symbol **keys = NULL;
         long num_keys = 0;
         dictionary_getkeys( atom_getobj(ap), &num_keys, &keys);
@@ -1755,18 +1754,15 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
         // free the keys
         if(keys) 
             dictionary_freekeys( atom_getobj(ap), num_keys, keys);
-        return s7_obj;
     }
-
     // case for string atoms, as can be the case if strings are mixed in arrays  
-    if( atomisstring(ap) ){
+    else if( atomisstring(ap) ){
         char *str = string_getptr( atom_getobj(ap) );
         s7_obj = s7_make_string(s7, str);
-        return s7_obj;
     }
-
     // simple types
-    switch (atom_gettype(ap)) {
+    else {
+      switch (atom_gettype(ap)) {
         case A_LONG:
             //post("int %ld", atom_getlong(ap));
             s7_obj = s7_make_integer(s7, atom_getlong(ap));
@@ -1805,7 +1801,10 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
             // unhandled types return an s7 nil
             post("ERROR: unknown atom type (%ld)", atom_gettype(ap));
             s7_obj = s7_nil(s7);
+      }
     }
+
+    s7_gc_unprotect_at(s7, s7_obj); 
     return s7_obj;
 }
 
