@@ -6,7 +6,7 @@ import os
 # its job is to copy the package, including the binary assets and scm files, into the 
 # dist directory, ready for zipping up for release
 
-version = "0.3-devel"     # appended to tarball name
+version = "0.3.0-rc1"     # appended to tarball name
 dry_run = False
 
 externals_src = "../../externals"
