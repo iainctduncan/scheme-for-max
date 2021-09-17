@@ -10,6 +10,7 @@
 #include "ext_atomarray.h"
 #include "ext_time.h"
 #include "ext_itm.h"
+#include "z_dsp.h"
 #include "stdint.h"
 #include "string.h"
 #include "stdbool.h"
@@ -23,11 +24,11 @@
 #define MAX_ATOMS_PER_OUTPUT_LIST 1024
 #define BOOTSTRAP_FILE "s4m.scm"
 #define MIN_HEAP_KB 8
-#define DEFAULT_HEAP_KB 64
+#define DEFAULT_HEAP_KB 32
 
 // object struct
 typedef struct _s4m {
-    t_object obj;
+    t_pxobject obj;                     // s4m-dsp changed from t_object
     s7_scheme *s7;
 
     t_symbol *source_file;              // main source file name (if one passed as object arg)
@@ -61,6 +62,9 @@ typedef struct _s4m {
     t_object *clock_listen_ms_low;       // version of the above for use from low thread s4m instances
     double clock_listen_ms_interval;     // time in ms for the listen-ms clock  
     double clock_listen_ms_t_interval;   // time in ms for the listen-ms-t clock  
+
+    bool kdsp;                           // attr, true if krate dsp should run
+    t_object *clock_krate;               // clock that fires once per signal vector
 
     t_object *test_obj; 
 
@@ -245,6 +249,11 @@ static s7_pointer s7_gc_disable(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_gc_run(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args);
 
+// s4m-kr
+void s4m_dsp64(t_s4m *x, t_object *dsp64, short *count, double samplerate, long maxvectorsize, long flags);
+void s4m_perform64(t_s4m *x, t_object *dsp64, double **ins, long numins, double **outs, long numouts, long sampleframes, long flags, void *userparam);
+void s4m_krate_cb(t_s4m *x);
+
 /********************************************************************************
 / some helpers */
 // return true if a string begins and ends with quotes
@@ -294,6 +303,9 @@ void ext_main(void *r){
     c = class_new("s4m", (method)s4m_new, (method)s4m_free,
          (long)sizeof(t_s4m), 0L /* leave NULL!! */, A_GIMME, 0);
 
+    // s4m-dsp:
+    class_dspinit(c);
+    class_addmethod(c, (method)s4m_dsp64, "dsp64", A_CANT, 0);
     
     class_addmethod(c, (method)s4m_reset, "reset", NULL, 0);
     class_addmethod(c, (method)s4m_eval_string, "eval-string", A_DEFSYM, 0);
@@ -336,6 +348,10 @@ void ext_main(void *r){
     CLASS_ATTR_INVISIBLE(c, "heap", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
     CLASS_ATTR_SAVE(c, "heap", 0);   // save with patcher
 
+    CLASS_ATTR_CHAR(c, "kdsp", 0, t_s4m, kdsp);
+    CLASS_ATTR_INVISIBLE(c, "kdsp", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
+    CLASS_ATTR_SAVE(c, "kdsp", 0);   // save with patcher
+
     CLASS_ATTR_ATOM_VARSIZE(c, "expr", 0, t_s4m, expr_argv, expr_argc, 128);
     CLASS_ATTR_ACCESSORS(c, "expr", NULL, s4m_expr_set);
     CLASS_ATTR_INVISIBLE(c, "expr", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
@@ -358,7 +374,6 @@ void ext_main(void *r){
     CLASS_ATTR_DEFAULT_SAVE(c, "log-null", 0, "1");
     CLASS_ATTR_STYLE_LABEL(c, "log-null", 0, "onoff", "Log null from REPL");
 
-
     class_addmethod(c, (method)s4m_assist, "assist", A_CANT, 0);
     class_register(CLASS_BOX, c); 
     s4m_class = c;
@@ -370,6 +385,10 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     t_s4m *x = NULL;
 
     x = (t_s4m *)object_alloc(s4m_class);
+
+    // s4m-kr
+    // can this be conditional on an attribute?? I don't know
+    dsp_setup((t_pxobject *)x, 0);
 
     x->s7 = NULL;
     x->s7_heap_size = DEFAULT_HEAP_KB;   // set in k
@@ -398,6 +417,9 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     x->clock_listen_ms = (t_object *) clock_new((t_object *)x, (method) s4m_listen_ms_cb); 
     // separate clock for the low priority thread to use
     x->clock_listen_ms_low = (t_object *) clock_new((t_object *)x, (method) s4m_listen_ms_cb_low); 
+
+    // clock for krate modulation, will fire once per signal vector
+    x->clock_krate = (t_object *) clock_new((t_object *)x, (method) s4m_krate_cb); 
 
     // setup internal member defaults 
     x->num_inlets = 1;
@@ -611,6 +633,26 @@ void s4m_init_s7(t_s4m *x){
     //post("s4m_init_s7 complete");
 }
 
+// s4m-kr: function to add object to the dsp chain
+void s4m_dsp64(t_s4m *x, t_object *dsp64, short *count, double samplerate, long maxvectorsize, long flags){
+    //post("s4m_dsp64() adding to dsp chain");
+    if(x->kdsp != 0){
+      post("s4m: enabling krate dsp");
+      object_method(dsp64, gensym("dsp_add64"), x, s4m_perform64, 0, NULL);
+    }
+}
+
+// dsp function that does nothing except ask a callback to run on the next scheduler pass
+void s4m_perform64(t_s4m *x, t_object *dsp64, double **ins, long numins, double **outs, 
+                   long numouts, long sampleframes, long flags, void *userparam) {
+    // post("s4m_perform64");  
+    // do nothing except set a clock for zero
+    if( x->kdsp != 0 ){
+      clock_fdelay(x->clock_krate, 0);
+    }
+}
+
+
 // wipe the scheme interpreter and reset any state
 void s4m_reset(t_s4m *x){
     // post("s4m_reset()");
@@ -635,6 +677,8 @@ void s4m_reset(t_s4m *x){
     time_stop(x->time_listen_ms); 
     // clock object used for the listen_ms no transport function
     clock_unset(x->clock_listen_ms);
+    // s4m-kr:
+    clock_unset(x->clock_krate);
 
     // cancel and free any clock in the clocks registry
     hashtab_funall(x->clocks, (method) s4m_cancel_clock_entry, x);
@@ -920,8 +964,10 @@ void s4m_cancel_clock_entry(t_hashtab_entry *e, void *arg){
 
 void s4m_free(t_s4m *x){ 
     //post("s4m: calling free()");
-    hashtab_chuck(x->registry);
+    // s4m-kr: free must call this first
+    dsp_free((t_pxobject *)x);
 
+    hashtab_chuck(x->registry);
     // delete all the clock and time objects
     object_free(x->timeobj);                   
     object_free(x->timeobj_quant);            
@@ -929,6 +975,7 @@ void s4m_free(t_s4m *x){
     object_free(x->time_listen_ticks_q);    
     object_free(x->time_listen_ms);        
     object_free(x->clock_listen_ms); 
+    object_free(x->clock_krate); 
 
     object_free(x->expr_argv);
 
@@ -3985,6 +4032,13 @@ static s7_pointer s7_cancel_itm_listen_ms(s7_scheme *s7, s7_pointer args){
     return s7_nil(s7);
 }
 // end of timer based clocking methods
+
+// krate clock callback
+void s4m_krate_cb(t_s4m *x){
+    //post("s4m_krate_cb()");
+    // call into scheme to execute the scheme function registered under this handle
+    s4m_s7_call(x, s7_name_to_value(x->s7, "s4m-krate"), s7_nil(x->s7) );   
+}
 
 
 // one-off delay stuff below

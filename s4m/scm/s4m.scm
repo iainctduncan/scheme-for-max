@@ -19,6 +19,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; From here down, you should not change things unless you know what it's going to do
 
+(define ramp
+  (let ((v 0))
+    (lambda()
+      (set! v (if (= 127 v) 0 (+ 1 v)))
+      (out 0 v))))
+  
+
+(define (s4m-krate)
+  ;(post "(s4m-krate)")
+  (ramp)
+  '()
+)
+
+
 ; function for getting attributes from the s4m object
 ; this is a function so that users won't try to set on the attr hash from scheme
 (define (*s4m* key)
