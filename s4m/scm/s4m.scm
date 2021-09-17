@@ -19,6 +19,30 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; From here down, you should not change things unless you know what it's going to do
 
+(define k-pass 0)
+(define k-sig 0)
+
+; make a k-rate phasor
+(define (s4m-kdsp)
+  (if (= 0 (modulo k-pass 128))
+    (post "(s4m-kpass)"))
+  (set! k-pass (+ 1 k-pass))
+  
+  (if (= k-sig 127) (set! k-sig 0) (set! k-sig (+ 1 k-sig)))
+  (out 0 k-sig)
+
+)
+
+;; samples is a float-vector
+;(define (s4m-dsp n samples)
+;  (for-each
+;    (lambda(i)
+;      (set! (samples i) (* (samples i) g-amp)))
+;    (range 0 n))
+;  samples
+;)
+
+
 ; function for getting attributes from the s4m object
 ; this is a function so that users won't try to set on the attr hash from scheme
 (define (*s4m* key)
