@@ -4,13 +4,13 @@
 		"appversion" : 		{
 			"major" : 8,
 			"minor" : 1,
-			"revision" : 8,
+			"revision" : 11,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ -393.0, -1001.0, 1056.0, 845.0 ],
+		"rect" : [ 804.0, -1001.0, 1356.0, 900.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -51,13 +51,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 1,
-							"revision" : 8,
+							"revision" : 11,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ -393.0, -975.0, 1056.0, 819.0 ],
+						"rect" : [ 804.0, -975.0, 1356.0, 874.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -658,6 +658,7 @@
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 11.0, 387.0, 176.0, 22.0 ],
 									"saved_object_attributes" : 									{
+										"heap" : 64,
 										"ins" : 1,
 										"log-null" : 0,
 										"outs" : 1,
@@ -1011,13 +1012,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 1,
-							"revision" : 8,
+							"revision" : 11,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1056.0, 819.0 ],
+						"rect" : [ 0.0, 26.0, 1356.0, 874.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1514,8 +1515,9 @@
 									"outlettype" : [ "", "" ],
 									"patching_rect" : [ 8.0, 387.0, 79.0, 22.0 ],
 									"saved_object_attributes" : 									{
+										"heap" : 64,
 										"ins" : 1,
-										"log-null" : 3361092696901943296,
+										"log-null" : 0,
 										"outs" : 2,
 										"thread" : 104
 									}
@@ -1811,13 +1813,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 1,
-							"revision" : 8,
+							"revision" : 11,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1056.0, 819.0 ],
+						"rect" : [ 0.0, 26.0, 1356.0, 874.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -2065,8 +2067,9 @@
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 11.0, 301.0, 143.0, 22.0 ],
 									"saved_object_attributes" : 									{
+										"heap" : 64,
 										"ins" : 1,
-										"log-null" : 85568392920039424,
+										"log-null" : 0,
 										"outs" : 1,
 										"thread" : 104
 									}
@@ -2240,13 +2243,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 1,
-							"revision" : 8,
+							"revision" : 11,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1056.0, 819.0 ],
+						"rect" : [ 0.0, 26.0, 1356.0, 874.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -2436,8 +2439,9 @@
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 11.0, 301.0, 194.0, 22.0 ],
 									"saved_object_attributes" : 									{
+										"heap" : 64,
 										"ins" : 1,
-										"log-null" : 90071992547409920,
+										"log-null" : 0,
 										"outs" : 1,
 										"thread" : 104
 									}
@@ -2577,13 +2581,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 1,
-							"revision" : 8,
+							"revision" : 11,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1056.0, 819.0 ],
+						"rect" : [ 0.0, 26.0, 1356.0, 874.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -2617,12 +2621,12 @@
 									"fontface" : 0,
 									"fontsize" : 16.0,
 									"id" : "obj-4",
-									"linecount" : 35,
+									"linecount" : 39,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 32.0, 51.0, 881.0, 632.0 ],
-									"text" : "Scheme-for-Max (s4m) is an open source Max/MSP external to enable scripting and live coding Max/MSP with Scheme / Lisp. It is available as a package for OSX and Windows, and as source code.\n\nScheme-for-Max 0.2-beta features include:\n- Hot reloading code\n- Live code evaluation from a REPL\n- Evaluating max messages as Scheme code \n- Sending remote messages to other objects\n- Dynamic creation of listener functions for input and output\n- Reading and writing to buffers and tables, with conversions to/from Scheme vectors\n- Reading and writing to dictionaries, with conversions to/from Scheme hash-tables\n- Choice of high or low priority thread execution, with automatic promotion/deferal of input\n- Interaction with the Max master tempo controls\n- Scheduling Scheme functions, by ms or Max tempo notation\n- Registering repeating clock functions, by ms or ticks\n- Quantization of scheduled calls with the Max master transport settings\n\nScheme-for-Max uses S7 Scheme, a \"lisp-y\" embeddable Scheme implementation by Bill Schottstaedt at CCRMA, based originally on Tiny Scheme.  S7 is a minimal Scheme and is the Scheme engine used in the Common Music algorithmic composition toolkit, and the Snd editor from CCRMA. It has keywords, Common Lisp style macros, first-class environments, thread safety, applicative syntax, and a straight forward FFI (foreign function interface) to enable extended with C. Linguistically, it is mostly R4RS with some later extensions, is quite similar to Guile, and shares many features with Clojure. \n\nDocumentation is here: https://github.com/iainctduncan/scheme-for-max-docs\n\nBug reports and feature requests can be filed here: https://github.com/iainctduncan/scheme-for-max\n\nFor questions, suggestions, and bug reports, please join the Scheme-for-Max google group.\nhttps://groups.google.com/forum/#!forum/scheme-for-max\n\nThe S7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html\n\nMany thanks go to Bill Schottstaedt and Heinrich Taube - S4M builds on their work on S7 and Common Music, and would not be possible without it."
+									"patching_rect" : [ 32.0, 51.0, 881.0, 704.0 ],
+									"text" : "Scheme for Max (S4M) is an open source Max/MSP external to enable scripting, live coding, and algorithmic composition in Max/MSP with Scheme Lisp. It is available as a package for OSX and Windows, and as source code. It also runs on Max For Live with Live 10+\n\nScheme for Max 0.3 features include:\n- Hot reloading code\n- Live code evaluation from a REPL\n- Evaluating max messages as Scheme code \n- Sending remote messages to other objects\n- Dynamic creation of listener functions for input and output\n- Reading and writing to buffers and tables, with conversions to/from Scheme vectors\n- Reading and writing to dictionaries, with conversions to/from Scheme hash-tables\n- Choice of high or low priority thread execution, with automatic promotion/deferal of input\n- Interaction with the Max master tempo controls (including the Live transport if in Max For Live)\n- Scheduling Scheme functions, by ms or Max tempo notation\n- Registering repeating clock functions, by ms or ticks\n- Quantization of scheduled calls with the Max master transport settings\n\nScheme for Max uses s7 Scheme, a Common-Lisp-influenced Scheme implementation by Bill Schottstaedt at CCRMA, based originally on Tiny Scheme.  s7 is a minimal Scheme and is the Scheme engine used in the Common Music algorithmic composition toolkit, and the Snd editor from CCRMA. It has keywords, Common-Lisp-style macros, first-class environments, thread safety, applicative syntax, and a straight forward FFI (foreign function interface) to enable extending with C. Linguistically, it is mostly R5RS with some later extensions, is quite similar to Guile, and shares many design decisions with Clojure. Scheme for Max uses S74, an optional convenience layer over s7 that providing various high-level functions to make music coding easier, borrowing from other Lisp dialects such as Racket, Clojure, and Chez.\n\nDocumentation is here: https://github.com/iainctduncan/scheme-for-max-docs\nA language tutorial is available here: https://iainctduncan.github.io/learn-scheme-for-max/introduction.html\nDemo and tutorial vidoes are posted here: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA\nBug reports and feature requests can be filed here: https://github.com/iainctduncan/scheme-for-max\n\nFor questions, suggestions, and bug reports, please join the Scheme for Max Google Group.\nhttps://groups.google.com/forum/#!forum/scheme-for-max\n\nThe s7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html\n\nScheme for Max is authored by Iain C.T. Duncan. Many thanks go to Bill Schottstaedt and Heinrich Taube - S4M builds on their work on s7 and Common Music, and would not be possible without it. Luigi Castelli has also been tremendously helpful with coding challenges during its development."
 								}
 
 							}
@@ -2635,7 +2639,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 31.5, 9.0, 769.0, 27.0 ],
-									"text" : "Scheme-for-Max 0.2 - Overview",
+									"text" : "Scheme-for-Max 0.3 - Overview",
 									"textjustification" : 1
 								}
 
@@ -2667,13 +2671,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 1,
-							"revision" : 8,
+							"revision" : 11,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1056.0, 819.0 ],
+						"rect" : [ 0.0, 26.0, 1356.0, 874.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -2703,6 +2707,38 @@
 						"showontab" : 1,
 						"assistshowspatchername" : 0,
 						"boxes" : [ 							{
+								"box" : 								{
+									"bubble" : 1,
+									"bubblepoint" : 0.25,
+									"fontsize" : 13.0,
+									"id" : "obj-5",
+									"linecount" : 4,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 561.500002443790436, 517.0, 191.0, 69.0 ],
+									"presentation_linecount" : 4,
+									"text" : "by quoting the whole list, a b & c will be treated as symbols (See the language tutorial if this is confusing!)"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
+									"bubblepoint" : 0.25,
+									"fontsize" : 13.0,
+									"id" : "obj-3",
+									"linecount" : 2,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 396.100000202655792, 470.200000882148743, 191.0, 40.0 ],
+									"presentation_linecount" : 2,
+									"text" : "send* automatically expands any list arguments"
+								}
+
+							}
+, 							{
 								"box" : 								{
 									"bubble" : 1,
 									"bubblepoint" : 0.25,
@@ -2765,8 +2801,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 360.5, 517.0, 185.0, 22.0 ],
-									"text" : "send 'target-coll 'store :foo 'a 'b 'c"
+									"patching_rect" : [ 360.5, 517.0, 198.0, 22.0 ],
+									"text" : "(send* 'target-coll '(store :foo a b c))"
 								}
 
 							}
@@ -2804,12 +2840,13 @@
 , 							{
 								"box" : 								{
 									"bubble" : 1,
+									"bubbleside" : 0,
 									"fontsize" : 13.0,
 									"id" : "obj-44",
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 427.0, 476.0, 104.0, 25.0 ],
+									"patching_rect" : [ 74.200000166893005, 502.400000035762787, 104.0, 40.0 ],
 									"text" : " target-msg-3"
 								}
 
@@ -2821,7 +2858,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 375.0, 476.0, 50.0, 22.0 ],
+									"patching_rect" : [ 109.700001358985901, 476.0, 50.0, 22.0 ],
+									"text" : "1 2 3",
 									"varname" : "target-msg-3"
 								}
 
@@ -2833,7 +2871,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 375.0, 449.0, 55.0, 22.0 ],
+									"patching_rect" : [ 109.700001358985901, 449.0, 55.0, 22.0 ],
 									"text" : "set 4 5 6"
 								}
 
@@ -2845,8 +2883,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 207.5, 476.0, 160.0, 22.0 ],
-									"text" : "send 'target-msg-3 'set 1 2 3"
+									"patching_rect" : [ 207.5, 470.399999916553497, 180.0, 22.0 ],
+									"text" : "(send* 'target-msg-3 '(set 1 2 3))"
 								}
 
 							}
@@ -2871,6 +2909,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 371.5, 363.0, 83.0, 22.0 ],
+									"text" : ":my-keyword",
 									"varname" : "target-msg-2"
 								}
 
@@ -2956,7 +2995,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 195.0, 316.0, 205.0, 22.0 ],
+									"patching_rect" : [ 195.0, 316.0, 170.599999487400055, 22.0 ],
 									"text" : "send 'target-msg-1 'set 1"
 								}
 
@@ -2966,12 +3005,12 @@
 									"bubble" : 1,
 									"fontsize" : 13.0,
 									"id" : "obj-15",
-									"linecount" : 3,
+									"linecount" : 4,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 186.5, 213.0, 302.0, 54.0 ],
-									"text" : "Send the scan message to scan all objects in this patcher and descendents, registering them in s4m by scripting name if they have one set."
+									"patching_rect" : [ 195.0, 200.599999904632568, 302.0, 69.0 ],
+									"text" : "Send the scan message to scan all objects in this patcher and descendents, registering them in s4m by scripting name if they have one set. This also happens automatically on reset."
 								}
 
 							}
@@ -3007,7 +3046,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 449.0, 314.5, 105.5, 25.0 ],
+									"patching_rect" : [ 426.599999666213989, 314.5, 105.5, 25.0 ],
 									"text" : "target-msg-1"
 								}
 
@@ -3019,7 +3058,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 412.0, 316.0, 29.5, 22.0 ],
+									"patching_rect" : [ 389.400000214576721, 316.0, 29.5, 22.0 ],
+									"text" : "1",
 									"varname" : "target-msg-1"
 								}
 
@@ -3058,8 +3098,9 @@
 									"outlettype" : [ "", "" ],
 									"patching_rect" : [ 11.0, 431.0, 79.0, 22.0 ],
 									"saved_object_attributes" : 									{
+										"heap" : 64,
 										"ins" : 1,
-										"log-null" : 132856189007429632,
+										"log-null" : 0,
 										"outs" : 2,
 										"thread" : 104
 									}
@@ -3194,7 +3235,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 217.0, 505.0, 195.0, 505.0, 195.0, 423.0, 20.5, 423.0 ],
+									"midpoints" : [ 217.0, 503.399999976158142, 195.0, 503.399999976158142, 195.0, 423.0, 20.5, 423.0 ],
 									"source" : [ "obj-37", 0 ]
 								}
 
@@ -3248,13 +3289,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 1,
-							"revision" : 8,
+							"revision" : 11,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1056.0, 819.0 ],
+						"rect" : [ 0.0, 26.0, 1356.0, 874.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -3461,7 +3502,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 24.0, 281.0, 276.0, 69.0 ],
-									"text" : "Double-click to view source with examples, or open s4m_help_listeners.scm from the Scheme-for-Max package help directory."
+									"text" : "Double-click to view source with examples, or open s4m_help_listeners.scm from the Scheme for Max package help directory."
 								}
 
 							}
@@ -3681,8 +3722,9 @@
 									"outlettype" : [ "", "" ],
 									"patching_rect" : [ 11.0, 367.0, 252.0, 22.0 ],
 									"saved_object_attributes" : 									{
+										"heap" : 64,
 										"ins" : 2,
-										"log-null" : -9165669666629091328,
+										"log-null" : 0,
 										"outs" : 2,
 										"thread" : 104
 									}
@@ -3937,13 +3979,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 1,
-							"revision" : 8,
+							"revision" : 11,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1056.0, 819.0 ],
+						"rect" : [ 0.0, 26.0, 1356.0, 874.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4042,8 +4084,8 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 182.0, 424.0, 305.0, 83.0 ],
-									"text" : "Dynamically build Scheme code from Max messages.  Commas in message makes two seperate Max messages, so the intepreter runs:\n(define my-var {number})\n(out 0 my-var)"
+									"patching_rect" : [ 182.0, 424.0, 344.200000584125519, 83.0 ],
+									"text" : "Dynamically build Scheme code from Max messages.  Commas in message makes two seperate Max messages, so in the lower example the intepreter runs:\n(define my-var {number})\n(out 0 my-var)"
 								}
 
 							}
@@ -4117,7 +4159,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 274.0, 616.0, 103.0, 22.0 ],
-									"text" : "out 0 'bar"
+									"text" : "(out 0 'foo)"
 								}
 
 							}
@@ -4128,8 +4170,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 314.0, 583.0, 52.0, 22.0 ],
-									"text" : "out 0 $1"
+									"patching_rect" : [ 314.0, 583.0, 60.0, 22.0 ],
+									"text" : "(out 0 $1)"
 								}
 
 							}
@@ -4142,8 +4184,8 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 182.0, 329.0, 303.0, 83.0 ],
-									"text" : "Quoting a symbol (standard Lisp/Scheme style)\ntells Scheme we want to use the symbol itself, not whatever it evaluates to. Technically, it asks\nthe interpreter to skip a round of evaluation. Note that the output has no quote."
+									"patching_rect" : [ 182.0, 329.0, 350.200000703334808, 83.0 ],
+									"text" : "Quoting a symbol (standard Lisp/Scheme style) tells Scheme we want to use the symbol itself, not whatever it evaluates to. Technically, it asks the interpreter to skip a round of evaluation. Note that the output has no quote as Max has converted it to a Max symbol."
 								}
 
 							}
@@ -4194,7 +4236,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 205.0, 207.5, 275.0, 69.0 ],
-									"text" : "In S7 Scheme, a keyword starts with a colon and is a symbol that always evaluates to itself, so it doesn't need to be defined to be output"
+									"text" : "In s7 Scheme, a keyword starts with a colon and is a symbol that always evaluates to itself, so it doesn't need to be defined to be output"
 								}
 
 							}
@@ -4241,8 +4283,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 46.5, 529.5, 171.0, 22.0 ],
-									"text" : "define my-var $1, out 0 my-var"
+									"patching_rect" : [ 46.5, 529.5, 187.0, 22.0 ],
+									"text" : "(define my-var $1), (out 0 my-var)"
 								}
 
 							}
@@ -4278,8 +4320,9 @@
 									"outlettype" : [ "", "" ],
 									"patching_rect" : [ 11.0, 623.0, 79.0, 22.0 ],
 									"saved_object_attributes" : 									{
+										"heap" : 64,
 										"ins" : 1,
-										"log-null" : -7521855802638860288,
+										"log-null" : 0,
 										"outs" : 2,
 										"thread" : 104
 									}
@@ -4514,13 +4557,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 1,
-							"revision" : 8,
+							"revision" : 11,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1056.0, 819.0 ],
+						"rect" : [ 0.0, 26.0, 1356.0, 874.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4552,13 +4595,41 @@
 						"boxes" : [ 							{
 								"box" : 								{
 									"bubble" : 1,
+									"bubblepoint" : 0.25,
+									"fontsize" : 13.0,
+									"id" : "obj-17",
+									"linecount" : 3,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 126.0, 210.5, 335.800000011920929, 54.0 ],
+									"presentation_linecount" : 3,
+									"text" : "you can send strings to Max over OSC for evaluation as Scheme code too, useful for sending directly from your editor. (See editor integration video on YouTube)"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-16",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 27.0, 218.200003385543823, 97.0, 22.0 ],
+									"text" : "udpreceive 7000"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
 									"fontsize" : 13.0,
 									"id" : "obj-15",
 									"linecount" : 3,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 154.5, 361.199999809265137, 187.0, 54.0 ],
+									"patching_rect" : [ 155.300000011920929, 389.20000022649765, 187.0, 54.0 ],
 									"text" : "Attributes to control logging to the console. These can also be set in the inspector."
 								}
 
@@ -4571,7 +4642,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "int" ],
 									"parameter_enable" : 0,
-									"patching_rect" : [ 92.5, 361.199999809265137, 24.0, 24.0 ]
+									"patching_rect" : [ 93.300000011920929, 389.20000022649765, 24.0, 24.0 ]
 								}
 
 							}
@@ -4583,7 +4654,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "int" ],
 									"parameter_enable" : 0,
-									"patching_rect" : [ 35.0, 361.199999809265137, 24.0, 24.0 ]
+									"patching_rect" : [ 35.800000011920929, 389.20000022649765, 24.0, 24.0 ]
 								}
 
 							}
@@ -4594,12 +4665,12 @@
 									"bubbleside" : 0,
 									"fontsize" : 13.0,
 									"id" : "obj-23",
-									"linecount" : 7,
+									"linecount" : 6,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 11.0, 486.0, 374.0, 127.0 ],
-									"text" : "The intepreter starts off by bootstrapping with the s4m.scm file automatically. This file is in the Scheme for Max package, and you can edit it if you want to change startup up definitions. For example, the s4m-filter-result function lets you alter what gets printed to the console after each execution,\nand the post and stringify function control what posting looks like."
+									"patching_rect" : [ 6.999999940395355, 517.200000464916229, 374.0, 113.0 ],
+									"text" : "The intepreter starts off by bootstrapping with the s4m.scm file automatically. This file is in the Scheme for Max package, and you can edit it if you want to change startup up definitions or have some files of your own that want always loaded on boot. You might also want to look at the s74.scm file to check out the convenience functions loaded by default as an extension to s7."
 								}
 
 							}
@@ -4637,7 +4708,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 35.0, 389.0, 49.0, 22.0 ],
+									"patching_rect" : [ 35.800000011920929, 417.000000417232513, 49.0, 22.0 ],
 									"text" : "log-repl"
 								}
 
@@ -4649,7 +4720,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 92.5, 389.0, 47.0, 22.0 ],
+									"patching_rect" : [ 93.300000011920929, 417.000000417232513, 47.0, 22.0 ],
 									"text" : "log-null"
 								}
 
@@ -4657,39 +4728,14 @@
 , 							{
 								"box" : 								{
 									"bubble" : 1,
-									"bubblepoint" : 0.2,
 									"fontsize" : 13.0,
 									"id" : "obj-18",
-									"linecount" : 4,
+									"linecount" : 2,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 508.0, 382.0, 322.0, 69.0 ],
-									"text" : "Another way to dynamically create scheme code in messages boxes.\ntosymbol is required to make Max treat it as a single string symbol, leaving the parentheses in."
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-14",
-									"maxclass" : "newobj",
-									"numinlets" : 1,
-									"numoutlets" : 1,
-									"outlettype" : [ "" ],
-									"patching_rect" : [ 404.0, 440.0, 111.0, 22.0 ],
-									"text" : "prepend eval-string"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-12",
-									"maxclass" : "newobj",
-									"numinlets" : 1,
-									"numoutlets" : 1,
-									"outlettype" : [ "" ],
-									"patching_rect" : [ 404.0, 414.0, 57.0, 22.0 ],
-									"text" : "tosymbol"
+									"patching_rect" : [ 498.399999856948853, 397.20000022649765, 322.0, 40.0 ],
+									"text" : "Another way to dynamically create Scheme code in messages boxes."
 								}
 
 							}
@@ -4700,7 +4746,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 404.0, 382.0, 102.0, 22.0 ],
+									"patching_rect" : [ 383.999999701976776, 405.20000022649765, 102.0, 22.0 ],
 									"text" : "(out 0 (+ 99 100))"
 								}
 
@@ -4714,7 +4760,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 92.5, 276.0, 263.0, 40.0 ],
+									"patching_rect" : [ 86.899999916553497, 327.200000762939453, 263.0, 40.0 ],
 									"text" : "reset will wipe any definitions you've done in the REPL and reload files."
 								}
 
@@ -4726,7 +4772,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 49.0, 285.0, 35.0, 22.0 ],
+									"patching_rect" : [ 42.800000011920929, 336.200000762939453, 35.0, 22.0 ],
 									"text" : "reset"
 								}
 
@@ -4737,7 +4783,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 11.0, 455.0, 121.0, 22.0 ],
+									"patching_rect" : [ 11.800000011920929, 483.000000417232513, 121.0, 22.0 ],
 									"text" : "print out-0 @popup 1"
 								}
 
@@ -4745,15 +4791,15 @@
 , 							{
 								"box" : 								{
 									"bubble" : 1,
-									"bubblepoint" : 0.0,
+									"bubblepoint" : 0.4,
 									"fontsize" : 13.0,
 									"id" : "obj-6",
-									"linecount" : 3,
+									"linecount" : 2,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 126.0, 212.5, 264.0, 54.0 ],
-									"text" : "eval-string \"(my-funct 1 2)\"\nsends raw scheme code to the intepreter for evaluation"
+									"patching_rect" : [ 126.0, 278.100000977516174, 335.800000011920929, 40.0 ],
+									"text" : "eval-string \"(my-funct 1 2)\" sends raw scheme code to the intepreter for evaluation."
 								}
 
 							}
@@ -4762,12 +4808,12 @@
 									"bubble" : 1,
 									"fontsize" : 13.0,
 									"id" : "obj-4",
-									"linecount" : 3,
+									"linecount" : 2,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 154.5, 425.0, 201.0, 54.0 ],
-									"text" : "Each instance of s4m.scm has its own isolated interpreter."
+									"patching_rect" : [ 155.300000011920929, 456.000000417232513, 187.0, 40.0 ],
+									"text" : "Each instance of s4m has its own isolated interpreter."
 								}
 
 							}
@@ -4778,8 +4824,9 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 11.0, 428.0, 83.0, 22.0 ],
+									"patching_rect" : [ 11.800000011920929, 456.000000417232513, 83.0, 22.0 ],
 									"saved_object_attributes" : 									{
+										"heap" : 64,
 										"ins" : 1,
 										"log-null" : 0,
 										"outs" : 1,
@@ -4836,7 +4883,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 11.0, 212.5, 111.0, 22.0 ],
+									"patching_rect" : [ 11.800000011920929, 281.30000102519989, 111.0, 22.0 ],
 									"text" : "prepend eval-string"
 								}
 
@@ -4885,7 +4932,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 44.5, 417.600006222724915, 20.5, 417.600006222724915 ],
+									"midpoints" : [ 45.300000011920929, 445.600006639957428, 21.300000011920929, 445.600006639957428 ],
 									"source" : [ "obj-10", 0 ]
 								}
 
@@ -4893,23 +4940,15 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 58.5, 345.0, 20.5, 345.0 ],
+									"midpoints" : [ 52.300000011920929, 359.400000214576721, 21.300000011920929, 359.400000214576721 ],
 									"source" : [ "obj-11", 0 ]
 								}
 
 							}
 , 							{
 								"patchline" : 								{
-									"destination" : [ "obj-14", 0 ],
-									"source" : [ "obj-12", 0 ]
-								}
-
-							}
-, 							{
-								"patchline" : 								{
-									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 413.5, 470.0, 391.0, 470.0, 391.0, 346.0, 20.5, 346.0 ],
-									"source" : [ "obj-14", 0 ]
+									"destination" : [ "obj-31", 0 ],
+									"source" : [ "obj-16", 0 ]
 								}
 
 							}
@@ -4943,7 +4982,8 @@
 							}
 , 							{
 								"patchline" : 								{
-									"destination" : [ "obj-12", 0 ],
+									"destination" : [ "obj-1", 0 ],
+									"midpoints" : [ 393.499999701976776, 451.200006723403931, 21.300000011920929, 451.200006723403931 ],
 									"source" : [ "obj-5", 0 ]
 								}
 
@@ -4951,7 +4991,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 102.0, 418.400006234645844, 20.5, 418.400006234645844 ],
+									"midpoints" : [ 102.800000011920929, 446.400006651878357, 21.300000011920929, 446.400006651878357 ],
 									"source" : [ "obj-7", 0 ]
 								}
 
@@ -4989,13 +5029,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 1,
-							"revision" : 8,
+							"revision" : 11,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1056.0, 819.0 ],
+						"rect" : [ 0.0, 26.0, 1356.0, 874.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -5026,6 +5066,37 @@
 						"assistshowspatchername" : 0,
 						"boxes" : [ 							{
 								"box" : 								{
+									"bubble" : 1,
+									"fontsize" : 13.0,
+									"id" : "obj-7",
+									"linecount" : 3,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 486.400006711483002, 12.0, 424.400001108646393, 54.0 ],
+									"presentation_linecount" : 5,
+									"text" : "If you're new to Scheme, you'll want to read the language tutorial, Learn Scheme for Max and s7 Scheme.\nhttps://iainctduncan.github.io/learn-scheme-for-max/introduction.html"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
+									"bubbleside" : 0,
+									"fontsize" : 13.0,
+									"id" : "obj-3",
+									"linecount" : 4,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 329.000004589557648, 426.800001919269562, 350.0, 84.0 ],
+									"presentation_linecount" : 4,
+									"text" : "You should definitely use a text-editor with support for parentheses matching. All major programming editors will provide this, though Emacs and Vim are probably two of the best for writing Lisp."
+								}
+
+							}
+, 							{
+								"box" : 								{
 									"id" : "obj-10",
 									"maxclass" : "message",
 									"numinlets" : 2,
@@ -5054,12 +5125,12 @@
 									"bubbleside" : 3,
 									"fontsize" : 13.0,
 									"id" : "obj-9",
-									"linecount" : 3,
+									"linecount" : 5,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 14.5, 219.0, 333.0, 54.0 ],
-									"text" : "\"reset\" will wipe and reload the intepreter, and reload the source file specified in the s4m.scm object box, if one is present."
+									"patching_rect" : [ 11.0, 204.5, 333.0, 83.0 ],
+									"text" : "\"reset\" will wipe and reload the intepreter, and reload the source file specified in the s4m.scm object box, if one is present. It will also scan the patcher and all children for object scripting names so that you can send them messages from Scheme."
 								}
 
 							}
@@ -5093,12 +5164,12 @@
 									"bubblepoint" : 0.2,
 									"fontsize" : 13.0,
 									"id" : "obj-27",
-									"linecount" : 20,
+									"linecount" : 19,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 667.0, 88.0, 228.0, 301.0 ],
-									"text" : "Messages sent to inlet 0 are evaluated as scheme code, automatically adding outer parentheses as if the first is: \n(define my-var 99)\n\nThis means that normal max symbols will be treated as scheme variables, producing unbound-symbol errors if undefined. The second message here will be an error if we haven't run the first one. (see Symbols tab)\n\n\"define\" is core scheme.\n\"out\" is part of scheme-for-max, to send out outlets.\n\"post\" logs to the max-console.\n\"my-adder\" is a function defined in the file s4m_help_basics.scm"
+									"patching_rect" : [ 667.0, 88.0, 228.0, 286.0 ],
+									"text" : "Messages sent to inlet 0 are evaluated as scheme code, automatically adding outer parentheses if they are missing.\n\nThis means that normal max symbols will be treated as Scheme variables, producing unbound-symbol errors if undefined. The second message here will be an error if we haven't run the first one. (see Symbols tab)\n\n\"define\" is core scheme.\n\"out\" is part of scheme-for-max, to send out outlets.\n\"post\" logs to the max-console.\n\"my-adder\" is a function defined in the file s4m_help_basics.scm"
 								}
 
 							}
@@ -5113,7 +5184,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 6.0, 80.5, 342.0, 112.0 ],
-									"text" : "\"read\" to inlet 0 will load a file from your max-file-path, without reseting the interpreter. This allows multiple files in the session. These files are in the Scheme-for-Max packages help directory.\nThe second redifines the inc-my-int function without redefining the state variable it works on, allowing hot reloading of functions while preserving state."
+									"text" : "\"read\" to inlet 0 will load a file from your max-file-path, without reseting the interpreter. This allows multiple files in the session. These files are in the Scheme for Max packages help directory.\nThe second redefines the inc-my-int function without redefining the state variable it works on, allowing hot reloading of functions while preserving state."
 								}
 
 							}
@@ -5124,12 +5195,12 @@
 									"bubbleside" : 3,
 									"fontsize" : 13.0,
 									"id" : "obj-18",
-									"linecount" : 8,
+									"linecount" : 7,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 6.0, 283.0, 350.0, 127.0 ],
-									"text" : "A filename in the box will be loaded on startup.\nDouble click to open an editor. Saving will reload the file without wiping the interpreter, but redefinitions will clobber existing definitions.\n\nChanging the filename in the object box will re-create the object, thus resetting the interpreter, and wiping all active definitions"
+									"patching_rect" : [ 6.0, 305.400000333786011, 350.0, 112.0 ],
+									"text" : "A filename in the box will be loaded on startup, searching from your Max file paths. Double click to see the full path for the current file in the console. \n\nChanging the filename in the object box will re-create the object, thus resetting the interpreter, and wiping all active definitions."
 								}
 
 							}
@@ -5151,8 +5222,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 565.5, 92.0, 98.0, 22.0 ],
-									"text" : "define my-var 99"
+									"patching_rect" : [ 553.0, 92.0, 106.0, 22.0 ],
+									"text" : "(define my-var 99)"
 								}
 
 							}
@@ -5199,8 +5270,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 565.5, 125.5, 75.0, 22.0 ],
-									"text" : "out 0 my-var"
+									"patching_rect" : [ 565.5, 125.5, 83.0, 22.0 ],
+									"text" : "(out 0 my-var)"
 								}
 
 							}
@@ -5248,8 +5319,9 @@
 									"outlettype" : [ "", "" ],
 									"patching_rect" : [ 371.0, 298.0, 201.0, 22.0 ],
 									"saved_object_attributes" : 									{
+										"heap" : 64,
 										"ins" : 1,
-										"log-null" : -5854116565628223488,
+										"log-null" : 0,
 										"outs" : 2,
 										"thread" : 104
 									}
@@ -5345,7 +5417,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 575.0, 119.0, 552.0, 119.0, 552.0, 279.0, 380.5, 279.0 ],
+									"midpoints" : [ 562.5, 119.0, 552.0, 119.0, 552.0, 279.0, 380.5, 279.0 ],
 									"source" : [ "obj-4", 0 ]
 								}
 
@@ -5398,7 +5470,7 @@
 		"lines" : [  ],
 		"dependency_cache" : [ 			{
 				"name" : "s4m.repl.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme4max/Scheme-For-Max/patchers",
+				"bootpath" : "~/Documents/Max 8/Packages/max-sdk-8.0.3/source/scheme-for-max/Scheme-For-Max/patchers",
 				"patcherrelativepath" : "../patchers",
 				"type" : "JSON",
 				"implicit" : 1
