@@ -8,6 +8,7 @@ import os
 
 version = "0.3.0-rc1"     # appended to tarball name
 dry_run = False
+do_install = False
 
 externals_src = "../../externals"
 externals_dest = "dist/Scheme-For-Max/externals"
@@ -70,9 +71,6 @@ def package_release():
 
 if __name__=="__main__":
     print ("\nmake-release.py: package up a scheme-for-max release")
-
-    dry_run = False
-    do_install = True
 
     if dry_run:
         print("... Dry run, commands only printed")
