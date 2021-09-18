@@ -1,0 +1,13 @@
+Notes on trying the dsp verion
+
+- outlet creation will be all buggered, need to fix that
+
+- I got audio rendering, but as soon as I changed a variable used in the audio
+  routine from outside, it crashed, so not sure if this will actually every work
+  - it crashes as soon as it tries to read a global variable, does turning off the gc help??
+  - even with the gc locked out of the dsp routine, it's a crash as soon as I update the global
+
+- I wonder if I can just use the perform routine to set a clock to run in the scheduler
+  once a cycle though??
+
+

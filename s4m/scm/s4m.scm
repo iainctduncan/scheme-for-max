@@ -19,19 +19,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; From here down, you should not change things unless you know what it's going to do
 
-(define ramp
-  (let ((v 0))
-    (lambda()
-      (set! v (if (= 127 v) 0 (+ 1 v)))
-      (out 0 v))))
-  
-
-(define (s4m-krate)
-  ;(post "(s4m-krate)")
-  (ramp)
-  '()
-)
-
 
 ; function for getting attributes from the s4m object
 ; this is a function so that users won't try to set on the attr hash from scheme
@@ -209,5 +196,37 @@
 (define s4m-done-bootstrap #t)
 
 (define buffer-samples buffer-size)
+
+
+;* krate dsp stuff
+(define s4m-krate-registry (hash-table))
+
+(define (add-krate fun)
+  (post "adding krate function")
+  (let ((handle (gensym)))
+    (set! (s4m-krate-registry handle) fun)
+    handle))
+
+(define (remove-krate handle)
+  (post "removing krate function")
+  (set! (s4m-krate-registry handle) #f))
+
+; call all registered krate handlers
+(define (s4m-krate)
+  ;(post "(s4m-krate)")
+  (for-each
+    (lambda (handle-fun)
+      ((cdr handle-fun)))
+    s4m-krate-registry)
+  '()
+)
+
+(define k-ramp
+  (let ((v 0))
+    (lambda()
+      (set! v (if (= 127 v) 0 (+ 1 v)))
+      (out 1 v))))
+
+(add-krate k-ramp)
 
 ;(post "s4m.scm init complete")
