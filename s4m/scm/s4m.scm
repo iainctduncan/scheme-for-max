@@ -221,12 +221,33 @@
   '()
 )
 
-(define k-ramp
-  (let ((v 0))
-    (lambda()
-      (set! v (if (= 127 v) 0 (+ 1 v)))
-      (out 1 v))))
-
-(add-krate k-ramp)
+;(define k-ramp
+;  (let ((v 0))
+;    (lambda()
+;      (set! v (if (= 127 v) 0 (+ 1 v)))
+;      (out 1 v))))
+;
+;(define k-ramp-2
+;  (let ((v 0))
+;    (lambda()
+;      (set! v (if (>= v 127) 0 (+ 2 v)))
+;      (out 2 v))))
+;
+;(define k-ramp-3
+;  (let ((v 0))
+;    (lambda()
+;      (set! v (if (>= v 127) 0 (+ 0.5 v)))
+;      (out 3 v))))
+;
+;(define k-ramp-4
+;  (let ((v 0))
+;    (lambda()
+;      (set! v (if (>= v 127) 0 (+ 0.3 v)))
+;      (out 4 v))))
+;
+;(add-krate k-ramp)
+;(add-krate k-ramp-2)
+;(add-krate k-ramp-3)
+;(add-krate k-ramp-4)
 
 ;(post "s4m.scm init complete")
