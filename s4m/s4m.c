@@ -23,7 +23,7 @@
 #define MAX_ATOMS_PER_OUTPUT_LIST 1024
 #define BOOTSTRAP_FILE "s4m.scm"
 #define MIN_HEAP_KB 8
-#define DEFAULT_HEAP_KB 64
+#define DEFAULT_HEAP_KB 32000
 
 // object struct
 typedef struct _s4m {
@@ -677,14 +677,20 @@ void s4m_make(t_s4m *x){
 }
 
 void s4m_eval_atoms_as_string(t_s4m *x, t_symbol *sym, long argc, t_atom *argv){
-    //post("s4m_eval_atoms_as_string");
+    //post("s4m_eval_atoms_as_string() argc: %i", argc);
     char *token_1 = sym->s_name;
     int token_1_size = strlen(token_1);
     long size = 0;
     char *atoms_as_text = NULL;
 
+    // single token handler, just eval the symbol
+    if(argc == 0){
+        s4m_s7_eval_c_string(x, token_1);
+        return;
+    }
+    // multiple token, more complex
     t_max_err err = atom_gettext(argc, argv, &size, &atoms_as_text, OBEX_UTIL_ATOM_GETTEXT_DEFAULT);
-    if (err == MAX_ERR_NONE && size && atoms_as_text) {
+    if(err == MAX_ERR_NONE && size && atoms_as_text) {
         int code_str_size = token_1_size + size + 1;
         char *code_str = (char *)sysmem_newptr( sizeof( char ) * code_str_size);
         sprintf(code_str, "%s %s", token_1, atoms_as_text);
@@ -1649,7 +1655,7 @@ void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *arg
     t_atom *ap;
 
 
-    // IN PROGRESS
+    // handle incoming messages that are complete code
     if(inlet_num == 0 && s->s_name[0] == '('){
       //post("caught raw code, first sym: %s", s->s_name);
       s4m_eval_atoms_as_string(x, s, argc, argv);
@@ -1716,12 +1722,11 @@ void s4m_execute_callback(t_s4m *x, t_symbol *s, short ac, t_atom *av){
 
 
 // convert a max atom to the appropriate type of s7 pointer
-// added top level protection, not sure if needs recursive protection
+// NB: trying to add gc protection here broke everything, don't do it
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
     //post("max_atom_to_s7_obj()");
     s7_pointer s7_obj;
-    s7_gc_protect(s7, s7_obj);
-    
+  
     // case for arrays of atoms, which will be turned into S7 vectors
     // pertinent docs: https://cycling74.com/sdk/max-sdk-8.0.3/html/group__atomarray.html
     if( atomisatomarray(ap) ){
@@ -1803,8 +1808,6 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
             s7_obj = s7_nil(s7);
       }
     }
-
-    s7_gc_unprotect_at(s7, s7_obj); 
     return s7_obj;
 }
 
