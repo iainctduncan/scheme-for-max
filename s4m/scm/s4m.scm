@@ -161,8 +161,7 @@
 (define (out outlet_num val) 
   (max-output outlet_num val))
 
-; out* - special output 
-; sequences are spread out
+; out* - special output that spreads sequences over the available outlets
 (define (out* val)
   ;(post "out*" val)
   (let ((outs (*s4m* :outs))
@@ -193,7 +192,5 @@
 (define (out-7 args) (max-output 7 args))
 
 (define s4m-done-bootstrap #t)
-
-(define buffer-samples buffer-size)
 
 ;(post "s4m.scm init complete")
