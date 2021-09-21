@@ -41,7 +41,7 @@
 		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
-					"id" : "obj-12",
+					"id" : "obj-13",
 					"maxclass" : "newobj",
 					"numinlets" : 0,
 					"numoutlets" : 0,
@@ -57,6 +57,120 @@
 ,
 						"classnamespace" : "box",
 						"rect" : [ 34.0, 105.0, 906.0, 729.0 ],
+						"bglocked" : 0,
+						"openinpresentation" : 0,
+						"default_fontsize" : 12.0,
+						"default_fontface" : 0,
+						"default_fontname" : "Arial",
+						"gridonopen" : 1,
+						"gridsize" : [ 15.0, 15.0 ],
+						"gridsnaponopen" : 1,
+						"objectsnaponopen" : 1,
+						"statusbarvisible" : 2,
+						"toolbarvisible" : 1,
+						"lefttoolbarpinned" : 0,
+						"toptoolbarpinned" : 0,
+						"righttoolbarpinned" : 0,
+						"bottomtoolbarpinned" : 0,
+						"toolbars_unpinned_last_save" : 0,
+						"tallnewobj" : 0,
+						"boxanimatetime" : 200,
+						"enablehscroll" : 1,
+						"enablevscroll" : 1,
+						"devicewidth" : 0.0,
+						"description" : "",
+						"digest" : "",
+						"tags" : "",
+						"style" : "",
+						"subpatcher_template" : "",
+						"showontab" : 1,
+						"assistshowspatchername" : 0,
+						"boxes" : [ 							{
+								"box" : 								{
+									"id" : "obj-3",
+									"linecount" : 2,
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 19.0, 389.0, 97.0, 35.0 ],
+									"text" : ";\rmax maxwindow"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"fontsize" : 14.0,
+									"id" : "obj-24",
+									"linecount" : 20,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 19.0, 50.0, 845.0, 319.0 ],
+									"text" : "Scheme for Max works well in Max For Live, but there are a few things you'll want to know.\n\nIn M4L, Max always runs as if Audio in Interrupt is selected, and the signal vector size is always 64. If the Live audio engine is not on, the high priority thread will not run. If your s4m object is unresponsive, check this.\n\nTempo dependent delays and clocks run off the Live transport. The easiest way to get perfect lock up is to use the quantized delay and clock methods, delay-tq and clock-ticks. When Live's transport starts, these will start too and will stay in sync with the main transport. The plugsync~ object is useful for triggering Scheme functions from the Live transport. \n\nYou can use Scheme for Max with the Live API. However, the Live API objects always run in the low priority thread. Messages to them from a high priority event are implicitly deferred. So you should make your Live API calls from low thread s4m object. S4M 0.3 now includes delays and clocks in the low thread object to do this, or you can send messages to your low priority instance from a high priority instance.\n\nudpreceive is useful for receiving Scheme code, but a word of warning: if you are editing patches while you use it, it can hang. Changing the port number fixes this.\n\nIt's helpful to be able to see the Max console. Use the max window message shown below.\n\nExample code for using the Live API is in the Extras folder, and is shown below. "
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"fontface" : 3,
+									"fontsize" : 13.0,
+									"id" : "obj-85",
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 375.0, 14.0, 174.0, 21.0 ],
+									"text" : "(open the console!)"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"fontface" : 1,
+									"fontsize" : 16.0,
+									"id" : "obj-2",
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 19.0, 11.0, 343.0, 24.0 ],
+									"text" : "Scheme For Max in Max For Live"
+								}
+
+							}
+ ],
+						"lines" : [  ]
+					}
+,
+					"patching_rect" : [ 969.0, 56.0, 42.0, 22.0 ],
+					"saved_object_attributes" : 					{
+						"description" : "",
+						"digest" : "",
+						"globalpatchername" : "",
+						"tags" : ""
+					}
+,
+					"text" : "p M4L"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-12",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 0,
+					"patcher" : 					{
+						"fileversion" : 1,
+						"appversion" : 						{
+							"major" : 8,
+							"minor" : 1,
+							"revision" : 11,
+							"architecture" : "x64",
+							"modernui" : 1
+						}
+,
+						"classnamespace" : "box",
+						"rect" : [ 0.0, 26.0, 906.0, 729.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -495,8 +609,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 1001.0, 56.0, 133.0, 22.0 ],
-					"presentation_linecount" : 3,
+					"patching_rect" : [ 891.0, 56.0, 61.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -504,7 +617,7 @@
 						"tags" : ""
 					}
 ,
-					"text" : "p Performance-and-GC"
+					"text" : "p Latency"
 				}
 
 			}
@@ -1457,7 +1570,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 849.0, 56.0, 119.0, 22.0 ],
+					"patching_rect" : [ 778.0, 56.0, 95.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -1465,7 +1578,7 @@
 						"tags" : ""
 					}
 ,
-					"text" : "p Delays-and-Clocks"
+					"text" : "p Delays/Clocks"
 				}
 
 			}
@@ -2258,7 +2371,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 765.0, 56.0, 69.0, 22.0 ],
+					"patching_rect" : [ 694.0, 56.0, 69.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -2688,7 +2801,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 665.0, 56.0, 81.0, 22.0 ],
+					"patching_rect" : [ 630.0, 56.0, 45.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -2696,7 +2809,7 @@
 						"tags" : ""
 					}
 ,
-					"text" : "p Dictionaries"
+					"text" : "p Dicts"
 				}
 
 			}
@@ -3026,7 +3139,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 513.0, 56.0, 119.0, 22.0 ],
+					"patching_rect" : [ 513.0, 56.0, 94.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -3034,7 +3147,7 @@
 						"tags" : ""
 					}
 ,
-					"text" : "p Tables-and-Buffers"
+					"text" : "p Tables/Buffers"
 				}
 
 			}

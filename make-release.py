@@ -26,6 +26,7 @@ scm_files = [
     ("loop.scm", "loop.scm"),
     ("utilities.scm", "utilities.scm"),
     ("schedule.scm", "schedule.scm"),
+    ("live-api.scm", "live-api.scm"),
 ]
 # list of patchers aside from the external
 patcher_files = [
