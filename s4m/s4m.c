@@ -23,7 +23,7 @@
 #define MAX_ATOMS_PER_OUTPUT_LIST 1024
 #define BOOTSTRAP_FILE "s4m.scm"
 #define MIN_HEAP_KB 8
-#define DEFAULT_HEAP_KB 32000
+#define DEFAULT_HEAP_KB 32
 
 // object struct
 typedef struct _s4m {
