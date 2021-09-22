@@ -260,7 +260,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 19.0, 347.5, 290.0, 57.0 ],
+									"patching_rect" : [ 19.0, 347.5, 294.0, 57.0 ],
 									"text" : "Click to see the Max console in Live. The API objects are in the live-api sub-patch."
 								}
 
@@ -671,12 +671,12 @@
 								"box" : 								{
 									"fontsize" : 14.0,
 									"id" : "obj-24",
-									"linecount" : 18,
+									"linecount" : 17,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 19.0, 50.0, 845.0, 288.0 ],
-									"text" : "Scheme for Max works well in Max For Live, but there are a few things you'll want to know. In M4L, Max always runs as if Audio in Interrupt is selected, and the signal vector size is always 64. If the Live audio engine is not on, the high priority thread will not run. If your s4m object is unresponsive, check this.\n\nTempo dependent delays and clocks run off the Live transport. The easiest way to get perfect lock up is to use the quantized delay and clock methods, delay-tq and clock-ticks. When Live's transport starts, these will start too and will stay in sync with the main transport. The plugsync~ object is useful for triggering Scheme functions from the Live transport. \n\nYou can use Scheme for Max with the Live API. However, the Live API objects always run in the low priority thread. Messages to them from a high priority event are implicitly deferred. So you should make your Live API calls from low thread s4m object. S4M 0.3 now includes delays and clocks in the low thread object to do this, or you can send messages to your low priority instance from a high priority instance.\n\nudpreceive is useful for receiving Scheme code, but a word of warning: if you are editing patches while you use it, it can hang. Changing the port number fixes this.\n\nExample code for using the Live API is in the extras folder of the Scheme for Max package, along with a sample device to try, and is shown below. Or you can copy the objects (not the messages) here to a M4L device to try it out."
+									"patching_rect" : [ 19.0, 50.0, 845.0, 272.0 ],
+									"text" : "Scheme for Max works well in Max For Live, but there are a few things you'll want to know. In M4L, Max always runs as if Audio in Interrupt is selected, and the signal vector size is always 64. If the Live audio engine is not on, the high priority thread will not run. If your s4m object is unresponsive, check this. udpreceive is useful for receiving Scheme code, but a word of warning: if you are editing patches while you use it, it can hang. Changing the port number fixes this.\n\nTempo dependent delays and clocks run off the Live transport. The easiest way to get perfect lock up is to use the quantized delay and clock methods, delay-tq and clock-ticks. When Live's transport starts, these will start too and will stay in sync with the main transport. The plugsync~ object is useful for triggering Scheme functions from the Live transport. \n\nYou can use Scheme for Max with the Live API. However, the Live API objects always run in the low priority thread. Messages to them from a high priority event are implicitly deferred. So you should make your Live API calls from low thread s4m object. S4M 0.3 now includes delays and clocks in the low thread object to do this, or you can send messages to your low priority instance from a high priority instance. To use the the live-api object in the examples below, you probably want to add (load-from-max \"live-api.scm\") to your s4m.scm file. You can edit live-api.scm to add your own convenience functions, like the fire-clip examples below.\n\nExample code for using the Live API is in the extras folder of the Scheme for Max package, along with a sample device to try, and is shown below. Or you can copy the objects (not the messages) here to a M4L device to try it out. "
 								}
 
 							}

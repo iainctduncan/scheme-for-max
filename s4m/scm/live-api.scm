@@ -34,7 +34,6 @@
 (define (stop)
   (live-api 'send-path `(live_set) '(set is_playing 0)))
 
-
 ;********************************************************************************
 ; The low-level api, normally you should not need to change this
 (define live-api
