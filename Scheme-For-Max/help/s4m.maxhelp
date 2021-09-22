@@ -88,13 +88,61 @@
 						"assistshowspatchername" : 0,
 						"boxes" : [ 							{
 								"box" : 								{
-									"id" : "obj-42",
-									"maxclass" : "newobj",
+									"id" : "obj-5",
+									"maxclass" : "toggle",
 									"numinlets" : 1,
 									"numoutlets" : 1,
+									"outlettype" : [ "int" ],
+									"parameter_enable" : 0,
+									"patching_rect" : [ 510.0, 500.0, 24.0, 24.0 ]
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-4",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 2,
+									"outlettype" : [ "bang", "bang" ],
+									"patching_rect" : [ 462.0, 434.0, 32.0, 22.0 ],
+									"text" : "t b b"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-8",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 3,
+									"outlettype" : [ "", "int", "int" ],
+									"patching_rect" : [ 335.5, 434.0, 48.0, 22.0 ],
+									"text" : "change"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-7",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 466.0, 382.5, 403.0, 22.0 ],
-									"text" : "loadmess (define (transport-state state) (post \"transport state now:\" state))"
+									"patching_rect" : [ 462.0, 465.0, 348.0, 22.0 ],
+									"text" : "(define (transport-state state) (post \"transport state now:\" state))"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-1",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 3,
+									"outlettype" : [ "bang", "int", "int" ],
+									"patching_rect" : [ 462.0, 408.0, 83.0, 22.0 ],
+									"text" : "live.thisdevice"
 								}
 
 							}
@@ -104,7 +152,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 339.5, 424.0, 47.0, 22.0 ],
+									"patching_rect" : [ 335.5, 493.5, 60.0, 22.0 ],
 									"text" : "s #0_in"
 								}
 
@@ -116,7 +164,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 339.5, 382.5, 111.0, 22.0 ],
+									"patching_rect" : [ 335.5, 465.0, 111.0, 22.0 ],
 									"text" : "(transport-state $1)"
 								}
 
@@ -124,14 +172,15 @@
 , 							{
 								"box" : 								{
 									"bubble" : 1,
+									"bubbleside" : 2,
 									"fontsize" : 14.0,
 									"id" : "obj-36",
+									"linecount" : 2,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 450.5, 343.5, 477.0, 26.0 ],
-									"presentation_linecount" : 3,
-									"text" : "You can use plugsync~ to trigger Scheme calls from a transport change."
+									"patching_rect" : [ 322.5, 347.5, 477.0, 57.0 ],
+									"text" : "You can use plugsync~ to trigger Scheme calls from a transport change, and live.thisdevice to reset s4m and trigger functions on device ready."
 								}
 
 							}
@@ -142,7 +191,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 9,
 									"outlettype" : [ "int", "int", "int", "float", "list", "float", "float", "int", "int" ],
-									"patching_rect" : [ 339.5, 347.5, 103.0, 22.0 ],
+									"patching_rect" : [ 335.5, 408.0, 103.0, 22.0 ],
 									"text" : "plugsync~"
 								}
 
@@ -157,8 +206,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 243.0, 517.0, 225.0, 72.0 ],
-									"presentation_linecount" : 4,
+									"patching_rect" : [ 234.0, 590.0, 228.0, 72.0 ],
 									"text" : "Some sample high-level functions, see the code in live-api.scm in the Extras folder."
 								}
 
@@ -169,7 +217,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 518.0, 495.0, 47.0, 22.0 ],
+									"patching_rect" : [ 510.0, 563.0, 60.0, 22.0 ],
 									"text" : "s #0_in"
 								}
 
@@ -181,9 +229,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 518.0, 463.0, 266.0, 22.0 ],
-									"presentation_linecount" : 6,
-									"text" : "(live-api 'send-path `(live_set) '(set is_playing 0))"
+									"patching_rect" : [ 510.0, 531.0, 271.0, 22.0 ],
+									"text" : "(live-api 'send-path '(live_set) '(set is_playing $1))"
 								}
 
 							}
@@ -197,8 +244,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 510.0, 517.0, 301.0, 72.0 ],
-									"presentation_linecount" : 5,
+									"patching_rect" : [ 504.0, 590.0, 301.0, 72.0 ],
 									"text" : "A low-level call to start the transport. The first list arg is the Live path, and the second is the message to send to the retrieved object."
 								}
 
@@ -206,31 +252,16 @@
 , 							{
 								"box" : 								{
 									"bubble" : 1,
-									"bubblepoint" : 0.6,
+									"bubblepoint" : 0.2,
 									"bubbleside" : 2,
-									"fontsize" : 14.0,
-									"id" : "obj-25",
-									"linecount" : 2,
-									"maxclass" : "comment",
-									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 25.0, 402.0, 216.0, 57.0 ],
-									"text" : "The objects used to run the Live API from Scheme are in here."
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"bubble" : 1,
 									"fontsize" : 14.0,
 									"id" : "obj-23",
 									"linecount" : 2,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 130.0, 347.5, 180.0, 42.0 ],
-									"presentation_linecount" : 2,
-									"text" : "Click or bang to see the Max console in Live"
+									"patching_rect" : [ 19.0, 347.5, 290.0, 57.0 ],
+									"text" : "Click to see the Max console in Live. The API objects are in the live-api sub-patch."
 								}
 
 							}
@@ -244,7 +275,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 20.0, 517.0, 188.0, 72.0 ],
+									"patching_rect" : [ 14.0, 590.0, 188.0, 72.0 ],
 									"text" : "Double-click the s4m object to find the live-api.scm file on your system (in console)"
 								}
 
@@ -256,7 +287,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 437.0, 463.0, 31.0, 22.0 ],
+									"patching_rect" : [ 431.0, 531.0, 31.0, 22.0 ],
 									"text" : "stop"
 								}
 
@@ -268,7 +299,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 397.0, 463.0, 31.0, 22.0 ],
+									"patching_rect" : [ 391.0, 531.0, 31.0, 22.0 ],
 									"text" : "play"
 								}
 
@@ -279,7 +310,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 243.0, 493.0, 47.0, 22.0 ],
+									"patching_rect" : [ 237.0, 561.0, 60.0, 22.0 ],
 									"text" : "s #0_in"
 								}
 
@@ -291,8 +322,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 317.0, 463.0, 73.0, 22.0 ],
-									"presentation_linecount" : 2,
+									"patching_rect" : [ 311.0, 531.0, 73.0, 22.0 ],
 									"text" : "stop-clip 0 0"
 								}
 
@@ -304,7 +334,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 243.0, 463.0, 67.0, 22.0 ],
+									"patching_rect" : [ 237.0, 531.0, 67.0, 22.0 ],
 									"text" : "fire-clip 0 0"
 								}
 
@@ -316,7 +346,7 @@
 									"numinlets" : 0,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 69.0, 461.0, 45.0, 22.0 ],
+									"patching_rect" : [ 53.0, 477.0, 58.0, 22.0 ],
 									"text" : "r #0_in"
 								}
 
@@ -328,7 +358,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 25.0, 461.0, 35.0, 22.0 ],
+									"patching_rect" : [ 14.0, 477.0, 35.0, 22.0 ],
 									"text" : "reset"
 								}
 
@@ -340,7 +370,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 20.0, 493.0, 169.0, 22.0 ],
+									"patching_rect" : [ 14.0, 509.0, 169.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"heap" : 32,
 										"ins" : 1,
@@ -371,7 +401,7 @@
 										}
 ,
 										"classnamespace" : "box",
-										"rect" : [ 619.0, 120.0, 640.0, 480.0 ],
+										"rect" : [ 323.0, 126.0, 640.0, 480.0 ],
 										"bglocked" : 0,
 										"openinpresentation" : 0,
 										"default_fontsize" : 12.0,
@@ -612,7 +642,7 @@
  ]
 									}
 ,
-									"patching_rect" : [ 125.0, 461.0, 57.0, 22.0 ],
+									"patching_rect" : [ 126.0, 477.0, 57.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"description" : "",
 										"digest" : "",
@@ -632,7 +662,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 25.0, 351.0, 97.0, 35.0 ],
+									"patching_rect" : [ 19.0, 413.0, 97.0, 35.0 ],
 									"text" : ";\rmax maxwindow"
 								}
 
@@ -641,12 +671,12 @@
 								"box" : 								{
 									"fontsize" : 14.0,
 									"id" : "obj-24",
-									"linecount" : 17,
+									"linecount" : 18,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 19.0, 50.0, 845.0, 272.0 ],
-									"text" : "Scheme for Max works well in Max For Live, but there are a few things you'll want to know. In M4L, Max always runs as if Audio in Interrupt is selected, and the signal vector size is always 64. If the Live audio engine is not on, the high priority thread will not run. If your s4m object is unresponsive, check this.\n\nTempo dependent delays and clocks run off the Live transport. The easiest way to get perfect lock up is to use the quantized delay and clock methods, delay-tq and clock-ticks. When Live's transport starts, these will start too and will stay in sync with the main transport. The plugsync~ object is useful for triggering Scheme functions from the Live transport. \n\nYou can use Scheme for Max with the Live API. However, the Live API objects always run in the low priority thread. Messages to them from a high priority event are implicitly deferred. So you should make your Live API calls from low thread s4m object. S4M 0.3 now includes delays and clocks in the low thread object to do this, or you can send messages to your low priority instance from a high priority instance.\n\nudpreceive is useful for receiving Scheme code, but a word of warning: if you are editing patches while you use it, it can hang. Changing the port number fixes this.\n\nExample code for using the Live API is in the Extras folder, and is shown below. "
+									"patching_rect" : [ 19.0, 50.0, 845.0, 288.0 ],
+									"text" : "Scheme for Max works well in Max For Live, but there are a few things you'll want to know. In M4L, Max always runs as if Audio in Interrupt is selected, and the signal vector size is always 64. If the Live audio engine is not on, the high priority thread will not run. If your s4m object is unresponsive, check this.\n\nTempo dependent delays and clocks run off the Live transport. The easiest way to get perfect lock up is to use the quantized delay and clock methods, delay-tq and clock-ticks. When Live's transport starts, these will start too and will stay in sync with the main transport. The plugsync~ object is useful for triggering Scheme functions from the Live transport. \n\nYou can use Scheme for Max with the Live API. However, the Live API objects always run in the low priority thread. Messages to them from a high priority event are implicitly deferred. So you should make your Live API calls from low thread s4m object. S4M 0.3 now includes delays and clocks in the low thread object to do this, or you can send messages to your low priority instance from a high priority instance.\n\nudpreceive is useful for receiving Scheme code, but a word of warning: if you are editing patches while you use it, it can hang. Changing the port number fixes this.\n\nExample code for using the Live API is in the extras folder of the Scheme for Max package, along with a sample device to try, and is shown below. Or you can copy the objects (not the messages) here to a M4L device to try it out."
 								}
 
 							}
@@ -679,6 +709,13 @@
  ],
 						"lines" : [ 							{
 								"patchline" : 								{
+									"destination" : [ "obj-4", 0 ],
+									"source" : [ "obj-1", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
 									"destination" : [ "obj-10", 0 ],
 									"source" : [ "obj-12", 0 ]
 								}
@@ -701,7 +738,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-17", 0 ],
-									"midpoints" : [ 326.5, 489.0, 252.5, 489.0 ],
+									"midpoints" : [ 320.5, 557.0, 246.5, 557.0 ],
 									"source" : [ "obj-16", 0 ]
 								}
 
@@ -709,7 +746,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-17", 0 ],
-									"midpoints" : [ 446.5, 490.0, 252.5, 490.0 ],
+									"midpoints" : [ 440.5, 558.0, 246.5, 558.0 ],
 									"source" : [ "obj-19", 0 ]
 								}
 
@@ -717,7 +754,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-17", 0 ],
-									"midpoints" : [ 406.5, 490.0, 252.5, 490.0 ],
+									"midpoints" : [ 400.5, 558.0, 246.5, 558.0 ],
 									"source" : [ "obj-20", 0 ]
 								}
 
@@ -731,7 +768,7 @@
 							}
 , 							{
 								"patchline" : 								{
-									"destination" : [ "obj-38", 0 ],
+									"destination" : [ "obj-8", 0 ],
 									"source" : [ "obj-31", 0 ]
 								}
 
@@ -745,16 +782,45 @@
 							}
 , 							{
 								"patchline" : 								{
+									"destination" : [ "obj-12", 0 ],
+									"midpoints" : [ 484.5, 460.0, 23.5, 460.0 ],
+									"source" : [ "obj-4", 1 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-7", 0 ],
+									"source" : [ "obj-4", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-27", 0 ],
+									"source" : [ "obj-5", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
 									"destination" : [ "obj-39", 0 ],
-									"midpoints" : [ 475.5, 415.0, 349.0, 415.0 ],
-									"source" : [ "obj-42", 0 ]
+									"midpoints" : [ 471.5, 489.5, 345.0, 489.5 ],
+									"source" : [ "obj-7", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-38", 0 ],
+									"source" : [ "obj-8", 0 ]
 								}
 
 							}
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-10", 0 ],
-									"midpoints" : [ 134.5, 487.0, 29.5, 487.0 ],
+									"midpoints" : [ 135.5, 503.0, 23.5, 503.0 ],
 									"source" : [ "obj-9", 0 ]
 								}
 
@@ -791,7 +857,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 906.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1066.0, 729.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -820,7 +886,6 @@
 						"subpatcher_template" : "",
 						"showontab" : 1,
 						"assistshowspatchername" : 0,
-						"visible" : 1,
 						"boxes" : [ 							{
 								"box" : 								{
 									"bgcolor" : [ 0.886274509803922, 0.866666666666667, 0.866666666666667, 0.0 ],
@@ -930,7 +995,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 20.5, 411.5, 47.0, 22.0 ],
+									"patching_rect" : [ 20.5, 411.5, 60.0, 22.0 ],
 									"text" : "s #0_in"
 								}
 
@@ -1001,7 +1066,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 18.0, 531.0, 47.0, 22.0 ],
+									"patching_rect" : [ 18.0, 531.0, 60.0, 22.0 ],
 									"text" : "s #0_in"
 								}
 
@@ -1036,7 +1101,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 22.5, 243.0, 47.0, 22.0 ],
+									"patching_rect" : [ 22.5, 243.0, 60.0, 22.0 ],
 									"text" : "s #0_in"
 								}
 
@@ -1060,7 +1125,7 @@
 									"numinlets" : 0,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 21.5, 136.0, 45.0, 22.0 ],
+									"patching_rect" : [ 21.5, 136.0, 58.0, 22.0 ],
 									"text" : "r #0_in"
 								}
 
@@ -1511,7 +1576,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 235.599999964237213, 625.300001323223114, 115.0, 22.0 ],
+									"patching_rect" : [ 235.599999964237213, 625.300001323223114, 128.0, 22.0 ],
 									"text" : "s #0_s4m_in_sched"
 								}
 
@@ -1781,7 +1846,7 @@
 									"numinlets" : 0,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 29.0, 283.0, 113.0, 22.0 ],
+									"patching_rect" : [ 29.0, 283.0, 126.0, 22.0 ],
 									"text" : "r #0_s4m_in_sched"
 								}
 
@@ -2321,7 +2386,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 163.0, 560.0, 77.0, 22.0 ],
+									"patching_rect" : [ 163.0, 560.0, 89.0, 22.0 ],
 									"text" : "s #0_s4m_in"
 								}
 
@@ -2638,7 +2703,7 @@
 									"numinlets" : 0,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 26.0, 300.0, 75.0, 22.0 ],
+									"patching_rect" : [ 26.0, 300.0, 87.0, 22.0 ],
 									"text" : "r #0_s4m_in"
 								}
 
@@ -3822,7 +3887,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 32.0, 51.0, 886.0, 704.0 ],
+									"patching_rect" : [ 32.0, 51.0, 890.0, 704.0 ],
 									"text" : "Scheme for Max (S4M) is an open source Max/MSP external to enable scripting, live coding, and algorithmic composition in Max/MSP with Scheme Lisp. It is available as a package for OSX and Windows, and as source code. It also runs on Max For Live with Live 10+\n\nScheme for Max 0.3 features include:\n- Hot reloading code\n- Live code evaluation from a REPL\n- Evaluating max messages as Scheme code \n- Sending remote messages to other objects\n- Dynamic creation of listener functions for input and output\n- Reading and writing to buffers and tables, with conversions to/from Scheme vectors\n- Reading and writing to dictionaries, with conversions to/from Scheme hash-tables\n- Choice of high or low priority thread execution, with automatic promotion/deferal of input\n- Interaction with the Max master tempo controls (including the Live transport if in Max For Live)\n- Scheduling Scheme functions, by ms or Max tempo notation\n- Registering repeating clock functions, by ms or ticks\n- Quantization of scheduled calls with the Max master transport settings\n\nScheme for Max uses s7 Scheme, a Common-Lisp-influenced Scheme implementation by Bill Schottstaedt at CCRMA, based originally on Tiny Scheme.  s7 is a minimal Scheme and is the Scheme engine used in the Common Music algorithmic composition toolkit, and the Snd editor from CCRMA. It has keywords, Common-Lisp-style macros, first-class environments, thread safety, applicative syntax, and a straight forward FFI (foreign function interface) to enable extending with C. Linguistically, it is mostly R5RS with some later extensions, is quite similar to Guile, and shares many design decisions with Clojure. Scheme for Max uses S74, an optional convenience layer over s7 that providing various high-level functions to make music coding easier, borrowing from other Lisp dialects such as Racket, Clojure, and Chez.\n\nDocumentation is here: https://github.com/iainctduncan/scheme-for-max-docs\nA language tutorial is available here: https://iainctduncan.github.io/learn-scheme-for-max/introduction.html\nDemo and tutorial vidoes are posted here: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA\nBug reports and feature requests can be filed here: https://github.com/iainctduncan/scheme-for-max\n\nFor questions, suggestions, and bug reports, please join the Scheme for Max Google Group.\nhttps://groups.google.com/forum/#!forum/scheme-for-max\n\nThe s7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html\n\nScheme for Max is authored by Iain C.T. Duncan. Many thanks go to Bill Schottstaedt and Heinrich Taube - S4M builds on their work on s7 and Common Music, and would not be possible without it. Luigi Castelli has also been tremendously helpful with coding challenges during its development."
 								}
 
@@ -4708,7 +4773,7 @@
 									"numinlets" : 0,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 210.0, 338.0, 71.0, 22.0 ],
+									"patching_rect" : [ 210.0, 338.0, 84.0, 22.0 ],
 									"text" : "r #0_inlet_1"
 								}
 
@@ -4733,7 +4798,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 380.0, 698.0, 73.0, 22.0 ],
+									"patching_rect" : [ 380.0, 698.0, 86.0, 22.0 ],
 									"text" : "s #0_inlet_1"
 								}
 
@@ -4744,7 +4809,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 262.5, 698.0, 73.0, 22.0 ],
+									"patching_rect" : [ 262.5, 698.0, 86.0, 22.0 ],
 									"text" : "s #0_inlet_0"
 								}
 
@@ -4869,7 +4934,7 @@
 									"numinlets" : 0,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 24.0, 338.0, 71.0, 22.0 ],
+									"patching_rect" : [ 24.0, 338.0, 84.0, 22.0 ],
 									"text" : "r #0_inlet_0"
 								}
 
