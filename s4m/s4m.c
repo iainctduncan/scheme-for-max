@@ -1932,23 +1932,23 @@ static s7_pointer s7_gc_disable(s7_scheme *s7, s7_pointer args){
     return s7_make_boolean(s7, false);
 }
 // run forces the gc to run, whether or not enabled
-// does not change enabled status, returns enabled status
+// does not change enabled status, returns nil
 static s7_pointer s7_gc_run(s7_scheme *s7, s7_pointer args){
     //post("s7_gc_run()");
     t_s4m *x = get_max_obj(s7);
     // need to call the scheme level function, as it does trigger the gc
     s7_pointer s7_args = s7_nil(s7);
     // call (gc) through our scheme wrapper, it always enables and runs it
-    s7_call(s7, s7_name_to_value(x->s7, "s4m-gc"), s7_args);
+    s7_call(s7, s7_name_to_value(s7, "s4m-gc"), s7_args);
     // as (gc) also enables, we must set it back to wherever it was
     if(x->gc_enabled){
       s7_gc_on(s7, true);    
     }else{
       s7_gc_on(s7, false);    
     } 
-    return s7_make_boolean(s7, x->gc_enabled);
+    return s7_nil(s7);
 }
-// run gc if enabled, don't if not, return enabled status
+// run gc if enabled, don't if not, return nil
 static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args){
     //post("s7_gc_try()");
     t_s4m *x = get_max_obj(s7);
@@ -1957,11 +1957,8 @@ static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args){
       //post(" - gc-enabled, running gc");
       s7_pointer s7_args = s7_nil(s7);
       s7_call(s7, s7_name_to_value(x->s7, "s4m-gc"), s7_args);
-      return s7_make_boolean(s7, true);
-    }else{
-      //post(" - gc-disabled, not running gc");
-      return s7_make_boolean(s7, false);
     }
+    return s7_nil(s7);
 }
 
 
