@@ -64,6 +64,10 @@ or workarounds that could be added here.
 
 The current "production beta" is 0.2.0 beta. Subsequent releases should be considered experimental for testing.
 
+### Installing on Mac OSX Big Sur
+
+As above, move the Scheme-For-Max folder into `~/Documents/Max 8/Packages`. Open the `externals` folder, hold down the control key and right click s4m.mxo and choose "open". You'll get an ugly warning about not being able to veify it's not malware.  Finally click on the "open" button.  Nothing will really happenm but now scheme for Max should be usable.
+
 ## Documentation and Community
 An extensive help file demonstrating all official features of the release is included, with
 sample source code in the package. Clicking "launch" on the package menu will open this file.
