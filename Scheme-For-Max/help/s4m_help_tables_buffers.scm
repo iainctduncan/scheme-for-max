@@ -39,7 +39,7 @@
     (post "(buffer? 'b1) " (buffer? 'b1))
 
     ;; get number of samples in buffer
-    (post "(buffer-samples 'b1) " (buffer-samples 'b1))
+    (post "(buffer-size 'b1) " (buffer-size 'b1))
 
     ;; read from a buffer
     (post "(buffer-ref 'b1 2) " (buffer-ref 'b1 2))
