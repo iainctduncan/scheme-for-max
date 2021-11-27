@@ -462,9 +462,11 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
         } 
         //post("s4m_new() source file: %s", x->source_file->s_name);
     }
-    s4m_scan(x);
     //post("init s7, @thread is: %c", x->thread);
+    //post("initializing s7...");
     s4m_init_s7(x);
+    //post("running scan...");
+    s4m_scan(x);
 
     // set initialized flag, used to prevent some changes after object creation
     x->initialized = true;
@@ -642,9 +644,11 @@ void s4m_reset(t_s4m *x){
     hashtab_clear(x->clocks); 
     hashtab_clear(x->clocks_quant); 
 
-    s4m_scan(x);
+    //s4m_scan(x);
     // reset the interpreter
     s4m_init_s7(x);
+    //post("running scan...");
+    s4m_scan(x);
     post("s4m re-initialized");
 }
 
