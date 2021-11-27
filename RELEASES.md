@@ -1,6 +1,6 @@
 # Scheme-For-Max Release Log
 
-## 0.3.0 2021-09-15
+## 0.3.0 2021-11-27
 - delay possible from low thread
 - sending code to s4m no longer needs tosymbol and eval-string
 - new gc functions: gc-enable, gc-disable, gc-run, gc-try
