@@ -58,34 +58,14 @@
   (map (lambda (pair) (cdr pair)) ht))
 
 
-;; test code for the dict getter
-;; leaving for reference
-;(define (hash-table-get ht . keys)
-;  (define (getter container keylist)
-;    (cond 
-;      ((or (null? (cdr keylist)) (eq? #f (container (car keylist))))
-;        (container (car keylist)))
-;      (else (getter (container (car keylist)) (cdr keylist)))))
-;  (getter ht keys))
-
-;; example of an error try catch
-;;(catch #t (lambda () (/ 1.0 0)) (lambda args (post :foobar)))
-
-
-;; Unfortunatly you cant use +documentation+ on a macro. BOOO.
-;; OH well, it's here anyway. 
+; A threading/pipe operator similar to Clojure and R
+; Takes an object as a starting value, then executes every form thereafter 
+; with the value of one operation feeding into the next.
+; You can use :$ (the hole marker) as the value of the previous operation, 
+; You can also define this with a different hole marker if you would like,
+; but :$ looks like Max's variable expansions while being safe.
 (define-macro (~> object . functions)
-  (let* ((hole :$)
-         (+documentation+
-          (format #f
-                  "A threading operator similar to Clojure.
-Takes an object as a starting value, then executes every form thereafter with the value of one operation feeding into the next.
-You can use ~A as the value of the previous operation.
-
-For instance: (~~> '(1 2 23) (cdr ~A) (car ~A) (+ ~A 3))
-Would return 5"
-                  hole    ; there has to be a better way to do this.
-                  hole hole hole))) ; head like a hole....
+  (let* ((hole :$)) ; you can redefine the hole symbol here if you want
     (define (plug-hole expression cork)
       (let iter ((expression expression))
         (cond
@@ -101,4 +81,18 @@ Would return 5"
           needle
           (append (thread-transform-loop (plug-hole (car fns) needle)
                                          (cdr fns)))))))
+
+;; test code for the dict getter
+;; leaving for reference
+;(define (hash-table-get ht . keys)
+;  (define (getter container keylist)
+;    (cond 
+;      ((or (null? (cdr keylist)) (eq? #f (container (car keylist))))
+;        (container (car keylist)))
+;      (else (getter (container (car keylist)) (cdr keylist)))))
+;  (getter ht keys))
+
+;; example of an error try catch
+;;(catch #t (lambda () (/ 1.0 0)) (lambda args (post :foobar)))
+
 
