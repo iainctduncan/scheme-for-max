@@ -82,17 +82,5 @@
           (append (thread-transform-loop (plug-hole (car fns) needle)
                                          (cdr fns)))))))
 
-;; test code for the dict getter
-;; leaving for reference
-;(define (hash-table-get ht . keys)
-;  (define (getter container keylist)
-;    (cond 
-;      ((or (null? (cdr keylist)) (eq? #f (container (car keylist))))
-;        (container (car keylist)))
-;      (else (getter (container (car keylist)) (cdr keylist)))))
-;  (getter ht keys))
-
-;; example of an error try catch
-;;(catch #t (lambda () (/ 1.0 0)) (lambda args (post :foobar)))
 
 
