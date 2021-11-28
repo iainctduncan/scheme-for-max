@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 1272.0, -1001.0, 927.0, 885.0 ],
+		"rect" : [ 106.0, 69.0, 1008.0, 723.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -37,7 +37,8 @@
 		"tags" : "",
 		"style" : "",
 		"subpatcher_template" : "",
-		"showontab" : 1,
+		"showrootpatcherontab" : 0,
+		"showontab" : 0,
 		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
@@ -56,7 +57,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 1706.0, -776.0, 640.0, 480.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -85,7 +86,6 @@
 						"subpatcher_template" : "",
 						"showontab" : 1,
 						"assistshowspatchername" : 0,
-						"visible" : 1,
 						"boxes" : [ 							{
 								"box" : 								{
 									"id" : "obj-28",
@@ -94,7 +94,6 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 79.0, 502.0, 71.0, 22.0 ],
-									"presentation_linecount" : 4,
 									"text" : "5 4 3 2"
 								}
 
@@ -119,8 +118,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 328.5, 405.0, 307.5, 51.0 ],
-									"presentation_linecount" : 3,
+									"patching_rect" : [ 328.5, 405.0, 310.0, 51.0 ],
 									"text" : "We can use out* to spread the output over all available outlets, with the right hand receiving the left overs."
 								}
 
@@ -214,7 +212,6 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 328.5, 266.0, 307.5, 64.0 ],
-									"presentation_linecount" : 3,
 									"text" : "By combining ~> with f-list, we can make piplines for arbitrary length lists. Note that we send s4m two messages now, one to define f-list, and then the list itself."
 								}
 
@@ -227,7 +224,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 19.0, 356.0, 150.0, 22.0 ],
-									"text" : "7 6 5 4 3 2"
+									"text" : "4 3 2"
 								}
 
 							}
@@ -239,7 +236,6 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 134.0, 266.0, 65.0, 22.0 ],
-									"presentation_linecount" : 2,
 									"text" : "1 2 3 4 5 6"
 								}
 
@@ -284,7 +280,6 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 19.0, 296.0, 299.0, 22.0 ],
-									"presentation_linecount" : 2,
 									"text" : "(define (f-list l)(~> l (reverse :$) (map inc :$) (out 0 :$)))"
 								}
 
@@ -537,7 +532,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1337,7 +1332,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1799,7 +1794,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1836,7 +1831,6 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 267.0, 244.99999988079071, 192.0, 22.0 ],
-									"presentation_linecount" : 2,
 									"text" : "(delay 500 (lambda()(out 0 :click)))"
 								}
 
@@ -1978,7 +1972,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 467.700000166893005, 232.0, 279.0, 73.0 ],
+									"patching_rect" : [ 467.700000166893005, 232.0, 280.0, 73.0 ],
 									"text" : "A few options for scheduling a function by ms. The function must be callable with no arguments. Use lambda to make anonymous zero-arg functions."
 								}
 
@@ -2791,7 +2785,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -3586,7 +3580,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4010,7 +4004,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4349,7 +4343,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 106.0, 95.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4439,7 +4433,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -5049,7 +5043,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -5733,7 +5727,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -6305,7 +6299,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -6770,7 +6764,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 927.0, 859.0 ],
+						"rect" : [ 0.0, 26.0, 1008.0, 697.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
