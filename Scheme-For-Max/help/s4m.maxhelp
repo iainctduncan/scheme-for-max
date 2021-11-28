@@ -3,14 +3,14 @@
 		"fileversion" : 1,
 		"appversion" : 		{
 			"major" : 8,
-			"minor" : 1,
-			"revision" : 11,
+			"minor" : 2,
+			"revision" : 1,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 64.0, 79.0, 950.0, 755.0 ],
+		"rect" : [ 1153.0, -993.0, 1220.0, 885.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -37,10 +37,490 @@
 		"tags" : "",
 		"style" : "",
 		"subpatcher_template" : "",
-		"showrootpatcherontab" : 0,
-		"showontab" : 0,
+		"showontab" : 1,
 		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
+				"box" : 				{
+					"id" : "obj-16",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 0,
+					"patcher" : 					{
+						"fileversion" : 1,
+						"appversion" : 						{
+							"major" : 8,
+							"minor" : 2,
+							"revision" : 1,
+							"architecture" : "x64",
+							"modernui" : 1
+						}
+,
+						"classnamespace" : "box",
+						"rect" : [ 1706.0, -776.0, 640.0, 480.0 ],
+						"bglocked" : 0,
+						"openinpresentation" : 0,
+						"default_fontsize" : 12.0,
+						"default_fontface" : 0,
+						"default_fontname" : "Arial",
+						"gridonopen" : 1,
+						"gridsize" : [ 15.0, 15.0 ],
+						"gridsnaponopen" : 1,
+						"objectsnaponopen" : 1,
+						"statusbarvisible" : 2,
+						"toolbarvisible" : 1,
+						"lefttoolbarpinned" : 0,
+						"toptoolbarpinned" : 0,
+						"righttoolbarpinned" : 0,
+						"bottomtoolbarpinned" : 0,
+						"toolbars_unpinned_last_save" : 0,
+						"tallnewobj" : 0,
+						"boxanimatetime" : 200,
+						"enablehscroll" : 1,
+						"enablevscroll" : 1,
+						"devicewidth" : 0.0,
+						"description" : "",
+						"digest" : "",
+						"tags" : "",
+						"style" : "",
+						"subpatcher_template" : "",
+						"showontab" : 1,
+						"assistshowspatchername" : 0,
+						"visible" : 1,
+						"boxes" : [ 							{
+								"box" : 								{
+									"id" : "obj-28",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 79.0, 502.0, 71.0, 22.0 ],
+									"presentation_linecount" : 4,
+									"text" : "5 4 3 2"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-27",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 49.0, 502.0, 24.0, 22.0 ],
+									"text" : "6"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
+									"id" : "obj-26",
+									"linecount" : 3,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 328.5, 405.0, 307.5, 51.0 ],
+									"presentation_linecount" : 3,
+									"text" : "We can use out* to spread the output over all available outlets, with the right hand receiving the left overs."
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-19",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 19.0, 502.0, 24.0, 22.0 ],
+									"text" : "7"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-20",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 134.0, 405.0, 65.0, 22.0 ],
+									"text" : "1 2 3 4 5 6"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-21",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 3,
+									"outlettype" : [ "", "", "" ],
+									"patching_rect" : [ 19.0, 464.0, 79.0, 22.0 ],
+									"saved_object_attributes" : 									{
+										"heap" : 32,
+										"ins" : 1,
+										"log-null" : 0,
+										"outs" : 3,
+										"thread" : 104
+									}
+,
+									"text" : "s4m @outs 3"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-22",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "bang" ],
+									"patching_rect" : [ 19.0, 405.0, 58.0, 22.0 ],
+									"text" : "loadbang"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-23",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 19.0, 435.0, 294.0, 22.0 ],
+									"text" : "(define (f-list l)(~> l (reverse :$) (map inc :$) (out* :$)))"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-25",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 90.0, 405.0, 35.0, 22.0 ],
+									"text" : "1 2 3"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
+									"id" : "obj-18",
+									"linecount" : 4,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 328.5, 266.0, 307.5, 64.0 ],
+									"presentation_linecount" : 3,
+									"text" : "By combining ~> with f-list, we can make piplines for arbitrary length lists. Note that we send s4m two messages now, one to define f-list, and then the list itself."
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-17",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 19.0, 356.0, 150.0, 22.0 ],
+									"text" : "7 6 5 4 3 2"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-16",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 134.0, 266.0, 65.0, 22.0 ],
+									"presentation_linecount" : 2,
+									"text" : "1 2 3 4 5 6"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-15",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 19.0, 325.0, 31.0, 22.0 ],
+									"saved_object_attributes" : 									{
+										"heap" : 32,
+										"ins" : 1,
+										"log-null" : 0,
+										"outs" : 1,
+										"thread" : 104
+									}
+,
+									"text" : "s4m"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-14",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "bang" ],
+									"patching_rect" : [ 19.0, 266.0, 58.0, 22.0 ],
+									"text" : "loadbang"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-13",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 19.0, 296.0, 299.0, 22.0 ],
+									"presentation_linecount" : 2,
+									"text" : "(define (f-list l)(~> l (reverse :$) (map inc :$) (out 0 :$)))"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-12",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 90.0, 266.0, 35.0, 22.0 ],
+									"text" : "1 2 3"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
+									"id" : "obj-10",
+									"linecount" : 4,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 320.5, 130.0, 315.5, 64.0 ],
+									"text" : "The ~> macro creates a threaded pipeline, similar to Clojure and R. :$ represents the threaded value. Here we create a list, and pass it through reverse, map the inc function over it, and send it out."
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-8",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 19.0, 218.0, 66.0, 22.0 ]
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-6",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 19.0, 186.0, 31.0, 22.0 ],
+									"saved_object_attributes" : 									{
+										"heap" : 32,
+										"ins" : 1,
+										"log-null" : 0,
+										"outs" : 1,
+										"thread" : 104
+									}
+,
+									"text" : "s4m"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-5",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 19.0, 125.0, 35.0, 22.0 ],
+									"text" : "1 2 3"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-3",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 19.0, 155.0, 289.0, 22.0 ],
+									"text" : "(~> (list $1 $2 $3) (reverse :$) (map inc :$) (out 0 :$))"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"fontsize" : 14.0,
+									"id" : "obj-24",
+									"linecount" : 3,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 19.0, 50.0, 625.0, 53.0 ],
+									"text" : "Scheme for Max can be used as a more powerful replacement for the zl family of functions.\nTo define a handler for list input, we define a function called f-list. In conjunction with the ~> threading macro, we can make short but powerful list processing pipelines."
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"fontface" : 1,
+									"fontsize" : 16.0,
+									"id" : "obj-2",
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 19.0, 11.0, 343.0, 24.0 ],
+									"text" : "List Processing with Scheme For Max "
+								}
+
+							}
+ ],
+						"lines" : [ 							{
+								"patchline" : 								{
+									"destination" : [ "obj-15", 0 ],
+									"midpoints" : [ 99.5, 291.0, 12.0, 291.0, 12.0, 323.0 ],
+									"source" : [ "obj-12", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-15", 0 ],
+									"source" : [ "obj-13", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-13", 0 ],
+									"source" : [ "obj-14", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-17", 1 ],
+									"source" : [ "obj-15", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-15", 0 ],
+									"midpoints" : [ 143.5, 291.0, 13.0, 291.0, 13.0, 322.0 ],
+									"source" : [ "obj-16", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-21", 0 ],
+									"midpoints" : [ 143.5, 430.0, 13.0, 430.0, 13.0, 461.0 ],
+									"source" : [ "obj-20", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-19", 1 ],
+									"source" : [ "obj-21", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-27", 1 ],
+									"source" : [ "obj-21", 1 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-28", 1 ],
+									"source" : [ "obj-21", 2 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-23", 0 ],
+									"source" : [ "obj-22", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-21", 0 ],
+									"source" : [ "obj-23", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-21", 0 ],
+									"midpoints" : [ 99.5, 430.0, 12.0, 430.0, 12.0, 462.0 ],
+									"source" : [ "obj-25", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-6", 0 ],
+									"source" : [ "obj-3", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-3", 0 ],
+									"source" : [ "obj-5", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-8", 1 ],
+									"source" : [ "obj-6", 0 ]
+								}
+
+							}
+ ]
+					}
+,
+					"patching_rect" : [ 426.0, 56.0, 43.0, 22.0 ],
+					"saved_object_attributes" : 					{
+						"description" : "",
+						"digest" : "",
+						"globalpatchername" : "",
+						"tags" : ""
+					}
+,
+					"text" : "p Lists"
+				}
+
+			}
+, 			{
 				"box" : 				{
 					"id" : "obj-13",
 					"maxclass" : "newobj",
@@ -50,14 +530,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 64.0, 105.0, 950.0, 729.0 ],
+						"rect" : [ 1153.0, -967.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -394,8 +874,8 @@
 										"fileversion" : 1,
 										"appversion" : 										{
 											"major" : 8,
-											"minor" : 1,
-											"revision" : 11,
+											"minor" : 2,
+											"revision" : 1,
 											"architecture" : "x64",
 											"modernui" : 1
 										}
@@ -671,12 +1151,12 @@
 								"box" : 								{
 									"fontsize" : 14.0,
 									"id" : "obj-24",
-									"linecount" : 17,
+									"linecount" : 18,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 19.0, 50.0, 845.0, 272.0 ],
-									"text" : "Scheme for Max works well in Max For Live, but there are a few things you'll want to know. In M4L, Max always runs as if Audio in Interrupt is selected, and the signal vector size is always 64. If the Live audio engine is not on, the high priority thread will not run. If your s4m object is unresponsive, check this. udpreceive is useful for receiving Scheme code, but a word of warning: if you are editing patches while you use it, it can hang. Changing the port number fixes this.\n\nTempo dependent delays and clocks run off the Live transport. The easiest way to get perfect lock up is to use the quantized delay and clock methods, delay-tq and clock-ticks. When Live's transport starts, these will start too and will stay in sync with the main transport. The plugsync~ object is useful for triggering Scheme functions from the Live transport. \n\nYou can use Scheme for Max with the Live API. However, the Live API objects always run in the low priority thread. Messages to them from a high priority event are implicitly deferred. So you should make your Live API calls from a low-thread s4m object. S4M 0.3 now includes delays and clocks in the low thread object to do this, or you can send messages to your low priority instance from a high priority instance. To use the the live-api object in the examples below, you probably want to add (load-from-max \"live-api.scm\") to your s4m.scm file. You can edit live-api.scm to add your own convenience functions, like the fire-clip examples below.\n\nExample code for using the Live API is in the extras folder of the Scheme for Max package, along with a sample device to try, and is shown below. Or you can copy the objects (not the messages) here to a M4L device to try it out. "
+									"patching_rect" : [ 19.0, 50.0, 845.0, 288.0 ],
+									"text" : "Scheme for Max works well in Max For Live, but there are a few things you'll want to know. In M4L, Max always runs as if Audio in Interrupt is selected, and the signal vector size is always 64. If the Live audio engine is not on, the high priority thread will not run. If your s4m object is unresponsive, check this. udpreceive is useful for receiving Scheme code, but a word of warning: if you are editing patches while you use it, it can hang. Changing the port number fixes this.\n\nTempo dependent delays and clocks run off the Live transport. The easiest way to get perfect lock up is to use the quantized delay and clock methods, delay-tq and clock-ticks. When Live's transport starts, these will start too and will stay in sync with the main transport. The plugsync~ object is useful for triggering Scheme functions from the Live transport without running into the M4L error that one gets if you try to use the Live API from a notification triggered event.\n\nYou can use Scheme for Max with the Live API. However, the Live API objects always run in the low priority thread. Messages to them from a high priority event are implicitly deferred. So you should make your Live API calls from a low-thread s4m object. S4M 0.3 now includes delays and clocks in the low thread object to do this, or you can send messages to your low priority instance from a high priority instance. To use the the live-api object in the examples below, you probably want to add (load-from-max \"live-api.scm\") to your s4m.scm file. You can edit live-api.scm to add your own convenience functions, like the fire-clip examples below.\n\nExample code for using the Live API is in the extras folder of the Scheme for Max package, along with a sample device to try, and is shown below. Or you can copy the objects (not the messages) here to a M4L device to try it out. "
 								}
 
 							}
@@ -828,7 +1308,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 969.0, 56.0, 42.0, 22.0 ],
+					"patching_rect" : [ 1026.0, 56.0, 42.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -850,14 +1330,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 950.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -897,7 +1377,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 156.300001680850983, 437.5, 588.1499984562397, 89.0 ],
+									"patching_rect" : [ 155.300001680850983, 495.5, 588.1499984562397, 89.0 ],
 									"text" : "(gc-try) will run the gc if it's enabled, without changing its enabled status. \n(gc-run) will run the gc whether or not it's enabled, without changing the status.\nYou can use these to proactively run the gc on a schedule, such as every 200-1000 ms or on off-beats. If you have a small heap (8-16KB) and run frequently, the gc runs can be as short as 0.3 ms on a modern computer. "
 								}
 
@@ -913,7 +1393,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 166.450000137090683, 207.0, 578.0, 73.0 ],
+									"patching_rect" : [ 165.450000137090683, 265.0, 578.0, 73.0 ],
 									"text" : "You can disable and renable the gc. Running without a gc at all will work as long as you can run later with a slow collection, such as between pieces. If you do this, you should set the heap at the beginning to as big as you will need so that there is no (slow) reap resize operation during your piece. You can trigger the gc on transport stop for example."
 								}
 
@@ -928,7 +1408,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 169.300001680850983, 363.0, 575.1499984562397, 42.0 ],
+									"patching_rect" : [ 168.300001680850983, 421.0, 575.1499984562397, 42.0 ],
 									"text" : "(*s7* 'heap-size) returns the actual (current) heap in bytes. \n(*s4m* :heap-size) returns your starting heap in KB, as set with the @heap attribute"
 								}
 
@@ -944,7 +1424,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 169.300001680850983, 290.5, 575.1499984562397, 57.0 ],
+									"patching_rect" : [ 168.300001680850983, 348.5, 575.1499984562397, 57.0 ],
 									"text" : "To watch the gc in the console, set *s7* gc-stats. It will show you how fast it runs and over how much memory. (Note, it's not an error, s7's reporting is just using the sderr output.) Smaller heaps require significantly less time. "
 								}
 
@@ -959,7 +1439,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 169.300001680850983, 139.0, 574.699998319149017, 57.0 ],
+									"patching_rect" : [ 168.300001680850983, 197.0, 574.699998319149017, 57.0 ],
 									"text" : "Set your starting heap size in KB with @heap. The default is 32KB. Note that the heap size can only be lowered by recreating the s4m object - reset does not. The gc runs faster over a smaller heap. The heap will resize grow (double) when needed."
 								}
 
@@ -968,12 +1448,12 @@
 								"box" : 								{
 									"fontsize" : 14.0,
 									"id" : "obj-24",
-									"linecount" : 3,
+									"linecount" : 7,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 19.0, 59.0, 687.0, 53.0 ],
-									"text" : "As a dynamic language, s7 has a garbage collector that runs occasionally to clean up memory. S4M 0.3 allows one to disable and enable the gc, and run it on demand, as well as set the starting heap size. We can use these to configure s4m for lower latency use. "
+									"patching_rect" : [ 19.0, 59.0, 724.0, 116.0 ],
+									"text" : "Scheme for Max runs either in the scheduler (high-priority) or main (low-priority/GUI) thread. By default, it runs in the high thread. To choose the low thread, use the \"@thread l\" attribute in the s4m box. Messages into s4m will automatically be sent to the correct thread, as if they had gone through a delay (high) or defer object.\n\nAs a dynamic language, s7 has a garbage collector that runs occasionally to clean up memory. S4M 0.3 allows one to disable and enable the gc, and run it on demand, as well as set the starting heap size. We can use these to configure s4m for lower latency use. "
 								}
 
 							}
@@ -985,7 +1465,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "int" ],
 									"parameter_enable" : 0,
-									"patching_rect" : [ 20.5, 295.5, 24.0, 24.0 ]
+									"patching_rect" : [ 19.5, 353.5, 24.0, 24.0 ]
 								}
 
 							}
@@ -995,7 +1475,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 20.5, 411.5, 60.0, 22.0 ],
+									"patching_rect" : [ 19.5, 469.5, 60.0, 22.0 ],
 									"text" : "s s4m_gc"
 								}
 
@@ -1007,7 +1487,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 20.5, 325.5, 133.0, 22.0 ],
+									"patching_rect" : [ 19.5, 383.5, 133.0, 22.0 ],
 									"text" : "(set! (*s7* 'gc-stats) $1)"
 								}
 
@@ -1019,7 +1499,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 51.5, 379.0, 107.0, 22.0 ],
+									"patching_rect" : [ 50.5, 437.0, 107.0, 22.0 ],
 									"text" : "(*s4m* :heap-size)"
 								}
 
@@ -1031,7 +1511,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 39.0, 352.5, 96.0, 22.0 ],
+									"patching_rect" : [ 38.0, 410.5, 96.0, 22.0 ],
 									"text" : "(*s7* 'heap-size)"
 								}
 
@@ -1044,7 +1524,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "int" ],
 									"parameter_enable" : 0,
-									"patching_rect" : [ 68.5, 444.0, 24.0, 24.0 ]
+									"patching_rect" : [ 67.5, 502.0, 24.0, 24.0 ]
 								}
 
 							}
@@ -1055,7 +1535,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "bang" ],
-									"patching_rect" : [ 68.5, 473.0, 63.0, 22.0 ],
+									"patching_rect" : [ 67.5, 531.0, 63.0, 22.0 ],
 									"text" : "metro 300"
 								}
 
@@ -1066,7 +1546,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 18.0, 531.0, 60.0, 22.0 ],
+									"patching_rect" : [ 17.0, 589.0, 60.0, 22.0 ],
 									"text" : "s s4m_gc"
 								}
 
@@ -1078,7 +1558,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 68.5, 501.0, 51.0, 22.0 ],
+									"patching_rect" : [ 67.5, 559.0, 51.0, 22.0 ],
 									"text" : "(gc-run)"
 								}
 
@@ -1090,7 +1570,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 18.0, 501.0, 46.0, 22.0 ],
+									"patching_rect" : [ 17.0, 559.0, 46.0, 22.0 ],
 									"text" : "(gc-try)"
 								}
 
@@ -1101,7 +1581,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 22.5, 243.0, 60.0, 22.0 ],
+									"patching_rect" : [ 21.5, 301.0, 60.0, 22.0 ],
 									"text" : "s s4m_gc"
 								}
 
@@ -1113,7 +1593,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 92.5, 136.0, 35.0, 22.0 ],
+									"patching_rect" : [ 91.5, 194.0, 35.0, 22.0 ],
 									"text" : "reset"
 								}
 
@@ -1125,7 +1605,7 @@
 									"numinlets" : 0,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 21.5, 136.0, 58.0, 22.0 ],
+									"patching_rect" : [ 20.5, 194.0, 58.0, 22.0 ],
 									"text" : "r s4m_gc"
 								}
 
@@ -1137,7 +1617,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 92.5, 207.0, 69.0, 22.0 ],
+									"patching_rect" : [ 91.5, 265.0, 69.0, 22.0 ],
 									"text" : "(gc-enable)"
 								}
 
@@ -1149,7 +1629,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 12.5, 207.0, 71.0, 22.0 ],
+									"patching_rect" : [ 11.5, 265.0, 71.0, 22.0 ],
 									"text" : "(gc-disable)"
 								}
 
@@ -1161,7 +1641,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 21.5, 169.0, 90.0, 22.0 ],
+									"patching_rect" : [ 20.5, 227.0, 90.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"heap" : 16,
 										"ins" : 1,
@@ -1182,7 +1662,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 536.450000137090683, 11.0, 174.0, 21.0 ],
+									"patching_rect" : [ 584.450000137090683, 14.0, 174.0, 21.0 ],
 									"text" : "(open the console!)"
 								}
 
@@ -1195,8 +1675,8 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 19.0, 11.0, 466.0, 24.0 ],
-									"text" : "Scheme For Max Help: Latency and the Garbage Collector"
+									"patching_rect" : [ 19.0, 11.0, 548.0, 24.0 ],
+									"text" : "Scheme For Max Help: Latency, Threads,  and the Garbage Collector"
 								}
 
 							}
@@ -1204,7 +1684,7 @@
 						"lines" : [ 							{
 								"patchline" : 								{
 									"destination" : [ "obj-11", 0 ],
-									"midpoints" : [ 78.0, 527.0, 27.5, 527.0 ],
+									"midpoints" : [ 77.0, 585.0, 26.5, 585.0 ],
 									"source" : [ "obj-12", 0 ]
 								}
 
@@ -1268,7 +1748,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-10", 0 ],
-									"midpoints" : [ 102.0, 234.0, 32.0, 234.0 ],
+									"midpoints" : [ 101.0, 292.0, 31.0, 292.0 ],
 									"source" : [ "obj-5", 0 ]
 								}
 
@@ -1290,7 +1770,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 891.0, 56.0, 61.0, 22.0 ],
+					"patching_rect" : [ 948.0, 56.0, 61.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -1312,14 +1792,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 950.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1350,6 +1830,19 @@
 						"assistshowspatchername" : 0,
 						"boxes" : [ 							{
 								"box" : 								{
+									"id" : "obj-14",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 267.0, 244.99999988079071, 192.0, 22.0 ],
+									"presentation_linecount" : 2,
+									"text" : "(delay 500 (lambda()(out 0 :click)))"
+								}
+
+							}
+, 							{
+								"box" : 								{
 									"bgcolor" : [ 0.886274509803922, 0.866666666666667, 0.866666666666667, 0.0 ],
 									"bubble" : 1,
 									"bubbleside" : 0,
@@ -1359,8 +1852,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 11.0, 589.40000855922699, 181.800000548362732, 88.0 ],
-									"presentation_linecount" : 3,
+									"patching_rect" : [ 11.0, 589.40000855922699, 185.0, 88.0 ],
 									"text" : "If you run the tick and quantized versions of these in M4L, they will clock off the Live transport. "
 								}
 
@@ -1445,7 +1937,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 421.099998950958252, 447.199999928474426, 238.200004100799561, 42.0 ],
-									"text" : "delay-qt takes a quantize value, and will sync with transport if on"
+									"text" : "delay-tq takes a quantize value, and will sync with transport if on"
 								}
 
 							}
@@ -1486,8 +1978,8 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 443.299999058246613, 239.0, 180.0, 73.0 ],
-									"text" : "A few options for scheduling a function by ms. The function is called with no args."
+									"patching_rect" : [ 467.700000166893005, 232.0, 279.0, 73.0 ],
+									"text" : "A few options for scheduling a function by ms. The function must be callable with no arguments. Use lambda to make anonymous zero-arg functions."
 								}
 
 							}
@@ -1570,7 +2062,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 267.0, 288.399999976158142, 155.0, 22.0 ],
+									"patching_rect" : [ 267.0, 302.399999976158142, 155.0, 22.0 ],
 									"text" : "(delay-eval 500 out 0 :click)"
 								}
 
@@ -1582,7 +2074,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 267.0, 258.199999749660492, 165.0, 22.0 ],
+									"patching_rect" : [ 267.0, 272.199999749660492, 165.0, 22.0 ],
 									"text" : "(delay-eval 500 '(out 0 :click))"
 								}
 
@@ -1605,7 +2097,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 267.0, 230.99999988079071, 121.0, 22.0 ],
+									"patching_rect" : [ 267.0, 217.99999988079071, 121.0, 22.0 ],
 									"text" : "(delay 500 play-click)"
 								}
 
@@ -1969,6 +2461,7 @@
 									"enablevscroll" : 0,
 									"id" : "obj-30",
 									"lockeddragscroll" : 0,
+									"lockedsize" : 0,
 									"maxclass" : "bpatcher",
 									"name" : "s4m.repl.maxpat",
 									"numinlets" : 0,
@@ -2062,6 +2555,14 @@
 							}
 , 							{
 								"patchline" : 								{
+									"destination" : [ "obj-52", 0 ],
+									"midpoints" : [ 276.5, 271.0, 245.099999964237213, 271.0 ],
+									"source" : [ "obj-14", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
 									"destination" : [ "obj-10", 1 ],
 									"source" : [ "obj-19", 0 ]
 								}
@@ -2129,7 +2630,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-52", 0 ],
-									"midpoints" : [ 276.5, 256.799999833106995, 245.099999964237213, 256.799999833106995 ],
+									"midpoints" : [ 276.5, 242.799999833106995, 245.099999964237213, 242.799999833106995 ],
 									"source" : [ "obj-51", 0 ]
 								}
 
@@ -2137,7 +2638,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-52", 0 ],
-									"midpoints" : [ 276.5, 284.000004231929779, 245.099999964237213, 284.000004231929779 ],
+									"midpoints" : [ 276.5, 299.000004231929779, 245.099999964237213, 299.000004231929779 ],
 									"source" : [ "obj-53", 0 ]
 								}
 
@@ -2145,7 +2646,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-52", 0 ],
-									"midpoints" : [ 276.5, 315.200004696846008, 245.099999964237213, 315.200004696846008 ],
+									"midpoints" : [ 276.5, 328.200004696846008, 245.099999964237213, 328.200004696846008 ],
 									"source" : [ "obj-54", 0 ]
 								}
 
@@ -2261,7 +2762,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 778.0, 56.0, 95.0, 22.0 ],
+					"patching_rect" : [ 835.0, 56.0, 95.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -2283,14 +2784,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 950.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -2819,6 +3320,7 @@
 									"enablevscroll" : 0,
 									"id" : "obj-30",
 									"lockeddragscroll" : 0,
+									"lockedsize" : 0,
 									"maxclass" : "bpatcher",
 									"name" : "s4m.repl.maxpat",
 									"numinlets" : 0,
@@ -3055,7 +3557,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 694.0, 56.0, 69.0, 22.0 ],
+					"patching_rect" : [ 751.0, 56.0, 69.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -3077,14 +3579,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 950.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -3169,7 +3671,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 252.033336222171783, 453.200006246566772, 165.200001776218414, 22.0 ],
-									"text" : ":d dictionary u655003389"
+									"text" : ":d dictionary u955002057"
 								}
 
 							}
@@ -3364,6 +3866,7 @@
 									"enablevscroll" : 0,
 									"id" : "obj-30",
 									"lockeddragscroll" : 0,
+									"lockedsize" : 0,
 									"maxclass" : "bpatcher",
 									"name" : "s4m.repl.maxpat",
 									"numinlets" : 0,
@@ -3478,7 +3981,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 630.0, 56.0, 45.0, 22.0 ],
+					"patching_rect" : [ 687.0, 56.0, 45.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -3500,14 +4003,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 950.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -3729,6 +4232,7 @@
 									"enablevscroll" : 0,
 									"id" : "obj-30",
 									"lockeddragscroll" : 0,
+									"lockedsize" : 0,
 									"maxclass" : "bpatcher",
 									"name" : "s4m.repl.maxpat",
 									"numinlets" : 0,
@@ -3785,6 +4289,13 @@
 							}
 , 							{
 								"patchline" : 								{
+									"destination" : [ "obj-31", 0 ],
+									"source" : [ "obj-30", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
 									"source" : [ "obj-31", 0 ]
 								}
@@ -3809,7 +4320,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 513.0, 56.0, 94.0, 22.0 ],
+					"patching_rect" : [ 570.0, 56.0, 94.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -3831,14 +4342,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 950.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -3877,7 +4388,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 32.0, 51.0, 890.0, 704.0 ],
-									"text" : "Scheme for Max (S4M) is an open source Max external to enable scripting, live coding, and algorithmic composition in Max with s7 Scheme Lisp. It is available as a package for OSX and Windows, and as source code. It also runs on Max For Live with Live 10+\n\nScheme for Max 0.3 features include:\n- Hot reloading code\n- Live code evaluation from a REPL\n- Evaluating max messages as Scheme code \n- Sending remote messages to other objects\n- Dynamic creation of listener functions for input and output\n- Reading and writing to buffers and tables, with conversions to/from Scheme vectors\n- Reading and writing to dictionaries, with conversions to/from Scheme hash-tables\n- Choice of high or low priority thread execution, with automatic promotion/deferal of input\n- Integration with the Max master tempo controls (including the Live transport if in Max For Live)\n- Scheduling Scheme functions, by ms or Max tempo based ticks\n- Registering repeating clock functions, by ms or ticks\n- Quantization of scheduled calls with the Max master transport settings (including in M4L)\n\nScheme for Max uses s7 Scheme, a Common-Lisp-influenced Scheme implementation by Bill Schottstaedt at CCRMA, based originally on Tiny Scheme.  s7 is a minimal Scheme and is the Scheme engine used in the Common Music algorithmic composition toolkit, and the Snd editor from CCRMA. It has keywords, Common-Lisp-style macros, first-class environments, thread safety, applicative syntax, and a straight forward FFI (foreign function interface) to enable extending with C. Linguistically, it is mostly R5RS with some later extensions, is quite similar to Guile, and shares many design decisions with Clojure. Scheme for Max uses S74, an optional convenience layer over s7 that providing various high-level functions to make music coding easier, borrowing from other Lisp dialects such as Racket, Clojure, and Chez.\n\nDocumentation is here: https://github.com/iainctduncan/scheme-for-max-docs\nA language tutorial is available here: https://iainctduncan.github.io/learn-scheme-for-max/introduction.html\nDemo and tutorial videos are posted here: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA\nBug reports and feature requests can be filed here: https://github.com/iainctduncan/scheme-for-max\n\nFor questions, suggestions, and bug reports, please join the Scheme for Max Google Group\nhttps://groups.google.com/forum/#!forum/scheme-for-max\n\nThe s7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html\n\nScheme for Max is authored by Iain C.T. Duncan. Many thanks go to Bill Schottstaedt and Heinrich Taube - S4M builds on their work on s7 and Common Music, and would not be possible without it. Luigi Castelli has also been tremendously helpful with coding challenges during its development."
+									"text" : "Scheme for Max (S4M) is an open source Max external to enable scripting, live coding, and algorithmic composition in Max with s7 Scheme Lisp. It is available as a package for OSX and Windows, and as source code. It also runs on Max For Live with Live 10+\n\nScheme for Max 0.3 features include:\n- Hot reloading code\n- Live code evaluation from a REPL\n- Evaluating max messages as Scheme code \n- Sending remote messages to other objects\n- Dynamic creation of listener functions for input and output\n- Reading and writing to buffers and tables, with conversions to/from Scheme vectors\n- Reading and writing to dictionaries, with conversions to/from Scheme hash-tables\n- Choice of high or low priority thread execution, with automatic promotion/deferal of input (@thread low or high)\n- Integration with the Max master tempo controls (including the Live transport if in Max For Live)\n- Scheduling Scheme functions, by ms or Max tempo based ticks\n- Registering repeating clock functions, by ms or ticks\n- Quantization of scheduled calls with the Max master transport settings (including in M4L)\n\nScheme for Max uses s7 Scheme, a Common-Lisp-influenced Scheme implementation by Bill Schottstaedt at CCRMA, based originally on Tiny Scheme.  s7 is a minimal Scheme and is the Scheme engine used in the Common Music algorithmic composition toolkit, and the Snd editor from CCRMA. It has keywords, Common-Lisp-style macros, first-class environments, thread safety, applicative syntax, and a straight forward FFI (foreign function interface) to enable extending with C. Linguistically, it is mostly R5RS with some later extensions, is quite similar to Guile, and shares many design decisions with Clojure. Scheme for Max uses S74, an optional convenience layer over s7 that providing various high-level functions to make music coding easier, borrowing from other Lisp dialects such as Racket, Clojure, and Chez.\n\nDocumentation is here: https://github.com/iainctduncan/scheme-for-max-docs\nA language tutorial is available here: https://iainctduncan.github.io/learn-scheme-for-max/introduction.html\nDemo and tutorial videos are posted here: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA\nBug reports and feature requests can be filed here: https://github.com/iainctduncan/scheme-for-max\n\nFor questions, suggestions, and bug reports, please join the Scheme for Max Google Group\nhttps://groups.google.com/forum/#!forum/scheme-for-max\n\nThe s7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html\n\nScheme for Max is authored by Iain C.T. Duncan. Many thanks go to Bill Schottstaedt and Heinrich Taube - S4M builds on their work on s7 and Common Music, and would not be possible without it. Luigi Castelli has also been tremendously helpful with coding challenges during its development."
 								}
 
 							}
@@ -3921,14 +4432,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 950.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4379,6 +4890,7 @@
 									"enablevscroll" : 0,
 									"id" : "obj-30",
 									"lockeddragscroll" : 0,
+									"lockedsize" : 0,
 									"maxclass" : "bpatcher",
 									"name" : "s4m.repl.maxpat",
 									"numinlets" : 0,
@@ -4508,7 +5020,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 423.0, 56.0, 73.0, 22.0 ],
+					"patching_rect" : [ 480.0, 56.0, 73.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -4530,14 +5042,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 950.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4996,6 +5508,7 @@
 									"enablevscroll" : 0,
 									"id" : "obj-30",
 									"lockeddragscroll" : 0,
+									"lockedsize" : 0,
 									"maxclass" : "bpatcher",
 									"name" : "s4m.repl.maxpat",
 									"numinlets" : 0,
@@ -5213,14 +5726,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 950.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -5319,7 +5832,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 182.0, 424.0, 381.0, 83.0 ],
+									"patching_rect" : [ 182.0, 424.0, 383.0, 83.0 ],
 									"text" : "Dynamically build Scheme code from Max messages.  Commas in message makes two seperate Max messages, so in the lower example the intepreter runs:\n(define my-var {number})\n(out 0 my-var)"
 								}
 
@@ -5419,7 +5932,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 182.0, 329.0, 381.0, 83.0 ],
+									"patching_rect" : [ 182.0, 329.0, 382.0, 83.0 ],
 									"text" : "Quoting a symbol (standard Lisp/Scheme style) tells Scheme we want to use the symbol itself, not whatever it evaluates to. Technically, it asks the interpreter to skip a round of evaluation. Note that the output has no quote as Max has converted it to a Max symbol."
 								}
 
@@ -5587,6 +6100,7 @@
 									"enablevscroll" : 0,
 									"id" : "obj-30",
 									"lockeddragscroll" : 0,
+									"lockedsize" : 0,
 									"maxclass" : "bpatcher",
 									"name" : "s4m.repl.maxpat",
 									"numinlets" : 0,
@@ -5784,14 +6298,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 950.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -6124,6 +6638,7 @@
 									"enablevscroll" : 0,
 									"id" : "obj-30",
 									"lockeddragscroll" : 0,
+									"lockedsize" : 0,
 									"maxclass" : "bpatcher",
 									"name" : "s4m.repl.maxpat",
 									"numinlets" : 0,
@@ -6248,14 +6763,14 @@
 						"fileversion" : 1,
 						"appversion" : 						{
 							"major" : 8,
-							"minor" : 1,
-							"revision" : 11,
+							"minor" : 2,
+							"revision" : 1,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 950.0, 729.0 ],
+						"rect" : [ 0.0, 26.0, 1220.0, 859.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -6532,19 +7047,19 @@
 								"box" : 								{
 									"id" : "obj-1",
 									"maxclass" : "newobj",
-									"numinlets" : 1,
+									"numinlets" : 2,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 371.0, 298.0, 201.0, 22.0 ],
+									"patching_rect" : [ 371.0, 298.0, 242.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"heap" : 32,
-										"ins" : 1,
+										"ins" : 2,
 										"log-null" : 0,
 										"outs" : 2,
 										"thread" : 104
 									}
 ,
-									"text" : "s4m s4m_help_basics.scm @outs 2"
+									"text" : "s4m s4m_help_basics.scm @ins 2 @outs 2"
 								}
 
 							}
