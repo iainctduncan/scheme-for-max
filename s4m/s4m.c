@@ -1248,7 +1248,6 @@ void s4m_callback_bang(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     long inlet_num = atom_getlong( argv );
     long arg = atom_getlong( argv + 1 );
     //post(" - inlet_num: %i arg: %i", inlet_num, arg);
-    sysmem_freeptr(argv); 
     return s4m_handle_bang(x, inlet_num);
 }
 
@@ -1319,7 +1318,6 @@ void s4m_callback_int(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     long inlet_num = atom_getlong( argv );
     long arg = atom_getlong( argv + 1 );
     //post(" - inlet_num: %i arg: %i", inlet_num, arg);
-    sysmem_freeptr(argv); 
     return s4m_handle_int(x, inlet_num, arg);
 }
 
@@ -1379,7 +1377,6 @@ void s4m_callback_float(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
     //post("s4m_callback_float()");
     long inlet_num = atom_getlong( argv );
     double arg = atom_getfloat( argv + 1 );
-    sysmem_freeptr(argv); 
     return s4m_handle_float(x, inlet_num, arg);
 }
 
@@ -1415,11 +1412,10 @@ void s4m_handle_float(t_s4m *x, int inlet_num, double arg){
 
 
 void s4m_callback_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_callback_list()");
+    // post("s4m_callback_list()");
     long inlet_num = atom_getlong( argv );
     //post("inlet_num: %i", inlet_num);
     s4m_handle_list(x, inlet_num, s, argc - 1, argv + 1);
-    sysmem_freeptr(argv);
 }
 
 // the list message handler, will handle any messages that are internally
@@ -1451,11 +1447,12 @@ void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
 }
 
 void s4m_handle_list(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv){
-    //post("s4m_handle_list(): inlet_num: %i, selector is %s, argc: %i", inlet_num, s->s_name, argc);
+    // post("s4m_handle_list(): inlet_num: %i, selector is %s, argc: %i", inlet_num, s->s_name, argc);
     // turn all args into an s7 list
     s7_pointer s7_args = s7_nil(x->s7); 
     // loop through the args backwards to build the cons list 
     t_atom *ap;
+    //t_atom *ap = (t_atom *) sysmem_newptr( sizeof( t_atom ) );
     for(int i = argc-1; i >= 0; i--) {
         ap = argv + i;
         s7_args = s7_cons(x->s7, max_atom_to_s7_obj(x->s7, ap), s7_args); 
