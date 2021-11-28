@@ -58,11 +58,11 @@ Binary packages are available for OSX and Windows: https://github.com/iainctdunc
 Download the Scheme-For-Max tar file and untar it in your Max Packages directory. 
 The Package manager should detect the Scheme For Max package and enable you to launch the help patcher.
 
-Currently tested on Max 8, with OSX High Sierra and Windows 10. 
+Currently tested on Max 8, on Mac up to Big Sur (Intel only) and Windows 10. 
 Please report problems installing to the google group, as well as any fixes
 or workarounds that could be added here.
 
-The current "production beta" is 0.2.0 beta. Subsequent releases should be considered experimental for testing.
+The current "production beta" is 0.3.0. Subsequent releases should be considered experimental for testing.
 
 ### Installing on Mac OSX Big Sur
 
@@ -93,11 +93,6 @@ https://groups.google.com/forum/#!forum/scheme-for-max
 ## Building from Source
 You will need the Max SDK and some understanding of how to build Max externals. The S7 sources are included here. Details on building from source are in the narrative docs here https://iainctduncan.github.io/scheme-for-max-docs/building.html
 
-**Windows Known Issues:**
-* Saving from the popup editor is not yet working on Windows
-* The Control keys for the repl bpatcher won't work because they collide with windows keys.
-* There seems to be an issue in Common Music's loop macro in loop.scm, so this is not loaded by default anymore. To use it on osx, edit s4m.scm and uncomment the line that loads loop.scm
-
 ## License: 
-As S7 Scheme, and TinyScheme on which it is based, are BSD licensed, this is too.
+As s7 Scheme, and TinyScheme on which it is based, are BSD licensed, this is too.
 
