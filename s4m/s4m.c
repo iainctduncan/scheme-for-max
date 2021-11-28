@@ -1451,7 +1451,7 @@ void s4m_list(t_s4m *x, t_symbol *s, long argc, t_atom *argv){
 }
 
 void s4m_handle_list(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *argv){
-    post("s4m_handle_list(): inlet_num: %i, selector is %s, argc: %i", inlet_num, s->s_name, argc);
+    //post("s4m_handle_list(): inlet_num: %i, selector is %s, argc: %i", inlet_num, s->s_name, argc);
     // turn all args into an s7 list
     s7_pointer s7_args = s7_nil(x->s7); 
     // loop through the args backwards to build the cons list 
