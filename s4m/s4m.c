@@ -111,7 +111,9 @@ void s4m_s7_load(t_s4m *x, char *full_path);
 void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args);
 
 void s4m_reset(t_s4m *x);
+void s4m_reload(t_s4m *x);
 void s4m_dblclick(t_s4m *x);
+void s4m_source(t_s4m *x, t_symbol *s);
 void s4m_read(t_s4m *x, t_symbol *s);
 void s4m_eval_string(t_s4m *x, t_symbol *s);
 
@@ -296,6 +298,8 @@ void ext_main(void *r){
 
     
     class_addmethod(c, (method)s4m_reset, "reset", NULL, 0);
+    class_addmethod(c, (method)s4m_reload, "reload", NULL, 0);
+    class_addmethod(c, (method)s4m_source, "source", A_DEFSYM, 0);
     class_addmethod(c, (method)s4m_eval_string, "eval-string", A_DEFSYM, 0);
     class_addmethod(c, (method)s4m_read, "read", A_DEFSYM, 0);
     class_addmethod(c, (method)s4m_scan, "scan", NULL, 0);
@@ -650,6 +654,32 @@ void s4m_reset(t_s4m *x){
     //post("running scan...");
     s4m_scan(x);
     post("s4m re-initialized");
+}
+
+// set the source file from a message
+void s4m_source(t_s4m *x, t_symbol *s){
+    x->source_file = s;
+    post("source file now: %s", x->source_file->s_name);
+}
+
+// reload the main file, without resetting
+void s4m_reload(t_s4m *x){
+    // post("s4m_reload()");
+    // don't reload unless on inlet 0
+    if( proxy_getinlet((t_object *)x) != 0 ){
+        return;
+    }
+    // promote/defer to correct thread
+    bool in_isr = isr();
+    if( !in_isr && x->thread == 'h' ){ 
+      return schedule(x, (method)s4m_reload, 0, NULL, 0, NULL); 
+    }else if( in_isr && x->thread == 'l'){
+      return defer(x, (method)s4m_reload, NULL, 0, NULL);
+    }
+    if( x->source_file != _sym_nothing){
+        post("reloading %s", x->source_file->s_name);
+        s4m_doread(x, x->source_file, true);
+    }
 }
 
 // test of making a thing via the patcher object triggered by "make" message
