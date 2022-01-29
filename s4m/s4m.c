@@ -87,6 +87,12 @@ typedef struct _s4m_clock_callbacks {
    bool in_isr; 
 } t_s4m_clock_callback;
 
+typedef struct _s4m_array {
+   t_symbol *name;
+   long size;
+   long *data;
+   // TODO add type
+} t_s4m_array;
 
 // global class pointer variable
 void *s4m_class;
@@ -253,6 +259,7 @@ static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args);
 
 /********************************************************************************
 / some helpers */
@@ -376,7 +383,7 @@ void ext_main(void *r){
     // initialized the hashtab for s4m instance datastores
     s4m_arrays = (t_hashtab *)hashtab_new(0);
     // OBJ_FLAG_REF means don't free data 
-    hashtab_flags(s4m_arrays, OBJ_FLAG_REF);
+    hashtab_flags(s4m_arrays, OBJ_FLAG_DATA | OBJ_FLAG_SILENT);
 
     //post("s4m.c ext_main() done");
 }
@@ -522,6 +529,7 @@ void s4m_init_s7(t_s4m *x){
 
     s7_define_function(x->s7, "make-array", s7_make_array, 2, 0, true, "");
     s7_define_function(x->s7, "array-set-from-vector!", s7_array_set_from_vector, 3, 2, true, "");
+    s7_define_function(x->s7, "vector-set-from-array!", s7_vector_set_from_array, 3, 2, true, "");
 
     s7_define_function(x->s7, "buffer?", s7_is_buffer, 1, 0, false, "(buffer? 'foo) returns true if buffer named foo exists");
     s7_define_function(x->s7, "buffer-size", s7_buffer_size, 1, 0, false, "(buffer-size 'foo) returns framecount of buffer"); 
@@ -1207,34 +1215,43 @@ int s4m_mc_buffer_write(t_s4m *x, char *buffer_name, int channel, long index, do
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     // args are symbol name and int size
     char *array_name;
-    int array_size; 
+    long array_size; 
+    // arg 1 is the name
     if( s7_is_symbol( s7_car(args) ) ){ 
         array_name = (char *) s7_symbol_name( s7_car(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "error making array, first argument should be a symbol of array name"));
-    } 
+    }
+    // arg 2 is size
     if( s7_is_integer( s7_cadr(args) ) ){ 
-        array_size = (int) s7_integer( s7_cadr(args) );
+        array_size = (long) s7_integer( s7_cadr(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "error making array, second argument should be an integer for array size"));
     } 
-    post("s7_make_array, name: %s size: %i", array_name, array_size);
-    int *new_array = (int *)sysmem_newptr( sizeof( int ) * array_size);
-    // hashtabs only store t_object pointers, so cast it
+    //post("s7_make_array, name: %s size: %i", array_name, array_size);
+
+    // create the new array, sysmem_newptrclear inits to zeros
+    long *new_array_data = (long *)sysmem_newptr( sizeof( long ) * array_size);
+    t_s4m_array *new_array = (t_s4m_array *)sysmem_newptr( sizeof(t_s4m_array) );
+    new_array->name = gensym(array_name);
+    new_array->size = array_size;
+    new_array->data = new_array_data;
+    for(int i = 0; i < new_array->size; i++){ new_array->data[i] = 0; }
+
+    // hashtabs only store t_object pointers, so cast it to a t_object pointer
     hashtab_store(s4m_arrays, gensym(array_name), (t_object *)new_array);
-    post("new array created and stored in hashtab");
+    //post("new array created and stored in hashtab");
 }
 
 // store an s7 vector in a named array, args: vector, array
-// based on table-set-from-vector!, but not complete yet
-// XXX: needs rest of protection added, as in tsfv
+// based on table-set-from-vector!, but not feature complete
+// checks size of source and dest and copies whatever fits
 static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args){
     char *array_name = NULL;
     int array_offset;
     char err_msg[128];
-    int *array;
     t_max_err err = NULL;
     // initialize return value to nil, as we need to return to S7 even on errors
     s7_pointer *s7_return_value = s7_nil(s7); 
@@ -1261,26 +1278,88 @@ static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args){
         sprintf(err_msg, "array-set-from-vector! : arg 3 must be a vector");
         return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
     }
-    post("array_set_from_vector, array: %s index: %i", array_name, array_offset);
-    
-    // TODO: we ought to check that the array fits
-
-    // get the vector and array
-    long vector_size = s7_vector_length(s7_source_vector);
-    s7_int *s7_vector_values = s7_vector_elements(s7_source_vector);
-    
-    err = hashtab_lookup(s4m_arrays, gensym(array_name), &array);
+    //post("array_set_from_vector, array: %s index: %i", array_name, array_offset);
+   
+    // fetch array from hashtable
+    t_object *obj_ptr;
+    err = hashtab_lookup(s4m_arrays, gensym(array_name), &obj_ptr);
     if(err){
         sprintf(err_msg, "array-set-from-vector! : no array found with name %s", array_name);
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
     }
+    // cast from t_tobj
+    t_s4m_array *array = (t_s4m_array *)obj_ptr;
+    // get the vector and array
+    long vector_size = s7_vector_length(s7_source_vector);
+    s7_int *s7_vector_values = s7_vector_elements(s7_source_vector);
+    long num_points = vector_size < array->size ? vector_size : array->size;
+
+    // TODO: this will only work safely right now if offset is zero
+
     // write the data
-    for(int i=0; i<vector_size; i++){
+    for(long i = 0; i < num_points; i++){
       s7_pointer *source_value = s7_vector_values[i];
-      array[i] = (int) s7_integer(source_value);
+      array->data[i] = (long) s7_integer(source_value);
     }
     return s7_return_value;
 }
+
+
+// working, but does not have all the controls from vector-set-from-table! yet
+static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args) {
+    // post("s7_set_vector_from_array()");
+    t_s4m *x = get_max_obj(s7);
+    t_s4m_array *array;
+    long array_offset = 0;   // default target index is 0 unless overridden
+    long vector_offset = 0;  // default start of vector to copy
+    char *array_name = NULL;
+    char err_msg[128]; 
+    s7_pointer *s7_return_value = s7_nil(s7); 
+
+    // arg 1 is the vector
+    s7_pointer *s7_dest_vector = s7_car(args);
+    if( !s7_is_vector(s7_dest_vector) ){
+        sprintf(err_msg, "vector-set-from-array! : arg 1 must be a vector");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }
+
+    // arg 2 is point in vector to update from
+    s7_pointer *arg_2 = s7_cadr(args);
+    if( !s7_is_integer( arg_2 ) ){
+        sprintf(err_msg, "vector-set-from-array! : arg 2 must be an int for vector index");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }
+    vector_offset = s7_integer( arg_2 );
+
+    // arg 3 is array name
+    s7_pointer *s7_array_name = s7_caddr(args);
+    if( !s7_is_symbol(s7_array_name) && !s7_is_string(s7_array_name) ){
+        sprintf(err_msg, "vector-set-from-array! : arg 3 must be a string or symbol of array name");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }else{
+        array_name = s7_object_to_c_string(s7, s7_array_name);
+    }
+    // get the t_s4m_array struct from the registry
+    t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &array);
+    if(err){
+        sprintf(err_msg, "vector-set-from-array! : no array found with name %s", array_name);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
+    }
+    // copy data, update vector with array data
+    // number of points to copy is whatever is smaller, the vector or the array
+    long vector_size = s7_vector_length(s7_dest_vector);
+    long num_points = vector_size < array->size ? vector_size : array->size;
+    for(long i=0; i < num_points; i++){
+        s7_pointer s7_value = s7_make_integer(s7, array->data[i]);
+        s7_vector_set(s7, s7_dest_vector, vector_offset + i, s7_value);
+    }
+    //post("...data copied");
+    // return nil 
+    return s7_return_value;
+}
+
+
+
 
 // call s7_call, with error logging
 void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args){
