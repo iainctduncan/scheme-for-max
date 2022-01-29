@@ -83,4 +83,29 @@
                                          (cdr fns)))))))
 
 
+;* some CM3 macros from Heinrich Taube, taken from the s7 test file
+(define-macro (dolist spec . body)	;; spec = (var list . return)
+	(let ((v (gensym)))
+	  `(do ((,v ,(cadr spec) (cdr ,v))
+		(,(car spec) #f))
+	       ((null? ,v) ,@(cddr spec))
+	     (set! ,(car spec) (car ,v))
+	     ,@body)))
+
+(define-macro (dotimes spec . body)	;; spec = (var end . return)
+	(let ((e (gensym))
+	      (n (car spec)))
+	  `(do ((,e ,(cadr spec))
+		(,n 0 (+ ,n 1)))
+	       ((>= ,n ,e) ,@(cddr spec))
+	     ,@body)))
+
+(define-macro (do* spec end . body)
+	`(let* (,@(map (lambda (var) (list (car var) (cadr var))) spec))
+	   (do () ,end
+	     ,@body
+	     ,@(map (lambda (var) (if (pair? (cddr var))
+				      `(set! ,(car var) ,(caddr var))
+				      (values)))
+		    spec))))
 
