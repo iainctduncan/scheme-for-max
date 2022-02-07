@@ -10,10 +10,14 @@
 #include "ext_atomarray.h"
 #include "ext_time.h"
 #include "ext_itm.h"
+#include "jpatcher_api.h"
+#include "jgraphics.h"
+
 #include "stdint.h"
 #include "string.h"
 #include "stdbool.h"
 #include "stdlib.h"
+#include "math.h"
 #include "s7.h"
 #include "common/commonsyms.c"
 
@@ -24,6 +28,8 @@
 #define BOOTSTRAP_FILE "s4m.scm"
 #define MIN_HEAP_KB 8
 #define DEFAULT_HEAP_KB 32
+#define GRID_ROWS 8
+#define GRID_COLS 16
 
 // object struct
 typedef struct _s4m {
@@ -82,23 +88,32 @@ typedef struct _s4m {
 } t_s4m;
 
 typedef struct _s4m_clock_callbacks {
-   t_s4m obj;
-   t_symbol *handle;
-   bool in_isr; 
+    t_s4m obj;
+    t_symbol *handle;
+    bool in_isr; 
 } t_s4m_clock_callback;
 
+
+typedef union _s4m_array_point {
+    char *s;
+    long i;
+    double f;
+} t_s4m_array_point;
+
+// perhaps enum is a dumb way of doing this?
 typedef struct _s4m_array {
-   t_symbol *name;
-   long size;
-   long *data;
-   // TODO add type
+    t_symbol *name;
+    long size;
+    char type;        // 'i','f', or 's'
+    t_s4m_array_point *data;
+    // TODO add enum of type
 } t_s4m_array;
 
 // global class pointer variable
 void *s4m_class;
 
 // a global hash-table for buffers to store data between s4m instances
-static t_hashtab *s4m_arrays;
+t_hashtab *s4m_arrays;
 
 /********************************************************************************
 / function prototypes
@@ -259,7 +274,40 @@ static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args);
+//static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args);
+//static s7_pointer s7_vector_set_chars_from_array(s7_scheme *s7, s7_pointer args);
+
+
+/********************************************************************************
+* s4m grid stuff - move to other file later?
+*/
+
+typedef struct _s4mgrid
+{
+    t_jbox u_box;                       // instead of t_object
+    void *u_out;                        // outlet pointer
+    t_jrgba u_outline;                  // instance vars for colours
+    t_jrgba u_text;  
+    t_jrgba u_background;
+    t_jrgba u_hilite;
+    long num_rows;
+    long num_cols;
+    long size;
+    char ***data;    // becomes a 2D array of char arrays
+} t_s4mgrid;
+
+void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv);
+void s4mgrid_free(t_s4mgrid *x);
+void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview);
+void s4mgrid_getdrawparams(t_s4mgrid *x, t_object *patcherview, t_jboxdrawparams *params);
+
+void s4mgrid_bang(t_s4mgrid *x);
+void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *argv);
+void s4mgrid_int(t_s4mgrid *x, long n);
+void s4mgrid_readarray(t_s4mgrid *x, t_symbol *s);
+
+static t_class *s_s4mgrid_class;
+void s4mgrid_main(void *r);
 
 /********************************************************************************
 / some helpers */
@@ -303,14 +351,13 @@ char *trim_symbol_quote(char *input){
 * main C code 
 */
 void ext_main(void *r){
-    //post("s4m.c ext_main()");
+    post("s4m.c ext_main()");
     t_class *c;
     common_symbols_init();
 
     c = class_new("s4m", (method)s4m_new, (method)s4m_free,
          (long)sizeof(t_s4m), 0L /* leave NULL!! */, A_GIMME, 0);
 
-    
     class_addmethod(c, (method)s4m_reset, "reset", NULL, 0);
     class_addmethod(c, (method)s4m_reload, "reload", NULL, 0);
     class_addmethod(c, (method)s4m_source, "source", A_DEFSYM, 0);
@@ -385,8 +432,10 @@ void ext_main(void *r){
     // OBJ_FLAG_REF means don't free data 
     hashtab_flags(s4m_arrays, OBJ_FLAG_DATA | OBJ_FLAG_SILENT);
 
-    //post("s4m.c ext_main() done");
+    s4mgrid_main(r);
+    post("s4m.c ext_main() done");
 }
+
 
 void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     //post("s4m_new(), arg count: %i", argc);
@@ -529,7 +578,8 @@ void s4m_init_s7(t_s4m *x){
 
     s7_define_function(x->s7, "make-array", s7_make_array, 2, 0, true, "");
     s7_define_function(x->s7, "array-set-from-vector!", s7_array_set_from_vector, 3, 2, true, "");
-    s7_define_function(x->s7, "vector-set-from-array!", s7_vector_set_from_array, 3, 2, true, "");
+    //s7_define_function(x->s7, "vector-set-from-array!", s7_vector_set_from_array, 3, 2, true, "");
+    //s7_define_function(x->s7, "vector-set-chars-from-array!", s7_vector_set_chars_from_array, 3, 2, true, "");
 
     s7_define_function(x->s7, "buffer?", s7_is_buffer, 1, 0, false, "(buffer? 'foo) returns true if buffer named foo exists");
     s7_define_function(x->s7, "buffer-size", s7_buffer_size, 1, 0, false, "(buffer-size 'foo) returns framecount of buffer"); 
@@ -1202,19 +1252,11 @@ int s4m_mc_buffer_write(t_s4m *x, char *buffer_name, int channel, long index, do
     return 0;
 }
 
-// create an array in the arrays hashtab
-// what to do about size? store it somewhere? 
-//int s4m_array_create(t_s4m *x, char *array_name, int size){
-//    post("s4m_array_create, name: %s size: %i", array_name, size);
-//    int *new_array = (int *)sysmem_newptr( sizeof( int ) * size);
-//    // hashtabs only store t_object pointers, so cast it
-//    hashtab_store(s4m_arrays, gensym(array_name), (t_object *)new_array);
-//    return 0; 
-//}
-
+// todo, this should specify type from a keyword arg of :int :real :string
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     // args are symbol name and int size
     char *array_name;
+    char *array_type;
     long array_size; 
     // arg 1 is the name
     if( s7_is_symbol( s7_car(args) ) ){ 
@@ -1223,22 +1265,39 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "error making array, first argument should be a symbol of array name"));
     }
-    // arg 2 is size
-    if( s7_is_integer( s7_cadr(args) ) ){ 
-        array_size = (long) s7_integer( s7_cadr(args) );
+    // arg 2 is type
+    if( s7_is_symbol( s7_cadr(args) ) ){ 
+        array_type = (char *) s7_symbol_name( s7_cadr(args) );
+        post("array_type: '%s'", array_type);
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "error making array, second argument should be type, (:int :float :string)"));
+    }
+    // arg 3 is size
+    if( s7_is_integer( s7_caddr(args) ) ){ 
+        array_size = (long) s7_integer( s7_caddr(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "error making array, second argument should be an integer for array size"));
     } 
-    //post("s7_make_array, name: %s size: %i", array_name, array_size);
+    post("s7_make_array, type: %s name: %s size: %i", array_type, array_name, array_size);
 
     // create the new array, sysmem_newptrclear inits to zeros
-    long *new_array_data = (long *)sysmem_newptr( sizeof( long ) * array_size);
+    //long *new_array_data = (long *)sysmem_newptr( sizeof( long ) * array_size);
+    t_s4m_array_point *new_array_data = (t_s4m_array_point *)sysmem_newptr( sizeof( t_s4m_array_point ) * array_size);
     t_s4m_array *new_array = (t_s4m_array *)sysmem_newptr( sizeof(t_s4m_array) );
     new_array->name = gensym(array_name);
     new_array->size = array_size;
+    new_array->type = array_type[1]; // will be 'i','f',or 's' from keywords :int, :float, or :string
     new_array->data = new_array_data;
-    for(int i = 0; i < new_array->size; i++){ new_array->data[i] = 0; }
+    for(int i = 0; i < new_array->size; i++){ 
+        if(new_array->type == 's'){
+            new_array->data[i].s = '\0'; 
+        }else if(new_array->type == 'i'){
+            new_array->data[i].i = 0;
+        }else
+            new_array->data[i].f = 0.0;
+    }
 
     // hashtabs only store t_object pointers, so cast it to a t_object pointer
     hashtab_store(s4m_arrays, gensym(array_name), (t_object *)new_array);
@@ -1296,15 +1355,25 @@ static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args){
 
     // TODO: this will only work safely right now if offset is zero
 
-    // write the data
+    // write the data as either int or 4 char array
     for(long i = 0; i < num_points; i++){
-      s7_pointer *source_value = s7_vector_values[i];
-      array->data[i] = (long) s7_integer(source_value);
+        s7_pointer *source_value = s7_vector_values[i];
+        // branch on type and populate the array
+        if( s7_is_string(source_value) ){
+            // xxx: not sure if this is safe or we need a strcopy
+            array->data[i].s = s7_string(source_value);
+        }else if( s7_is_integer(source_value) ){
+            array->data[i].i = (long) s7_integer(source_value);
+        }else if( s7_is_real(source_value) ){
+            array->data[i].f = (double) s7_real(source_value);
+        }else{
+            post("array-set-from-vector! unhandled type in s7 vector");
+        }
     }
     return s7_return_value;
 }
 
-
+/*
 // working, but does not have all the controls from vector-set-from-table! yet
 static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args) {
     // post("s7_set_vector_from_array()");
@@ -1350,7 +1419,7 @@ static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args) {
     long vector_size = s7_vector_length(s7_dest_vector);
     long num_points = vector_size < array->size ? vector_size : array->size;
     for(long i=0; i < num_points; i++){
-        s7_pointer s7_value = s7_make_integer(s7, array->data[i]);
+        s7_pointer s7_value = s7_make_integer(s7, array->data[i].num);
         s7_vector_set(s7, s7_dest_vector, vector_offset + i, s7_value);
     }
     //post("...data copied");
@@ -1358,7 +1427,58 @@ static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args) {
     return s7_return_value;
 }
 
+// version for char buffers
+static s7_pointer s7_vector_set_chars_from_array(s7_scheme *s7, s7_pointer args) {
+    t_s4m *x = get_max_obj(s7);
+    t_s4m_array *array;
+    long array_offset = 0;   // default target index is 0 unless overridden
+    long vector_offset = 0;  // default start of vector to copy
+    char *array_name = NULL;
+    char err_msg[128]; 
+    s7_pointer *s7_return_value = s7_nil(s7); 
 
+    // arg 1 is the vector
+    s7_pointer *s7_dest_vector = s7_car(args);
+    if( !s7_is_vector(s7_dest_vector) ){
+        sprintf(err_msg, "vector-set-from-array! : arg 1 must be a vector");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }
+
+    // arg 2 is point in vector to update from
+    s7_pointer *arg_2 = s7_cadr(args);
+    if( !s7_is_integer( arg_2 ) ){
+        sprintf(err_msg, "vector-set-from-array! : arg 2 must be an int for vector index");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }
+    vector_offset = s7_integer( arg_2 );
+
+    // arg 3 is array name
+    s7_pointer *s7_array_name = s7_caddr(args);
+    if( !s7_is_symbol(s7_array_name) && !s7_is_string(s7_array_name) ){
+        sprintf(err_msg, "vector-set-from-array! : arg 3 must be a string or symbol of array name");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }else{
+        array_name = s7_object_to_c_string(s7, s7_array_name);
+    }
+    // get the t_s4m_array struct from the registry
+    t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &array);
+    if(err){
+        sprintf(err_msg, "vector-set-from-array! : no array found with name %s", array_name);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
+    }
+    // copy data, update vector with array data
+    // number of points to copy is whatever is smaller, the vector or the array
+    long vector_size = s7_vector_length(s7_dest_vector);
+    long num_points = vector_size < array->size ? vector_size : array->size;
+    for(long i=0; i < num_points; i++){
+        s7_pointer s7_value = s7_make_integer(s7, array->data[i].num);
+        s7_vector_set(s7, s7_dest_vector, vector_offset + i, s7_value);
+    }
+    //post("...data copied");
+    // return nil 
+    return s7_return_value;
+}
+*/
 
 
 // call s7_call, with error logging
@@ -4538,5 +4658,275 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
     return s7_return_value;
 }
 
+/*********************************************************************************
+* s4mgrid functions
+*/
+
+void s4mgrid_main(void *r){
+    post("s4mgrid_main()");
+    t_class *c;
+    c = class_new("s4m.grid", (method)s4mgrid_new, (method)s4mgrid_free, sizeof(t_s4mgrid), 0L, A_GIMME, 0);
+
+    // the next two lines are necessary for UI objects
+    c->c_flags |= CLASS_FLAG_NEWDICTIONARY;
+    // optional call to set flags
+    jbox_initclass(c, JBOX_FIXWIDTH | JBOX_COLOR);
+
+    // necessary, the method that draws the thing
+    class_addmethod(c, (method)s4mgrid_paint, "paint",    A_CANT, 0);
+
+    // bang forces an update
+    class_addmethod(c, (method)s4mgrid_bang, "bang", 0);
+    class_addmethod(c, (method)s4mgrid_list, "list", A_GIMME, 0);
+    class_addmethod(c, (method)s4mgrid_readarray, "readarray", A_DEFSYM, 0);
+
+    // attributes
+    CLASS_STICKY_ATTR(c, "category", 0, "Color");
+    CLASS_ATTR_RGBA(c, "bgcolor", 0, t_s4mgrid, u_background);
+    CLASS_ATTR_DEFAULTNAME_SAVE_PAINT(c, "bgcolor", 0, "1. 1. 1. 1.");
+    CLASS_ATTR_STYLE_LABEL(c,"bgcolor",0,"rgba","Background Color");
+
+    CLASS_ATTR_RGBA(c, "bordercolor", 0, t_s4mgrid, u_outline);
+    CLASS_ATTR_DEFAULTNAME_SAVE_PAINT(c, "bordercolor", 0, "0.5 0.5 0.5 1.");
+    CLASS_ATTR_STYLE_LABEL(c,"bordercolor",0,"rgba","Border Color");
+
+    CLASS_ATTR_RGBA(c, "hilitecolor", 0, t_s4mgrid, u_hilite);
+    CLASS_ATTR_DEFAULTNAME_SAVE_PAINT(c, "hilitecolor", 0, "0.5 0.5 0.5 1.");
+    CLASS_ATTR_STYLE_LABEL(c,"hilitecolor",0,"rgba","Hilite Color");
+
+    CLASS_ATTR_RGBA(c, "textcolor", 0, t_s4mgrid, u_text);
+    CLASS_ATTR_DEFAULTNAME_SAVE_PAINT(c, "textcolor", 0, "0.0 0.0 0.0 1.");
+    CLASS_ATTR_STYLE_LABEL(c,"textcolor",0,"rgba","Text Color");
+
+    CLASS_STICKY_ATTR_CLEAR(c, "category");
+
+    CLASS_ATTR_LONG(c, "rows", 0, t_s4mgrid, num_rows);
+    CLASS_ATTR_INVISIBLE(c, "rows", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
+    CLASS_ATTR_LONG(c, "columns", 0, t_s4mgrid, num_cols);
+    CLASS_ATTR_INVISIBLE(c, "columns", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
+    CLASS_ATTR_LONG(c, "size", 0, t_s4mgrid, size);
+    CLASS_ATTR_INVISIBLE(c, "size", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
+
+    CLASS_ATTR_DEFAULT(c,"patching_rect",0, "0. 0. 1024. 192.");
+
+    class_register(CLASS_BOX, c);
+    s_s4mgrid_class = c;
+}
+
+
+
+void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv) {
+    t_s4mgrid *x = NULL;
+
+    post("s4mgrid_new");
+    
+    // necessary: ui objects get their starting attributes from the dict
+    t_dictionary *d = NULL;
+    if (!(d = object_dictionaryarg(argc,argv)))
+        return NULL;
+
+    x = (t_s4mgrid *)object_alloc(s_s4mgrid_class);
+   
+    // defaults
+    x->num_rows = 8;
+    x->num_cols = 16;
+    x->size = 4;
+
+    long boxflags;
+    boxflags = 0
+               | JBOX_DRAWFIRSTIN
+               | JBOX_NODRAWBOX
+               | JBOX_DRAWINLAST
+               // | JBOX_TRANSPARENT
+               //        | JBOX_NOGROW
+               //| JBOX_GROWY
+               | JBOX_GROWBOTH
+               //        | JBOX_HILITE
+               | JBOX_BACKGROUND
+               | JBOX_DRAWBACKGROUND
+               //        | JBOX_NOFLOATINSPECTOR
+               //        | JBOX_TEXTFIELD
+               //        | JBOX_MOUSEDRAGDELTA
+               ;
+
+    // necessary, note the cast
+    // this initializes the t_jbox for us
+    jbox_new((t_jbox *)x, boxflags, argc, argv);
+
+    // x->u_box is our t_jobx instance
+    // these are also necessary
+    x->u_box.b_firstin = (void *)x;
+    
+    // set up an outlet, note we need the cast to t_object
+    x->u_out = intout((t_object *)x);
+
+    // do any internal state initialization here
+    attr_dictionary_process(x, d);
+
+    post("rows: %i cols: %i size: %i", x->num_rows, x->num_cols, x->size);
+
+    // set up the internal memory as array of array of strings of size chars
+    x->data = (char *)sysmem_newptr( x->num_rows * sizeof(char *) );
+    for(int row=0; row < x->num_rows; row++){
+        x->data[row] = sysmem_newptr( x->num_cols * sizeof(char *));
+        for(int col=0; col < x->num_cols; col++){
+            x->data[row][col] = sysmem_newptr( (x->size + 1) * sizeof(char));
+            sprintf(x->data[row][col], "");
+        }
+    }
+
+    // call the initial paint
+    jbox_ready((t_jbox *)x);
+
+    //x->buffer_ref = NULL;
+
+    return x;
+}
+
+// read from an array and update the data grid of strings
+// TODO: only reads string arrays right now
+void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
+    //post("s4mgrid_readarray, array name: %s", array_name->s_name);
+    t_s4m_array *array;
+    // get the t_s4m_array struct from the registry
+    t_max_err err = hashtab_lookup(s4m_arrays, array_name, &array);
+    if(err){
+        post("s4m.grid error: could not find array '%s'", array_name->s_name); 
+        return;
+    }
+    // figure out max points to write
+    int num_grid_cells = x->num_rows * x->num_cols;
+    int num_points = array->size < num_grid_cells ? array->size : num_grid_cells;
+    //post("s4mgrid_readarray %s type: %c, size: %i points: %i", array_name->s_name, 
+    //    array->type, array->size, num_points);
+    for(int i=0; i < num_points; i++){
+        int col = i % x->num_cols;
+        int row = floor( i / x->num_cols );
+        //post("row: %i col: %i data: %i", row, col, array->data[i].num);
+        // for reading numbers from the array
+        //sprintf( x->data[row][col], "%i", array->data[i].num);
+        // TODO: should branch on array type yo 
+        sprintf( x->data[row][col], array->data[i].s);
+        //post("cell: %s", x->data[row][col]);
+    }
+    jbox_redraw( (t_jbox *)x);
+}
+
+// update the entire data from a list message
+void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *ap){
+    //post("s4mgrid_list, selector: %s", s->s_name);
+    // loop through the args, updating the internal data store
+    for(int i=0; i < argc; i++){
+        switch (atom_gettype(ap + i)){
+            case A_LONG:
+                //post("int %ld", atom_getlong(ap+i));
+                sprintf( x->data[0][i], "%i", atom_getlong(ap+i));
+                break;
+            case A_FLOAT:
+                //post("float %.2f", atom_getfloat(ap+i));
+                sprintf( x->data[0][i], "%.2f", atom_getfloat(ap+i));
+                break;
+            case A_SYM: 
+                //post("sym %s", atom_getsym(ap+i)->s_name);
+                sprintf( x->data[0][i], "%s", atom_getsym(ap+i)->s_name);
+                break;
+        }
+    }
+    // the below will call the paint method
+    jbox_redraw( (t_jbox *)x);
+}
+
+
+void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
+    //post("s4mgrid_paint()");
+
+    // make these into attributes or something
+    int col_width = 32;
+    int row_height = 24;
+    int num_rows = x->num_rows;
+    int num_cols = x->num_cols;
+    int x_offset = 0;
+    int y_offset = 0;
+ 
+    // setup, obtain graphics context
+    t_rect rect;
+    t_jgraphics *g = (t_jgraphics *) patcherview_get_jgraphics(patcherview);        
+    jbox_get_rect_for_view((t_object *)x, patcherview, &rect);
+
+    // color for filling boxes on every quarter
+    t_jrgba u_quarter_highlight;                 
+    jrgba_set( &u_quarter_highlight, 0.8, 0.8, 0.8, 1.0);
+    t_jrgba u_bar_highlight;                 
+    jrgba_set( &u_bar_highlight, 0.7, 0.7, 0.7, 1.0);
+
+    for(int row=0; row < num_rows; row++){
+        for(int col=0; col < num_cols; col++){
+            // fill background every four
+            if( col % 4 == 0 ){
+              if( col % 16 == 0 )
+                jgraphics_set_source_jrgba(g, &u_bar_highlight);
+              else
+                jgraphics_set_source_jrgba(g, &u_quarter_highlight);
+              jgraphics_rectangle(g, x_offset, y_offset, col_width, row_height);
+              jgraphics_fill(g);
+            }
+            jgraphics_stroke(g);
+            // draw rectangle to represent a square in the grid
+            jgraphics_set_source_jrgba(g, &x->u_hilite);
+            jgraphics_set_line_width(g, 1.4);
+            jgraphics_rectangle(g, x_offset, y_offset, col_width, row_height);
+            jgraphics_stroke(g);
+             
+            x_offset += col_width;
+        }
+        x_offset = 0;
+        y_offset += row_height;
+    }
+
+    // draw a grid of text
+    t_jfont *font = jfont_create( "Futura", JGRAPHICS_FONT_SLANT_NORMAL, JGRAPHICS_FONT_WEIGHT_BOLD, 11.0 );
+	t_jtextlayout *text_layout = jtextlayout_create( );
+ 
+    // loop to update from the text model
+    int pos_x = 0;
+    int pos_y = 0;
+    for(int i=0; i < num_rows; i++){
+      for(int j=0; j < num_cols; j++){
+        //post("%s", x->data[i][j]);
+        jtextlayout_set( text_layout, x->data[i][j], font, pos_x - 2, pos_y, col_width, row_height, JGRAPHICS_TEXT_JUSTIFICATION_RIGHT, JGRAPHICS_TEXTLAYOUT_NOWRAP );
+	    jtextlayout_draw( text_layout, g );
+        pos_x += col_width;
+      }
+      pos_x = 0;  
+      pos_y += row_height;
+    }
+
+    // paint outline last so it's on top
+    jgraphics_set_source_jrgba(g, &x->u_outline);
+    jgraphics_set_line_width(g, 3.);
+    jgraphics_rectangle(g, 0., 0., num_cols * col_width, num_rows * row_height);
+    jgraphics_stroke(g);
+
+    // Clean up
+	jgraphics_stroke ( g );
+	jfont_destroy ( font );
+	jtextlayout_destroy ( text_layout );
+  
+}
+
+// bang reads the framebuffer and repaints 
+void s4mgrid_bang(t_s4mgrid *x) {
+    post("updating");
+    jbox_redraw( (t_jbox *)x);
+}
+
+void s4mgrid_getdrawparams(t_s4mgrid *x, t_object *patcherview, t_jboxdrawparams *params) {
+    params->d_bordercolor.alpha = 0;
+    params->d_boxfillcolor.alpha = 0;
+}
+
+void s4mgrid_free(t_s4mgrid *x) {
+    jbox_free((t_jbox *)x);
+}
 
 
