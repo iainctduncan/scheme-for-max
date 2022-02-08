@@ -4854,22 +4854,28 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
     jbox_get_rect_for_view((t_object *)x, patcherview, &rect);
 
     // color for filling boxes on every quarter
-    t_jrgba u_quarter_highlight;                 
-    jrgba_set( &u_quarter_highlight, 0.8, 0.8, 0.8, 1.0);
-    t_jrgba u_bar_highlight;                 
-    jrgba_set( &u_bar_highlight, 0.7, 0.7, 0.7, 1.0);
+    t_jrgba rgb_text, rgb_cell_bkg, rgb_quarter_highlight, rgb_bar_highlight;
+    jrgba_set( &rgb_text, 1, 1, 1, 1);
+    jrgba_set( &rgb_cell_bkg, 0.0, 0.0, 0.0, 1.0);
+    jrgba_set( &rgb_quarter_highlight, 0.25, 0.25, 0.25, 1.0);
+    jrgba_set( &rgb_bar_highlight, 0.3, 0.3, 0.3, 1.0);
+
+    // make these props
+    int cells_per_bar = 16;
+    int cells_per_beat = 4;
 
     for(int row=0; row < num_rows; row++){
         for(int col=0; col < num_cols; col++){
             // fill background every four
-            if( col % 4 == 0 ){
-              if( col % 16 == 0 )
-                jgraphics_set_source_jrgba(g, &u_bar_highlight);
-              else
-                jgraphics_set_source_jrgba(g, &u_quarter_highlight);
-              jgraphics_rectangle(g, x_offset, y_offset, col_width, row_height);
-              jgraphics_fill(g);
-            }
+            if( col % cells_per_bar == 0 ){
+                jgraphics_set_source_jrgba(g, &rgb_bar_highlight);
+            }else if( col % 4 == 0 ){
+                jgraphics_set_source_jrgba(g, &rgb_quarter_highlight);
+            }else{
+                jgraphics_set_source_jrgba(g, &rgb_cell_bkg);
+            }  
+            jgraphics_rectangle(g, x_offset, y_offset, col_width, row_height);
+            jgraphics_fill(g);
             jgraphics_stroke(g);
             // draw rectangle to represent a square in the grid
             jgraphics_set_source_jrgba(g, &x->u_hilite);
@@ -4884,16 +4890,19 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
     }
 
     // draw a grid of text
-    t_jfont *font = jfont_create( "Futura", JGRAPHICS_FONT_SLANT_NORMAL, JGRAPHICS_FONT_WEIGHT_BOLD, 11.0 );
+    t_jfont *font = jfont_create( "Futura", JGRAPHICS_FONT_SLANT_NORMAL, JGRAPHICS_FONT_WEIGHT_NORMAL, 12.0 );
 	t_jtextlayout *text_layout = jtextlayout_create( );
- 
+    jtextlayout_settextcolor(text_layout, &rgb_text);
+
     // loop to update from the text model
     int pos_x = 0;
     int pos_y = 0;
     for(int i=0; i < num_rows; i++){
       for(int j=0; j < num_cols; j++){
-        //post("%s", x->data[i][j]);
-        jtextlayout_set( text_layout, x->data[i][j], font, pos_x - 2, pos_y, col_width, row_height, JGRAPHICS_TEXT_JUSTIFICATION_RIGHT, JGRAPHICS_TEXTLAYOUT_NOWRAP );
+        // string we want is in x->data[i][j]
+        jtextlayout_set( text_layout, x->data[i][j], font, 
+                           pos_x - 7, pos_y, col_width, row_height, 
+                           JGRAPHICS_TEXT_JUSTIFICATION_RIGHT, JGRAPHICS_TEXTLAYOUT_NOWRAP );
 	    jtextlayout_draw( text_layout, g );
         pos_x += col_width;
       }
