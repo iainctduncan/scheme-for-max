@@ -30,6 +30,8 @@
 #define DEFAULT_HEAP_KB 32
 #define GRID_ROWS 8
 #define GRID_COLS 16
+#define GRID_COL_WIDTH 30
+#define GRID_ROW_HEIGHT 22
 
 // object struct
 typedef struct _s4m {
@@ -274,6 +276,7 @@ static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args);
 //static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args);
 //static s7_pointer s7_vector_set_chars_from_array(s7_scheme *s7, s7_pointer args);
 
@@ -351,7 +354,8 @@ char *trim_symbol_quote(char *input){
 * main C code 
 */
 void ext_main(void *r){
-    post("s4m.c ext_main()");
+    post("Scheme For Max 0.3, (c) Iain C.T. Duncan, 2022");
+
     t_class *c;
     common_symbols_init();
 
@@ -433,7 +437,7 @@ void ext_main(void *r){
     hashtab_flags(s4m_arrays, OBJ_FLAG_DATA | OBJ_FLAG_SILENT);
 
     s4mgrid_main(r);
-    post("s4m.c ext_main() done");
+    //post("s4m.c ext_main() done");
 }
 
 
@@ -578,6 +582,7 @@ void s4m_init_s7(t_s4m *x){
 
     s7_define_function(x->s7, "make-array", s7_make_array, 2, 0, true, "");
     s7_define_function(x->s7, "array-set-from-vector!", s7_array_set_from_vector, 3, 2, true, "");
+    s7_define_function(x->s7, "array->vector", s7_array_to_vector, 1, 2, true, "");
     //s7_define_function(x->s7, "vector-set-from-array!", s7_vector_set_from_array, 3, 2, true, "");
     //s7_define_function(x->s7, "vector-set-chars-from-array!", s7_vector_set_chars_from_array, 3, 2, true, "");
 
@@ -1268,7 +1273,7 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     // arg 2 is type
     if( s7_is_symbol( s7_cadr(args) ) ){ 
         array_type = (char *) s7_symbol_name( s7_cadr(args) );
-        post("array_type: '%s'", array_type);
+        //post("array_type: '%s'", array_type);
     }else{
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "error making array, second argument should be type, (:int :float :string)"));
@@ -1280,7 +1285,7 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "error making array, second argument should be an integer for array size"));
     } 
-    post("s7_make_array, type: %s name: %s size: %i", array_type, array_name, array_size);
+    //post("s7_make_array, type: %s name: %s size: %i", array_type, array_name, array_size);
 
     // create the new array, sysmem_newptrclear inits to zeros
     //long *new_array_data = (long *)sysmem_newptr( sizeof( long ) * array_size);
@@ -1292,7 +1297,7 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     new_array->data = new_array_data;
     for(int i = 0; i < new_array->size; i++){ 
         if(new_array->type == 's'){
-            new_array->data[i].s = '\0'; 
+            new_array->data[i].s = ""; 
         }else if(new_array->type == 'i'){
             new_array->data[i].i = 0;
         }else
@@ -1308,6 +1313,7 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
 // based on table-set-from-vector!, but not feature complete
 // checks size of source and dest and copies whatever fits
 static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args){
+    //post("array_set_from_vector");
     char *array_name = NULL;
     int array_offset;
     char err_msg[128];
@@ -1353,24 +1359,113 @@ static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args){
     s7_int *s7_vector_values = s7_vector_elements(s7_source_vector);
     long num_points = vector_size < array->size ? vector_size : array->size;
 
-    // TODO: this will only work safely right now if offset is zero
+    // write as much of the vector as fits
+    for(long i = 0; i < vector_size; i++){
+        int dest_index = array_offset + i;
+        // prevent writing past end of array
+        if( dest_index >= array->size )
+            break;
 
-    // write the data as either int or 4 char array
-    for(long i = 0; i < num_points; i++){
         s7_pointer *source_value = s7_vector_values[i];
-        // branch on type and populate the array
-        if( s7_is_string(source_value) ){
-            // xxx: not sure if this is safe or we need a strcopy
-            array->data[i].s = s7_string(source_value);
-        }else if( s7_is_integer(source_value) ){
-            array->data[i].i = (long) s7_integer(source_value);
-        }else if( s7_is_real(source_value) ){
-            array->data[i].f = (double) s7_real(source_value);
-        }else{
-            post("array-set-from-vector! unhandled type in s7 vector");
+        // branch on array type and then do conversion in scheme
+        if( array->type == 'i'){
+            if( s7_is_number(source_value) ){
+                array->data[dest_index].i = (double) s7_real(source_value);
+            }else{
+                sprintf(err_msg, "array-set-from-vector! : non-number used for float s4m array");
+                return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+            }
+        }else if( array->type == 'i' ){
+            if( s7_is_number(source_value) ){
+                array->data[dest_index].i = (long) s7_integer(source_value);
+            }else{
+                sprintf(err_msg, "array-set-from-vector! : non-number used for int s4m array");
+                return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+            }
+        }else { // it's a string array 
+            if( s7_is_string(source_value) ){
+                array->data[dest_index].s = (char *) s7_string(source_value);
+            }else{
+                array->data[dest_index].s = (char *) s7_object_to_c_string(s7, source_value);
+            }
         }
     }
+ 
     return s7_return_value;
+}
+
+// array->vector array-name optional-start-index optional-points
+static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args) {
+    // post("s7_array_to_vector()");
+    t_s4m *x = get_max_obj(s7);
+    t_s4m_array *array;
+    char *array_name = NULL;
+    long array_offset = 0;   // default array starting index is 0 unless overridden
+    int num_points = 0;      // optional number of points, 0 means full size;
+    char err_msg[128]; 
+    s7_pointer *s7_return_value = s7_nil(s7); 
+
+    // arg 1 is array name
+    s7_pointer *s7_array_name = s7_car(args);
+    if( !s7_is_symbol(s7_array_name) && !s7_is_string(s7_array_name) ){
+        sprintf(err_msg, "array->vector : arg 1 must be a string or symbol of array name");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }else{
+        array_name = (char *) s7_object_to_c_string(s7, s7_array_name);
+    }
+    // arg 2 is the optional start index 
+    if( s7_list_length(s7, args) > 1 ){
+        s7_pointer *s7_array_offset = s7_cadr(args);
+        if( !s7_is_integer(s7_array_offset) ){
+            sprintf(err_msg, "array->vector: arg 2 must be an integer index");
+            return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+        }else{
+            array_offset = (int) s7_integer(s7_array_offset); 
+        }
+    }
+    // arg 3 is the optional number of points
+    if( s7_list_length(s7, args) > 2 ){
+        s7_pointer *s7_num_points = s7_caddr(args);
+        if( !s7_is_integer(s7_num_points) ){
+            sprintf(err_msg, "array->vector: arg 2 must be an integer number of points");
+            return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+        }else{
+            num_points = (int) s7_integer(s7_num_points); 
+        }
+    }
+
+    // get the t_s4m_array struct from the registry
+    t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &array);
+    if(err){
+        sprintf(err_msg, "array->vector : no array found with name %s", array_name);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
+    }
+  
+    // if no num_points specified, num_points is from the index to the end of the buffer
+    if( array_offset < 0 || array_offset >= array->size){
+        sprintf(err_msg, "array->vector : illegal offset", array_name);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
+    }
+    if( num_points == 0) num_points = array->size - array_offset; 
+    if( num_points > (array->size - array_offset)) num_points = array->size - array_offset;
+
+    // create a new vector and copy from buffer (vector sizes itself dynamically)
+    s7_pointer *new_vector = s7_make_vector(s7, num_points); 
+    for(int i=0; i < num_points; i++){
+        int index = i + array_offset;
+        switch( array->type ){
+            case 'i':
+                s7_vector_set(s7, new_vector, i, s7_make_integer(s7, array->data[index].i ) ); 
+                break;
+            case 'f':
+                s7_vector_set(s7, new_vector, i, s7_make_real(s7, array->data[index].f ) ); 
+                break;
+            case 's':
+                s7_vector_set(s7, new_vector, i, s7_make_string(s7, array->data[index].s ) ); 
+                break;
+        }
+    }
+    return new_vector;
 }
 
 /*
@@ -4663,7 +4758,7 @@ static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args) {
 */
 
 void s4mgrid_main(void *r){
-    post("s4mgrid_main()");
+    //post("s4mgrid_main()");
     t_class *c;
     c = class_new("s4m.grid", (method)s4mgrid_new, (method)s4mgrid_free, sizeof(t_s4mgrid), 0L, A_GIMME, 0);
 
@@ -4680,6 +4775,17 @@ void s4mgrid_main(void *r){
     class_addmethod(c, (method)s4mgrid_list, "list", A_GIMME, 0);
     class_addmethod(c, (method)s4mgrid_readarray, "readarray", A_DEFSYM, 0);
 
+    // @rows, @columns, @size attributes
+
+    CLASS_ATTR_LONG(c, "rows", 0, t_s4mgrid, num_rows);
+    CLASS_ATTR_INVISIBLE(c, "rows", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
+    CLASS_ATTR_SAVE(c, "rows", 0);   
+    CLASS_ATTR_LONG(c, "columns", 0, t_s4mgrid, num_cols);
+    CLASS_ATTR_INVISIBLE(c, "columns", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
+    CLASS_ATTR_SAVE(c, "columns", 0);   
+    CLASS_ATTR_LONG(c, "size", 0, t_s4mgrid, size);
+    CLASS_ATTR_INVISIBLE(c, "size", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
+    CLASS_ATTR_SAVE(c, "size", 0);  
     // attributes
     CLASS_STICKY_ATTR(c, "category", 0, "Color");
     CLASS_ATTR_RGBA(c, "bgcolor", 0, t_s4mgrid, u_background);
@@ -4700,14 +4806,8 @@ void s4mgrid_main(void *r){
 
     CLASS_STICKY_ATTR_CLEAR(c, "category");
 
-    CLASS_ATTR_LONG(c, "rows", 0, t_s4mgrid, num_rows);
-    CLASS_ATTR_INVISIBLE(c, "rows", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
-    CLASS_ATTR_LONG(c, "columns", 0, t_s4mgrid, num_cols);
-    CLASS_ATTR_INVISIBLE(c, "columns", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
-    CLASS_ATTR_LONG(c, "size", 0, t_s4mgrid, size);
-    CLASS_ATTR_INVISIBLE(c, "size", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
-
-    CLASS_ATTR_DEFAULT(c,"patching_rect",0, "0. 0. 1024. 192.");
+    // what the patch rectangle will start with
+    //CLASS_ATTR_DEFAULT(c,"patching_rect",0, "0. 0. 600. 400.");
 
     class_register(CLASS_BOX, c);
     s_s4mgrid_class = c;
@@ -4716,9 +4816,8 @@ void s4mgrid_main(void *r){
 
 
 void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv) {
+    //post("s4mgrid_new");
     t_s4mgrid *x = NULL;
-
-    post("s4mgrid_new");
     
     // necessary: ui objects get their starting attributes from the dict
     t_dictionary *d = NULL;
@@ -4763,8 +4862,7 @@ void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv) {
     // do any internal state initialization here
     attr_dictionary_process(x, d);
 
-    post("rows: %i cols: %i size: %i", x->num_rows, x->num_cols, x->size);
-
+    //post("rows: %i cols: %i size: %i", x->num_rows, x->num_cols, x->size);
     // set up the internal memory as array of array of strings of size chars
     x->data = (char *)sysmem_newptr( x->num_rows * sizeof(char *) );
     for(int row=0; row < x->num_rows; row++){
@@ -4775,10 +4873,12 @@ void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv) {
         }
     }
 
+    // set up the size of the object
+    t_size box_size = { GRID_COL_WIDTH * x->num_cols, GRID_ROW_HEIGHT * x->num_rows};
+    jbox_set_size((t_object *)x, &box_size); 
+
     // call the initial paint
     jbox_ready((t_jbox *)x);
-
-    //x->buffer_ref = NULL;
 
     return x;
 }
@@ -4802,12 +4902,20 @@ void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
     for(int i=0; i < num_points; i++){
         int col = i % x->num_cols;
         int row = floor( i / x->num_cols );
-        //post("row: %i col: %i data: %i", row, col, array->data[i].num);
+        //post("row: %i col: %i", row, col);
         // for reading numbers from the array
-        //sprintf( x->data[row][col], "%i", array->data[i].num);
-        // TODO: should branch on array type yo 
-        sprintf( x->data[row][col], array->data[i].s);
-        //post("cell: %s", x->data[row][col]);
+        // sprintf( x->data[row][col], "%i", array->data[i].num);
+        switch( array->type ){
+            case('s'):
+                sprintf( x->data[row][col], array->data[i].s);
+                break;
+            case('i'):
+                sprintf( x->data[row][col], "%i", array->data[i].i);
+                break;
+            case('f'):
+                sprintf( x->data[row][col], "%.2f", array->data[i].f);
+                break;
+        }
     }
     jbox_redraw( (t_jbox *)x);
 }
@@ -4836,13 +4944,14 @@ void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *ap){
     jbox_redraw( (t_jbox *)x);
 }
 
-
 void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
     //post("s4mgrid_paint()");
 
     // make these into attributes or something
-    int col_width = 32;
-    int row_height = 24;
+    //int col_width = 32;
+    //int row_height = 24;
+    int col_width = GRID_COL_WIDTH;
+    int row_height = GRID_ROW_HEIGHT;
     int num_rows = x->num_rows;
     int num_cols = x->num_cols;
     int x_offset = 0;
@@ -4890,8 +4999,8 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
     }
 
     // draw a grid of text
-    t_jfont *font = jfont_create( "Futura", JGRAPHICS_FONT_SLANT_NORMAL, JGRAPHICS_FONT_WEIGHT_NORMAL, 12.0 );
-	t_jtextlayout *text_layout = jtextlayout_create( );
+    t_jfont *font = jfont_create( "Futura", JGRAPHICS_FONT_SLANT_NORMAL, JGRAPHICS_FONT_WEIGHT_NORMAL, 11.0 );
+	  t_jtextlayout *text_layout = jtextlayout_create( );
     jtextlayout_settextcolor(text_layout, &rgb_text);
 
     // loop to update from the text model

@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ -1082.0, -1001.0, 1038.0, 693.0 ],
+		"rect" : [ 73.0, 79.0, 1072.0, 681.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -41,12 +41,51 @@
 		"boxes" : [ 			{
 				"box" : 				{
 					"color" : [ 1.0, 1.0, 1.0, 1.0 ],
-					"id" : "obj-7",
+					"columns" : 16,
+					"id" : "obj-8",
 					"maxclass" : "s4m.grid",
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "int" ],
-					"patching_rect" : [ 20.0, 300.0, 1024.0, 192.0 ]
+					"patching_rect" : [ 18.0, 292.0, 100.0, 100.0 ],
+					"rows" : 8,
+					"size" : 4
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-10",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 339.0, 99.666666388511658, 196.0, 22.0 ],
+					"text" : "(array-set-from-vector! :array-2 0 v)"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-9",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 144.0, 99.666666388511658, 181.0, 22.0 ],
+					"text" : "(make-array :array-2 :string 128)"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-2",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 136.0, 232.0, 105.0, 22.0 ],
+					"text" : "readarray :array-2"
 				}
 
 			}
@@ -117,7 +156,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 97.833333194255829, 70.666666388511658, 35.0, 22.0 ],
+					"patching_rect" : [ 97.833333194255829, 99.666666388511658, 35.0, 22.0 ],
 					"text" : "reset"
 				}
 
@@ -153,7 +192,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 65.833333194255829, 102.0, 99.0, 22.0 ],
+					"patching_rect" : [ 65.833333194255829, 143.0, 99.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"heap" : 32,
 						"ins" : 1,
@@ -180,6 +219,14 @@
 					"destination" : [ "obj-34", 0 ],
 					"order" : 1,
 					"source" : [ "obj-1", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-37", 0 ],
+					"midpoints" : [ 348.5, 135.0, 75.333333194255829, 135.0 ],
+					"source" : [ "obj-10", 0 ]
 				}
 
 			}
@@ -216,6 +263,14 @@
 				"patchline" : 				{
 					"destination" : [ "obj-4", 0 ],
 					"source" : [ "obj-6", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-37", 0 ],
+					"midpoints" : [ 153.5, 135.0, 75.333333194255829, 135.0 ],
+					"source" : [ "obj-9", 0 ]
 				}
 
 			}
