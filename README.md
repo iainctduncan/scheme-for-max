@@ -60,7 +60,7 @@ Binary packages are available for OSX and Windows: https://github.com/iainctdunc
 Download the Scheme-For-Max tar file and untar it in your Max Packages directory. 
 The Package manager should detect the Scheme For Max package and enable you to launch the help patcher.
 
-Currently tested on Max 8, on Mac up to Big Sur (Intel only) and Windows 10. 
+Currently tested on Max 8, on Mac up to Monterey (Intel and M1) and Windows 10. 
 Please report problems installing to the google group, as well as any fixes
 or workarounds that could be added here.
 
@@ -69,6 +69,10 @@ The current "production beta" is 0.3.0. Subsequent releases should be considered
 ### Installing on Mac OSX Big Sur
 
 As above, move the Scheme-For-Max folder into `~/Documents/Max 8/Packages`. Open the `externals` folder, hold down the control key and right click s4m.mxo and choose "open". You'll get an ugly warning about not being able to veify it's not malware.  Finally click on the "open" button.  Nothing will really happenm but now scheme for Max should be usable.
+
+### Installing on M1
+
+As above, but replace the s4m.mxo file with the one in the Universal Binary update for 0.3. This is temporary during testing.
 
 ## Documentation and Community
 An extensive help file demonstrating all official features of the release is included, with
