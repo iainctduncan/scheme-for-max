@@ -59,6 +59,7 @@ If you enjoy Scheme for Max, please consider supporting development on my patreo
 Binary packages are available for OSX and Windows: https://github.com/iainctduncan/scheme-for-max/releases
 Download the Scheme-For-Max tar file and untar it in your Max Packages directory. 
 The Package manager should detect the Scheme For Max package and enable you to launch the help patcher.
+Note: if you get errors with the s4m object not being found, double check that the external files are actually in the externals directory. Some users have reported issues where security software quarantined or blocked these files on a seemingly successful install. The external should be s4m.mxo on Mac, or s4m.mxe and s4m.mxe64 on windows.
 
 Currently tested on Max 8, on Mac up to Monterey (Intel and M1) and Windows 10. 
 Please report problems installing to the google group, as well as any fixes
