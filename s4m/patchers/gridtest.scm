@@ -11,6 +11,5 @@
 
 (array-set-from-vector! :array 0 v)  
 
-(caddr '(1 2 3))
 
 (post "done")

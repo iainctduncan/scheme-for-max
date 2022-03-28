@@ -275,6 +275,8 @@ static s7_pointer s7_gc_run(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args);
 //static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args);
@@ -580,9 +582,17 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "vector-set-from-table!", s7_vector_set_from_table, 3, 2, false, "copy contents of a Max table to an existing vector");
     s7_define_function(x->s7, "vecst", s7_vector_set_from_table, 3, 2, false, "copy contents of a Max table to an existing vector");
 
+    // s4m array i/o
     s7_define_function(x->s7, "make-array", s7_make_array, 2, 0, true, "");
+    s7_define_function(x->s7, "array-ref", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
+    s7_define_function(x->s7, "arrr", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
+    s7_define_function(x->s7, "array-set!", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
+    s7_define_function(x->s7, "arrs", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
     s7_define_function(x->s7, "array-set-from-vector!", s7_array_set_from_vector, 3, 2, true, "");
+    s7_define_function(x->s7, "arrsv", s7_array_set_from_vector, 3, 2, true, "");
     s7_define_function(x->s7, "array->vector", s7_array_to_vector, 1, 2, true, "");
+    s7_define_function(x->s7, "a->v", s7_array_to_vector, 1, 2, true, "");
+    // might bring these back later
     //s7_define_function(x->s7, "vector-set-from-array!", s7_vector_set_from_array, 3, 2, true, "");
     //s7_define_function(x->s7, "vector-set-chars-from-array!", s7_vector_set_chars_from_array, 3, 2, true, "");
 
@@ -1216,7 +1226,6 @@ int s4m_buffer_write(t_s4m *x, char *buffer_name, long index, double value){
     } 
     // we need to lock the buffer before fetching from it
     float *sample_data = buffer_locksamples(buffer);
-    // oops the the below is not right 
     sample_data[ index ] = value;
     // unlock and free buffer reference
     buffer_unlocksamples(buffer);
@@ -2256,7 +2265,6 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
             s7_obj_to_max_atom(s7, s7_vector_ref(s7, s7_obj, i), ap);         
             atomarray_appendatom(aa, ap); 
         }
-        // attempt to set the atom be an atom array, not working. getting crashes
         atom_setobj(atom, (void *)aa);
     }
 
