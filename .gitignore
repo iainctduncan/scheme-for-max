@@ -3,6 +3,7 @@ dist
 *.swm
 *.swo
 *.swp
+*.sw*
 *.zip
 *.o
 *.xcuserdata
