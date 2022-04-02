@@ -275,8 +275,8 @@ static s7_pointer s7_gc_run(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args);
+//static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args);
+//static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args);
 //static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args);
@@ -309,6 +309,7 @@ void s4mgrid_getdrawparams(t_s4mgrid *x, t_object *patcherview, t_jboxdrawparams
 void s4mgrid_bang(t_s4mgrid *x);
 void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *argv);
 void s4mgrid_int(t_s4mgrid *x, long n);
+void s4mgrid_clear(t_s4mgrid *x);
 void s4mgrid_readarray(t_s4mgrid *x, t_symbol *s);
 
 static t_class *s_s4mgrid_class;
@@ -584,10 +585,10 @@ void s4m_init_s7(t_s4m *x){
 
     // s4m array i/o
     s7_define_function(x->s7, "make-array", s7_make_array, 2, 0, true, "");
-    s7_define_function(x->s7, "array-ref", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
-    s7_define_function(x->s7, "arrr", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
-    s7_define_function(x->s7, "array-set!", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
-    s7_define_function(x->s7, "arrs", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
+    //s7_define_function(x->s7, "array-ref", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
+    //s7_define_function(x->s7, "arrr", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
+    //s7_define_function(x->s7, "array-set!", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
+    //s7_define_function(x->s7, "arrs", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
     s7_define_function(x->s7, "array-set-from-vector!", s7_array_set_from_vector, 3, 2, true, "");
     s7_define_function(x->s7, "arrsv", s7_array_set_from_vector, 3, 2, true, "");
     s7_define_function(x->s7, "array->vector", s7_array_to_vector, 1, 2, true, "");
@@ -4781,6 +4782,7 @@ void s4mgrid_main(void *r){
     // bang forces an update
     class_addmethod(c, (method)s4mgrid_bang, "bang", 0);
     class_addmethod(c, (method)s4mgrid_list, "list", A_GIMME, 0);
+    class_addmethod(c, (method)s4mgrid_clear, "clear", 0);
     class_addmethod(c, (method)s4mgrid_readarray, "readarray", A_DEFSYM, 0);
 
     // @rows, @columns, @size attributes
@@ -4837,6 +4839,7 @@ void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv) {
     // defaults
     x->num_rows = 8;
     x->num_cols = 16;
+    // number of characters per cell
     x->size = 4;
 
     long boxflags;
@@ -4946,6 +4949,18 @@ void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *ap){
                 //post("sym %s", atom_getsym(ap+i)->s_name);
                 sprintf( x->data[0][i], "%s", atom_getsym(ap+i)->s_name);
                 break;
+        }
+    }
+    // the below will call the paint method
+    jbox_redraw( (t_jbox *)x);
+}
+
+// blank out the grid
+void s4mgrid_clear(t_s4mgrid *x){
+    //post("s4mgrid_clear");
+    for(int i=0; i < x->num_rows; i++){
+        for(int j=0; j < x->num_cols; j++){
+           sprintf( x->data[i][j], ""); 
         }
     }
     // the below will call the paint method
