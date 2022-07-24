@@ -4,7 +4,7 @@
 		"appversion" : 		{
 			"major" : 8,
 			"minor" : 2,
-			"revision" : 1,
+			"revision" : 2,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
@@ -47,7 +47,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "int" ],
-					"patching_rect" : [ 18.0, 292.0, 100.0, 100.0 ],
+					"patching_rect" : [ 18.0, 292.0, 480.0, 176.0 ],
 					"rows" : 8,
 					"size" : 4
 				}
@@ -261,6 +261,13 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-8", 0 ],
+					"source" : [ "obj-5", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-4", 0 ],
 					"source" : [ "obj-6", 0 ]
 				}
@@ -276,10 +283,6 @@
 			}
  ],
 		"dependency_cache" : [ 			{
-				"name" : "s4m.mxo",
-				"type" : "iLaX"
-			}
-, 			{
 				"name" : "s4m.mxo",
 				"type" : "iLaX"
 			}

@@ -30,8 +30,8 @@
 #define DEFAULT_HEAP_KB 32
 #define GRID_ROWS 8
 #define GRID_COLS 16
-#define GRID_COL_WIDTH 30
-#define GRID_ROW_HEIGHT 22
+#define GRID_COL_WIDTH 29
+#define GRID_ROW_HEIGHT 20
 
 // object struct
 typedef struct _s4m {
@@ -299,6 +299,10 @@ typedef struct _s4mgrid
     long num_cols;
     long size;
     char ***data;    // becomes a 2D array of char arrays
+    long print_zero;
+    long note_names;
+    long note_row;
+
 } t_s4mgrid;
 
 void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv);
@@ -311,6 +315,9 @@ void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *argv);
 void s4mgrid_int(t_s4mgrid *x, long n);
 void s4mgrid_clear(t_s4mgrid *x);
 void s4mgrid_readarray(t_s4mgrid *x, t_symbol *s);
+
+void s4mgrid_int_to_note_name(t_s4mgrid *x, char *dest, int note_num);
+void s4mgrid_fill_int_cell(t_s4mgrid *x, long row, long col, long value);
 
 static t_class *s_s4mgrid_class;
 void s4mgrid_main(void *r);
@@ -4815,6 +4822,17 @@ void s4mgrid_main(void *r){
     CLASS_ATTR_STYLE_LABEL(c,"textcolor",0,"rgba","Text Color");
 
     CLASS_STICKY_ATTR_CLEAR(c, "category");
+    
+    CLASS_ATTR_LONG(c, "printzero", 0, t_s4mgrid, print_zero);
+    CLASS_ATTR_SAVE(c, "printzero", 0);   
+    CLASS_ATTR_STYLE(c, "printzero", 0, "onoff");   
+
+    CLASS_ATTR_LONG(c, "notenames", 0, t_s4mgrid, note_names);
+    CLASS_ATTR_SAVE(c, "notenames", 0);   
+    CLASS_ATTR_STYLE(c, "notenames", 0, "onoff");   
+
+    CLASS_ATTR_LONG(c, "noterow", 0, t_s4mgrid, note_row);
+    CLASS_ATTR_SAVE(c, "noterow", 0);   
 
     // what the patch rectangle will start with
     //CLASS_ATTR_DEFAULT(c,"patching_rect",0, "0. 0. 600. 400.");
@@ -4841,6 +4859,10 @@ void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv) {
     x->num_cols = 16;
     // number of characters per cell
     x->size = 4;
+    // assume showzero = false
+    x->print_zero = 0;
+    x->note_names = 0;
+    x->note_row = NULL;
 
     long boxflags;
     boxflags = 0
@@ -4894,6 +4916,25 @@ void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv) {
     return x;
 }
 
+// naive implementation, doesn't know keys
+void s4mgrid_int_to_note_name(t_s4mgrid *x, char *dest, int note_num){
+    int octave = floor( note_num / 12 );
+    int pitch_num = note_num % 12;
+    char *pitch_names[] = {"C ", "C#", "D ", "Eb", "E", "F ", "F#", "G ", "Ab", "A ", "Bb", "B "};
+    sprintf(dest, "%s%i", pitch_names[pitch_num], octave);
+}
+
+void s4mgrid_fill_int_cell(t_s4mgrid *x, long row, long col, long value){
+    //post("s4mgrid_fill_int_cell");
+    if( !x->print_zero && value == 0){
+        sprintf( x->data[row][col], "");
+    }else if( (x->note_names && !x->note_row) || (x->note_names && row == x->note_row) ){
+        s4mgrid_int_to_note_name(x, x->data[row][col], value);
+    }else { 
+        sprintf( x->data[row][col], "%i", value);
+    }
+}
+
 // read from an array and update the data grid of strings
 // TODO: only reads string arrays right now
 void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
@@ -4921,7 +4962,7 @@ void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
                 sprintf( x->data[row][col], array->data[i].s);
                 break;
             case('i'):
-                sprintf( x->data[row][col], "%i", array->data[i].i);
+                s4mgrid_fill_int_cell(x, row, col, array->data[i].i);
                 break;
             case('f'):
                 sprintf( x->data[row][col], "%.2f", array->data[i].f);
@@ -4932,6 +4973,7 @@ void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
 }
 
 // update the entire data from a list message
+// XXX: THIS IS NOT WORKING FOR MULTI LINES OF INPUT!
 void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *ap){
     //post("s4mgrid_list, selector: %s", s->s_name);
     // loop through the args, updating the internal data store
@@ -4939,7 +4981,7 @@ void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *ap){
         switch (atom_gettype(ap + i)){
             case A_LONG:
                 //post("int %ld", atom_getlong(ap+i));
-                sprintf( x->data[0][i], "%i", atom_getlong(ap+i));
+                s4mgrid_fill_int_cell(x, 0, i, atom_getlong(ap+i));
                 break;
             case A_FLOAT:
                 //post("float %.2f", atom_getfloat(ap+i));
@@ -5057,7 +5099,7 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
 
 // bang reads the framebuffer and repaints 
 void s4mgrid_bang(t_s4mgrid *x) {
-    post("updating");
+    //post("updating");
     jbox_redraw( (t_jbox *)x);
 }
 

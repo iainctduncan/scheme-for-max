@@ -1,4 +1,4 @@
-;(post "live-api.scm")
+(post "live-api-local.scm")
 
 ; Scheme for Max Live-API interface
 ; by Iain Duncan, September 2021
@@ -20,27 +20,55 @@
 ; - a list of the message you want to send the object
 
 (define (fire-clip track slot)
+  (post "(fire-clip)" track slot)
   (live-api 'send-path (list 'live_set 'tracks track 'clip_slots slot 'clip) 
-  (list 'call 'fire)))
+    '(call fire)))
   
 (define (stop-clip track slot)
   ; as above, but using back-tick lisp syntax
   (live-api 'send-path `(live_set tracks ,track clip_slots ,slot clip) 
-  '(call stop)))
+    '(call stop)))
 
+(define (fire-scene scene)
+  ;(post "(fire-scene)" scene)
+  (live-api 'send-path `(live_set scenes ,scene) '(call fire)))
+
+(define (stop-scene scene)
+  ;(post "(stop-scene)" scene)
+  (live-api 'send-path `(live_set scenes ,scene) '(call stop)))
+  
+; the below work, but I'm sending signals to a transport player instead mostly
 (define (play)
   (live-api 'send-path `(live_set) '(set is_playing 1)))
 
 (define (stop)
   (live-api 'send-path `(live_set) '(set is_playing 0)))
 
+(define (set-device-parameter track device param value)
+  ;(post "(set-device-param")
+  (live-api 'send-path `(live_set tracks ,track devices ,device parameters ,param) 
+     `(set value ,value)))
+
+(define (get-device-parameter track device param)
+  ;(post "(get-device-param")
+  (live-api 'send-path `(live_set tracks ,track devices ,device parameters ,param) 
+     `(get value)))
+
 ;********************************************************************************
 ; The low-level api, normally you should not need to change this
 (define live-api
   (let ((obj-id #f)   ; object id of last path request
         (value #f)    ; value received for successful value requests
-        (debug #f))   ; set to true to see messages in the console
+        (debug #t))   ; set to true to see messages in the console
  
+    ; method to find an object from a live path
+    ; results in live.path object calling back with the update-id callback
+    (define (find-path path)
+      (log-debug "(live-api.find" path ")")
+      (set! obj-id #f)
+      ; send the live.path object a path message, it will trigger the 'id message
+      (apply send (cons 'live-path (cons 'path path))))
+
     ; the id callback, called from the response from the live.path obj
     ; updates internal (last object) id and sends id message to the live.object
     (define (update-id id)
@@ -54,13 +82,6 @@
       (log-debug "live-api.update-value" value-in)
       (set! value value-in))
 
-    ; method to find an object from a live path
-    ; results in live.path object calling back with the id callback
-    (define (find-path path)
-      (log-debug "(live-api.find" path ")")
-      (set! obj-id #f)
-      (apply send (cons 'live-path (cons 'path path))))
-
     (define (send-object msg-list)
       (log-debug "live-api.send-object" msg-list )
       (set! value #f)
@@ -68,6 +89,10 @@
       ; if the above resulted in an update to value, return it, else null
       (if value value '()))
 
+    ; send a message to a live API path
+    ; first find-path fins the object and updates the obj-id instance var
+    ; then send-object sends the object a message
+    ; if this resulted in value being update, this is returned
     (define (send-path path msg)
       (log-debug "live-api.send-path" path msg)
       (find-path path)
@@ -89,3 +114,4 @@
           (else '()))))
 ))    
 
+  
