@@ -3316,6 +3316,7 @@ static s7_pointer s7_dict_replace_recurser(s7_scheme *s7, t_atom *container_atom
 }
 
 // set a value a value from a named dict, recursing through a list of keys
+/*
 static s7_pointer s7_dict_put(s7_scheme *s7, s7_pointer args) {
     //post("s7_dict_put()");
     // table names could come in from s7 as either strings or symbols, if using keyword table names
@@ -3364,7 +3365,7 @@ static s7_pointer s7_dict_put(s7_scheme *s7, s7_pointer args) {
     s7_value = s7_nil(s7);
     return s7_value;
 }
-
+*/
 
 
 static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args){
