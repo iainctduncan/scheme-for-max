@@ -25,34 +25,46 @@ void s4mgrid_main(void *r){
     class_addmethod(c, (method)s4mgrid_readarray, "readarray", A_DEFSYM, 0);
 
     // @rows, @columns, @size attributes
-
+    CLASS_STICKY_ATTR(c, "category", 0, "Dimensions");
     CLASS_ATTR_LONG(c, "rows", 0, t_s4mgrid, num_rows);
-    CLASS_ATTR_INVISIBLE(c, "rows", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
+    CLASS_ATTR_ACCESSORS(c, "rows", NULL, s4mgrid_rows_set);
     CLASS_ATTR_SAVE(c, "rows", 0);   
-    CLASS_ATTR_LONG(c, "columns", 0, t_s4mgrid, num_cols);
-    CLASS_ATTR_INVISIBLE(c, "columns", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
+    CLASS_ATTR_LONG(c, "columns", 0, t_s4mgrid, num_columns);
+    CLASS_ATTR_ACCESSORS(c, "columns", NULL, s4mgrid_columns_set);
     CLASS_ATTR_SAVE(c, "columns", 0);   
-    CLASS_ATTR_LONG(c, "size", 0, t_s4mgrid, size);
-    CLASS_ATTR_INVISIBLE(c, "size", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
-    CLASS_ATTR_SAVE(c, "size", 0);  
+    CLASS_ATTR_LONG(c, "cellchars", 0, t_s4mgrid, cell_chars);
+    CLASS_ATTR_ACCESSORS(c, "cellchars", NULL, s4mgrid_cell_chars_set);
+    CLASS_ATTR_SAVE(c, "cellchars", 0);   
+    CLASS_ATTR_LONG(c, "cellwidth", 0, t_s4mgrid, cell_width);
+    CLASS_ATTR_SAVE(c, "cellwidth", 0);   
+    CLASS_ATTR_LONG(c, "cellheight", 0, t_s4mgrid, cell_height);
+    CLASS_ATTR_SAVE(c, "cellheight", 0);   
+    CLASS_ATTR_FLOAT(c, "fontsize", 0, t_s4mgrid, font_size);
+    CLASS_ATTR_SAVE(c, "fontsize", 0);   
+
+    CLASS_ATTR_LONG(c, "cellsperbeat", 0, t_s4mgrid, cells_per_beat);
+    CLASS_ATTR_SAVE(c, "cellsperbeat", 0);   
+    CLASS_ATTR_LONG(c, "cellsperbar", 0, t_s4mgrid, cells_per_bar);
+    CLASS_ATTR_SAVE(c, "cellsperbar", 0);   
+
+    CLASS_STICKY_ATTR_CLEAR(c, "category");
+
+
     // attributes
+    // colours - not yet working fully
     CLASS_STICKY_ATTR(c, "category", 0, "Color");
     CLASS_ATTR_RGBA(c, "bgcolor", 0, t_s4mgrid, u_background);
     CLASS_ATTR_DEFAULTNAME_SAVE_PAINT(c, "bgcolor", 0, "1. 1. 1. 1.");
     CLASS_ATTR_STYLE_LABEL(c,"bgcolor",0,"rgba","Background Color");
-
     CLASS_ATTR_RGBA(c, "bordercolor", 0, t_s4mgrid, u_outline);
     CLASS_ATTR_DEFAULTNAME_SAVE_PAINT(c, "bordercolor", 0, "0.5 0.5 0.5 1.");
     CLASS_ATTR_STYLE_LABEL(c,"bordercolor",0,"rgba","Border Color");
-
     CLASS_ATTR_RGBA(c, "hilitecolor", 0, t_s4mgrid, u_hilite);
     CLASS_ATTR_DEFAULTNAME_SAVE_PAINT(c, "hilitecolor", 0, "0.5 0.5 0.5 1.");
     CLASS_ATTR_STYLE_LABEL(c,"hilitecolor",0,"rgba","Hilite Color");
-
     CLASS_ATTR_RGBA(c, "textcolor", 0, t_s4mgrid, u_text);
     CLASS_ATTR_DEFAULTNAME_SAVE_PAINT(c, "textcolor", 0, "0.0 0.0 0.0 1.");
     CLASS_ATTR_STYLE_LABEL(c,"textcolor",0,"rgba","Text Color");
-
     CLASS_STICKY_ATTR_CLEAR(c, "category");
     
     CLASS_ATTR_LONG(c, "printzero", 0, t_s4mgrid, print_zero);
@@ -65,9 +77,6 @@ void s4mgrid_main(void *r){
 
     CLASS_ATTR_LONG(c, "noterow", 0, t_s4mgrid, note_row);
     CLASS_ATTR_SAVE(c, "noterow", 0);   
-
-    // what the patch rectangle will start with
-    //CLASS_ATTR_DEFAULT(c,"patching_rect",0, "0. 0. 600. 400.");
 
     class_register(CLASS_BOX, c);
     s_s4mgrid_class = c;
@@ -89,10 +98,14 @@ void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv) {
     x = (t_s4mgrid *)object_alloc(s_s4mgrid_class);
    
     // defaults
-    x->num_rows = 8;
-    x->num_cols = 16;
-    // number of characters per cell
-    x->size = 4;
+    x->num_rows = DEFAULT_ROWS;
+    x->num_columns = DEFAULT_COLS;
+    x->cell_width = DEFAULT_CELL_WIDTH;
+    x->cell_height = DEFAULT_CELL_HEIGHT;
+    x->cells_per_beat = DEFAULT_CELLS_PER_BEAT;
+    x->cells_per_bar = DEFAULT_CELLS_PER_BAR;
+    x->font_size = DEFAULT_FONT_SIZE;
+    x->cell_chars = DEFAULT_CELL_CHARS;
     // assume showzero = false
     x->print_zero = 0;
     x->note_names = 0;
@@ -129,25 +142,58 @@ void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv) {
     // do any internal state initialization here
     attr_dictionary_process(x, d);
 
-    //post("rows: %i cols: %i size: %i", x->num_rows, x->num_cols, x->size);
-    // set up the internal memory as array of array of strings of size chars
-    x->data = (char *)sysmem_newptr( x->num_rows * sizeof(char *) );
-    for(int row=0; row < x->num_rows; row++){
-        x->data[row] = sysmem_newptr( x->num_cols * sizeof(char *));
-        for(int col=0; col < x->num_cols; col++){
-            x->data[row][col] = sysmem_newptr( (x->size + 1) * sizeof(char));
-            sprintf(x->data[row][col], "");
-        }
-    }
+    // allocate the internal data for the contents
+    s4mgrid_init_data(x);
 
     // set up the size of the object
-    t_size box_size = { GRID_COL_WIDTH * x->num_cols, GRID_ROW_HEIGHT * x->num_rows};
+    t_size box_size = { x->cell_width * x->num_columns, x->cell_height * x->num_rows};
     jbox_set_size((t_object *)x, &box_size); 
 
     // call the initial paint
     jbox_ready((t_jbox *)x);
 
     return x;
+}
+
+t_max_err s4mgrid_rows_set(t_s4mgrid *x, t_object *attr, long argc, t_atom *argv){
+    //post("s4mgrid_rows_set()");
+    x->num_rows = atom_getlong(argv);
+    if( x->num_rows < 1) x->num_rows = 1;
+    s4mgrid_init_data(x);
+    return 0;
+}
+
+t_max_err s4mgrid_columns_set(t_s4mgrid *x, t_object *attr, long argc, t_atom *argv){
+    //post("s4mgrid_columns_set()");
+    x->num_columns = atom_getlong(argv);
+    if( x->num_columns < 1) x->num_columns = 1;
+    s4mgrid_init_data(x);
+    return 0;
+}
+
+t_max_err s4mgrid_cell_chars_set(t_s4mgrid *x, t_object *attr, long argc, t_atom *argv){
+    //post("s4mgrid_cell_chars_set()");
+    x->cell_chars = atom_getlong(argv);
+    if( x->cell_chars < 1) x->cell_chars = 1;
+    s4mgrid_init_data(x);
+    return 0;
+}
+
+
+void s4mgrid_init_data(t_s4mgrid *x){
+    //post("s4mgrid_init_data()");
+    // free data if already allocated
+    if(x->data){
+      sysmem_freeptr(x->data);
+    }
+    x->data = (char *)sysmem_newptr( x->num_rows * sizeof(char *) );
+    for(int row=0; row < x->num_rows; row++){
+        x->data[row] = sysmem_newptr( x->num_columns * sizeof(char *));
+        for(int col=0; col < x->num_columns; col++){
+            x->data[row][col] = sysmem_newptr( (x->cell_chars + 1) * sizeof(char));
+            sprintf(x->data[row][col], "");
+        }
+    }
 }
 
 // naive implementation, doesn't know keys
@@ -158,13 +204,14 @@ void s4mgrid_int_to_note_name(t_s4mgrid *x, char *dest, int note_num){
     sprintf(dest, "%s%i", pitch_names[pitch_num], octave);
 }
 
-void s4mgrid_fill_int_cell(t_s4mgrid *x, long row, long col, long value){
-    //post("s4mgrid_fill_int_cell");
+void s4mgrid_fill_cell(t_s4mgrid *x, long row, long col, long value){
+    //post("s4mgrid_fill_cell");
     if( !x->print_zero && value == 0){
         sprintf( x->data[row][col], "");
     }else if( (x->note_names && !x->note_row) || (x->note_names && row == x->note_row) ){
         s4mgrid_int_to_note_name(x, x->data[row][col], value);
     }else { 
+        sprintf( x->data[row][col], "%i", value);
         sprintf( x->data[row][col], "%i", value);
     }
 }
@@ -182,13 +229,13 @@ void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
         return;
     }
     // figure out max points to write
-    int num_grid_cells = x->num_rows * x->num_cols;
+    int num_grid_cells = x->num_rows * x->num_columns;
     int num_points = array->size < num_grid_cells ? array->size : num_grid_cells;
     //post("s4mgrid_readarray %s type: %c, size: %i points: %i", array_name->s_name, 
     //    array->type, array->size, num_points);
     for(int i=0; i < num_points; i++){
-        int col = i % x->num_cols;
-        int row = floor( i / x->num_cols );
+        int col = i % x->num_columns;
+        int row = floor( i / x->num_columns );
         //post("row: %i col: %i", row, col);
         // for reading numbers from the array
         // sprintf( x->data[row][col], "%i", array->data[i].num);
@@ -197,7 +244,7 @@ void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
                 sprintf( x->data[row][col], array->data[i].s);
                 break;
             case('i'):
-                s4mgrid_fill_int_cell(x, row, col, array->data[i].i);
+                s4mgrid_fill_cell(x, row, col, array->data[i].i);
                 break;
             case('f'):
                 sprintf( x->data[row][col], "%.2f", array->data[i].f);
@@ -208,23 +255,27 @@ void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
 }
 
 // update the entire data from a list message
-// XXX: THIS IS NOT WORKING FOR MULTI LINES OF INPUT!
 void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *ap){
     //post("s4mgrid_list, selector: %s", s->s_name);
     // loop through the args, updating the internal data store
     for(int i=0; i < argc; i++){
+        int col = i % x->num_columns;
+        int row = floor( i / x->num_columns );
+        if( col >= x->num_columns || row >= x->num_rows ) 
+            continue;
         switch (atom_gettype(ap + i)){
             case A_LONG:
                 //post("int %ld", atom_getlong(ap+i));
-                s4mgrid_fill_int_cell(x, 0, i, atom_getlong(ap+i));
+                s4mgrid_fill_cell(x, row, col, atom_getlong(ap+i));
                 break;
             case A_FLOAT:
                 //post("float %.2f", atom_getfloat(ap+i));
-                sprintf( x->data[0][i], "%.2f", atom_getfloat(ap+i));
+                //TODO this should adapt to the cell size
+                sprintf( x->data[row][col], "%.2f", atom_getfloat(ap+i));
                 break;
             case A_SYM: 
                 //post("sym %s", atom_getsym(ap+i)->s_name);
-                sprintf( x->data[0][i], "%s", atom_getsym(ap+i)->s_name);
+                sprintf( x->data[row][col], "%s", atom_getsym(ap+i)->s_name);
                 break;
         }
     }
@@ -236,7 +287,7 @@ void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *ap){
 void s4mgrid_clear(t_s4mgrid *x){
     //post("s4mgrid_clear");
     for(int i=0; i < x->num_rows; i++){
-        for(int j=0; j < x->num_cols; j++){
+        for(int j=0; j < x->num_columns; j++){
            sprintf( x->data[i][j], ""); 
         }
     }
@@ -247,13 +298,10 @@ void s4mgrid_clear(t_s4mgrid *x){
 void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
     //post("s4mgrid_paint()");
 
-    // make these into attributes or something
-    //int col_width = 32;
-    //int row_height = 24;
-    int col_width = GRID_COL_WIDTH;
-    int row_height = GRID_ROW_HEIGHT;
+    int col_width = x->cell_width;
+    int row_height = x->cell_height;
     int num_rows = x->num_rows;
-    int num_cols = x->num_cols;
+    int num_columns = x->num_columns;
     int x_offset = 0;
     int y_offset = 0;
  
@@ -263,23 +311,20 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
     jbox_get_rect_for_view((t_object *)x, patcherview, &rect);
 
     // color for filling boxes on every quarter
-    t_jrgba rgb_text, rgb_cell_bkg, rgb_quarter_highlight, rgb_bar_highlight;
+    // TODO: set with attributes
+    t_jrgba rgb_text, rgb_cell_bkg, rgb_beat_highlight, rgb_bar_highlight;
     jrgba_set( &rgb_text, 1, 1, 1, 1);
     jrgba_set( &rgb_cell_bkg, 0.0, 0.0, 0.0, 1.0);
-    jrgba_set( &rgb_quarter_highlight, 0.25, 0.25, 0.25, 1.0);
+    jrgba_set( &rgb_beat_highlight, 0.25, 0.25, 0.25, 1.0);
     jrgba_set( &rgb_bar_highlight, 0.3, 0.3, 0.3, 1.0);
 
-    // make these props
-    int cells_per_bar = 16;
-    int cells_per_beat = 4;
-
     for(int row=0; row < num_rows; row++){
-        for(int col=0; col < num_cols; col++){
+        for(int col=0; col < num_columns; col++){
             // fill background every four
-            if( col % cells_per_bar == 0 ){
+            if( col % x->cells_per_bar == 0 ){
                 jgraphics_set_source_jrgba(g, &rgb_bar_highlight);
-            }else if( col % 4 == 0 ){
-                jgraphics_set_source_jrgba(g, &rgb_quarter_highlight);
+            }else if( col % x->cells_per_beat == 0 ){
+                jgraphics_set_source_jrgba(g, &rgb_beat_highlight);
             }else{
                 jgraphics_set_source_jrgba(g, &rgb_cell_bkg);
             }  
@@ -299,7 +344,7 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
     }
 
     // draw a grid of text
-    t_jfont *font = jfont_create( "Futura", JGRAPHICS_FONT_SLANT_NORMAL, JGRAPHICS_FONT_WEIGHT_NORMAL, 11.0 );
+    t_jfont *font = jfont_create( "Futura", JGRAPHICS_FONT_SLANT_NORMAL, JGRAPHICS_FONT_WEIGHT_NORMAL, x->font_size);
 	  t_jtextlayout *text_layout = jtextlayout_create( );
     jtextlayout_settextcolor(text_layout, &rgb_text);
 
@@ -307,7 +352,7 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
     int pos_x = 0;
     int pos_y = 0;
     for(int i=0; i < num_rows; i++){
-      for(int j=0; j < num_cols; j++){
+      for(int j=0; j < num_columns; j++){
         // string we want is in x->data[i][j]
         jtextlayout_set( text_layout, x->data[i][j], font, 
                            pos_x - 7, pos_y, col_width, row_height, 
@@ -322,13 +367,13 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
     // paint outline last so it's on top
     jgraphics_set_source_jrgba(g, &x->u_outline);
     jgraphics_set_line_width(g, 3.);
-    jgraphics_rectangle(g, 0., 0., num_cols * col_width, num_rows * row_height);
+    jgraphics_rectangle(g, 0., 0., num_columns * col_width, num_rows * row_height);
     jgraphics_stroke(g);
 
     // Clean up
-	jgraphics_stroke ( g );
-	jfont_destroy ( font );
-	jtextlayout_destroy ( text_layout );
+  	jgraphics_stroke ( g );
+	  jfont_destroy ( font );
+	  jtextlayout_destroy ( text_layout );
   
 }
 
