@@ -25,8 +25,10 @@
 #define DEFAULT_CELL_HEIGHT 20
 #define DEFAULT_FONT_SIZE 11.0
 #define DEFAULT_CELL_CHARS 4
+#define DEFAULT_FLOAT_PRECISION 2
 #define DEFAULT_CELLS_PER_BAR 16
 #define DEFAULT_CELLS_PER_BEAT 4
+
 
 
 typedef struct _s4mgrid
@@ -49,9 +51,9 @@ typedef struct _s4mgrid
     long print_zero;
     long note_names;
     long note_row;
+    long rotate;
+    int float_precision;
     
-    bool vertical;
-
 } t_s4mgrid;
 
 static t_class *s_s4mgrid_class;
@@ -75,7 +77,8 @@ void s4mgrid_clear(t_s4mgrid *x);
 void s4mgrid_readarray(t_s4mgrid *x, t_symbol *s);
 
 void s4mgrid_int_to_note_name(t_s4mgrid *x, char *dest, int note_num);
-void s4mgrid_fill_cell(t_s4mgrid *x, long row, long col, long value);
+void s4mgrid_fill_cell_int(t_s4mgrid *x, long row, long col, long value);
+void s4mgrid_fill_cell_float(t_s4mgrid *x, long row, long col, double value);
 
 void s4mgrid_main(void *r);
 
