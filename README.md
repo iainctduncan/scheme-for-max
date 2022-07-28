@@ -83,6 +83,8 @@ sample source code in the package. Clicking "launch" on the package menu will op
 
 Narative documentation is here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
+The online community lives here: https://schemeformax.discourse.group/
+
 Learn S7 Scheme and Scheme For Max E-book: https://iainctduncan.github.io/learn-scheme-for-max/index.html 
 
 Tutorials on sequencing with Scheme For Max: https://iainctduncan.github.io/s4m-stk/
