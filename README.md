@@ -3,6 +3,8 @@ Scheme For Max (s4m) is an open source Max/MSP external to enable scripting, liv
 Max/MSP with s7 Scheme Lisp. It is available as a packages for Mac (Intel and M1) and Windows (32 and 64 bit), and as source. It has been developed and tested on Max 8. It also works in Max for Live on Ableton Live 10 and 11.
 
 ## Recent News
+**2022-07-28**: There is now an official forum thanks to the Discourse community program. https://schemeformax.discourse.group/
+
 **2022-02-22**: There is now a Universal Binary build for Apple Silicon up for 0.3. This is a drop in replacement for the external object and should work on M1 and Intel Macs.
 
 **2021-11-27**: 0.3.0 is released. This includes convenience features like directly passing code messages to the s4m object, a threading macro similar to Clojure and Rackets, supporting delay from the low-priority thread, garbage collector interface functions, and tools for using the Ableton Live API from Max4Live. Please report any bugs as github issues. Note: This has not been built for Apple Silicon yet. If you are able to help do this, please get in touch.
