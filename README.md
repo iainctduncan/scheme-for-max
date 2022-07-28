@@ -94,8 +94,8 @@ To file tickets about errors or improvement suggestions for the docs, use the do
 The S7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html
 
 For release and tutorial announcements, questions, suggestions, installation issues, and bug reports, 
-please join the scheme-for-max google group and check the discussion board on this github page.
-
+please join the scheme-for-max forum or google group and check the discussion board on this github page.
+https://schemeformax.discourse.group/
 https://groups.google.com/forum/#!forum/scheme-for-max
 
 
