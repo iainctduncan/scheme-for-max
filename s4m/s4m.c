@@ -257,12 +257,11 @@ static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args);
-//static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args);
 //static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args);
 //static s7_pointer s7_vector_set_chars_from_array(s7_scheme *s7, s7_pointer args);
-
 
 /********************************************************************************
 / some helpers */
@@ -537,8 +536,8 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "make-array", s7_make_array, 2, 0, true, "");
     s7_define_function(x->s7, "array-ref", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
     s7_define_function(x->s7, "arrr", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
-    //s7_define_function(x->s7, "array-set!", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
-    //s7_define_function(x->s7, "arrs", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
+    s7_define_function(x->s7, "array-set!", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
+    s7_define_function(x->s7, "arrs", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
     s7_define_function(x->s7, "array-set-from-vector!", s7_array_set_from_vector, 3, 2, true, "");
     s7_define_function(x->s7, "arrsv", s7_array_set_from_vector, 3, 2, true, "");
     s7_define_function(x->s7, "array->vector", s7_array_to_vector, 1, 2, true, "");
@@ -1256,7 +1255,7 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     //          "error making array, optional third argument should be an integer for the string lenghts"));
     //  }
     //}
-    post("s7_make_array, type: %s name: %s size: %i", array_type, array_name, array_size );
+    // post("s7_make_array, type: %s name: %s size: %i", array_type, array_name, array_size );
 
     // create the new array, sysmem_newptrclear inits to zeros
     t_s4m_array_point *new_array_data = (t_s4m_array_point *)sysmem_newptr( sizeof( t_s4m_array_point ) * array_size);
@@ -1338,6 +1337,83 @@ static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args){
             break;
     }
     return s7_return_value;
+}
+
+// set a point in an array, returns value set
+static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args){
+    //post("s7_array_set()");
+    t_s4m *x = get_max_obj(s7);
+    t_s4m_array *array;
+    char *array_name = NULL;
+    long array_index;   
+    char err_msg[128]; 
+    s7_pointer *s7_return_value = s7_nil(s7); 
+    char *source_str = NULL;
+    int  copy_len = 0;
+
+    // arg 1 is array name
+    s7_pointer *s7_array_name = s7_car(args);
+    if( !s7_is_symbol(s7_array_name) && !s7_is_string(s7_array_name) ){
+        sprintf(err_msg, "array-set! : arg 1 must be a string or symbol of array name");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }else{
+        array_name = (char *) s7_object_to_c_string(s7, s7_array_name);
+    }
+    // arg 2 is the index
+    s7_pointer *s7_array_index = s7_cadr(args);
+    if( !s7_is_integer(s7_array_index) ){
+        sprintf(err_msg, "array-set!: arg 2 must be an integer index");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }else{
+        array_index = (int) s7_integer(s7_array_index); 
+    }
+    // arg 3 is the value to set
+    s7_pointer *s7_value = s7_caddr(args);
+    //post("array-set!, array: %s index: %i value: %s", array_name, array_index, (char *) s7_object_to_c_string(s7, s7_value));
+
+    // get the t_s4m_array struct from the registry
+    t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &array);
+    if(err){
+        sprintf(err_msg, "array-set! : no array found with name %s", array_name);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
+    }
+    // check index is in range
+    if( array_index < 0 || array_index > array->size){
+        sprintf(err_msg, "array-set! : index out of range for array %s index %i", array_name, array_index);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
+    }
+    // set the value in the array, convert to correct s7 type, and return
+    switch(array->type){
+        case 'i':
+            if( !s7_is_integer( s7_value ) ){
+                sprintf(err_msg, "array-set! : value is non-integer for integer array %s", array_name);
+                return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
+            }
+            array->data[array_index].i = (long) s7_integer(s7_value);
+            break;
+        case 'f':
+            if( !s7_is_real( s7_value ) ){
+                sprintf(err_msg, "array-set! : value is non-real for float array %s", array_name);
+                return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
+            }
+            array->data[array_index].f = (double) s7_real(s7_value);
+            break;
+        case 's':
+            source_str = s7_is_string(s7_value) ? (char *) s7_string(s7_value) : (char *) s7_object_to_c_string(s7, s7_value);
+            // free previous data, allocate, and copy
+            sysmem_freeptr( array->data[array_index].s );
+            array->data[array_index].s = sysmem_newptr( sizeof( source_str ) );
+            strncpy_zero( array->data[array_index].s, source_str, strlen(source_str) + 1 ); 
+            break;
+        case 'c':
+            source_str = s7_is_string(s7_value) ? (char *) s7_string(s7_value) : (char *) s7_object_to_c_string(s7, s7_value);
+            // wipe it first
+            strncpy_zero( array->data[array_index].c, CHAR_ARRAY_BLANK, CHAR_ARRAY_SIZE);
+            copy_len = CHAR_ARRAY_SIZE < strlen(source_str) + 1 ? CHAR_ARRAY_SIZE : strlen(source_str) + 1;
+            strncpy_zero( array->data[array_index].c, source_str, copy_len ); 
+            break;
+    }
+    return s7_value;
 }
 
 // store an s7 vector in a named array, args: vector, array
@@ -1423,7 +1499,7 @@ static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args){
             }
         }else { // case string array, make a copy of the s7 string value 
             // copy the whole source string, allocating memory here
-            char *source =  s7_is_string(source_value) ? (char *) s7_string(source_value) : (char *) s7_object_to_c_string(s7, source_value);
+            char *source = s7_is_string(source_value) ? (char *) s7_string(source_value) : (char *) s7_object_to_c_string(s7, source_value);
             array->data[dest_index].s = sysmem_newptr( sizeof( source ) );
             strncpy_zero( array->data[dest_index].s, source, strlen(source) + 1 ); 
         }
