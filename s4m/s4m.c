@@ -256,7 +256,7 @@ static s7_pointer s7_gc_run(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args);
-//static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args);
 //static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args);
@@ -383,7 +383,7 @@ void ext_main(void *r){
     class_register(CLASS_BOX, c); 
     s4m_class = c;
 
-    // initialized the hashtab for s4m instance datastores
+    // initialized the hashtab registry for the s4m_arrays
     s4m_arrays = (t_hashtab *)hashtab_new(0);
     // OBJ_FLAG_REF means don't free data 
     hashtab_flags(s4m_arrays, OBJ_FLAG_DATA | OBJ_FLAG_SILENT);
@@ -535,8 +535,8 @@ void s4m_init_s7(t_s4m *x){
 
     // s4m array i/o
     s7_define_function(x->s7, "make-array", s7_make_array, 2, 0, true, "");
-    //s7_define_function(x->s7, "array-ref", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
-    //s7_define_function(x->s7, "arrr", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
+    s7_define_function(x->s7, "array-ref", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
+    s7_define_function(x->s7, "arrr", s7_array_ref, 2, 0, false, "(array-ref :foo 1) returns value at index 1 from array :foo");
     //s7_define_function(x->s7, "array-set!", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
     //s7_define_function(x->s7, "arrs", s7_array_set, 3, 0, false, "(array-set! :foo 1 4) sets value at index 1 in array :foo");
     s7_define_function(x->s7, "array-set-from-vector!", s7_array_set_from_vector, 3, 2, true, "");
@@ -1217,20 +1217,22 @@ int s4m_mc_buffer_write(t_s4m *x, char *buffer_name, int channel, long index, do
     return 0;
 }
 
-// todo, this should specify type from a keyword arg of :int :real :string
+// make an s4m array: (make-array :name :int size
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
-    // args are symbol name and int size
+    //post("s7_make_array");
     char *array_name;
     char *array_type;
-    long array_size; 
-    // arg 1 is the name
+    long array_size;  
+    long str_len = 1;  
+    // arg 1 is the name for the array, must be a symbol or keyword
+    // this is used as the key to put in it the hashtab registry
     if( s7_is_symbol( s7_car(args) ) ){ 
         array_name = (char *) s7_symbol_name( s7_car(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "error making array, first argument should be a symbol of array name"));
     }
-    // arg 2 is type
+    // arg 2 is type, :int :float or :string
     if( s7_is_symbol( s7_cadr(args) ) ){ 
         array_type = (char *) s7_symbol_name( s7_cadr(args) );
         //post("array_type: '%s'", array_type);
@@ -1245,28 +1247,97 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "error making array, second argument should be an integer for array size"));
     } 
-    //post("s7_make_array, type: %s name: %s size: %i", array_type, array_name, array_size);
+    // shelving this for now going for fixed size char arrays (8 chars)
+    //if( s7_list_length(s7, args) == 4){
+    //  if( s7_is_integer( s7_cadddr(args) ) ){ 
+    //      str_len = (long) s7_integer( s7_cadddr(args) );
+    //  }else{
+    //      return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+    //          "error making array, optional third argument should be an integer for the string lenghts"));
+    //  }
+    //}
+    post("s7_make_array, type: %s name: %s size: %i", array_type, array_name, array_size );
 
     // create the new array, sysmem_newptrclear inits to zeros
-    //long *new_array_data = (long *)sysmem_newptr( sizeof( long ) * array_size);
     t_s4m_array_point *new_array_data = (t_s4m_array_point *)sysmem_newptr( sizeof( t_s4m_array_point ) * array_size);
     t_s4m_array *new_array = (t_s4m_array *)sysmem_newptr( sizeof(t_s4m_array) );
     new_array->name = gensym(array_name);
     new_array->size = array_size;
-    new_array->type = array_type[1]; // will be 'i','f',or 's' from keywords :int, :float, or :string
+    new_array->strlen = str_len;
+    new_array->type = array_type[1]; // will be 'i','f', 's', or 'c' from keywords :int, :float, or :string
     new_array->data = new_array_data;
     for(int i = 0; i < new_array->size; i++){ 
         if(new_array->type == 's'){
+            // string type is unknown length, will be allocated when used
             new_array->data[i].s = ""; 
         }else if(new_array->type == 'i'){
-            new_array->data[i].i = 0;
-        }else
-            new_array->data[i].f = 0.0;
+            new_array->data[i].i = (long) 0;
+        }else if(new_array->type == 'f'){
+            new_array->data[i].i = (double) 0;
+        }else if(new_array->type == 'c'){
+            strncpy_zero( new_array->data[i].c, CHAR_ARRAY_BLANK, CHAR_ARRAY_SIZE);
+        }
     }
 
     // hashtabs only store t_object pointers, so cast it to a t_object pointer
     hashtab_store(s4m_arrays, gensym(array_name), (t_object *)new_array);
-    //post("new array created and stored in hashtab");
+    //post("new array created and stored in hashtab under %s", array_name);
+}
+
+static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args){
+    // post("s7_array_ref()");
+    t_s4m *x = get_max_obj(s7);
+    t_s4m_array *array;
+    char *array_name = NULL;
+    long array_index;   
+    char err_msg[128]; 
+    s7_pointer *s7_return_value = s7_nil(s7); 
+
+    // arg 1 is array name
+    s7_pointer *s7_array_name = s7_car(args);
+    if( !s7_is_symbol(s7_array_name) && !s7_is_string(s7_array_name) ){
+        sprintf(err_msg, "array-ref : arg 1 must be a string or symbol of array name");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }else{
+        array_name = (char *) s7_object_to_c_string(s7, s7_array_name);
+    }
+    // arg 2 is the index
+    s7_pointer *s7_array_index = s7_cadr(args);
+    if( !s7_is_integer(s7_array_index) ){
+        sprintf(err_msg, "array-ref: arg 2 must be an integer index");
+        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
+    }else{
+        array_index = (int) s7_integer(s7_array_index); 
+    }
+    //post("array-ref, array: %s index: %i", array_name, array_index);
+
+    // get the t_s4m_array struct from the registry
+    t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &array);
+    if(err){
+        sprintf(err_msg, "array-ref : no array found with name %s", array_name);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
+    }
+    // check index is in range
+    if( array_index < 0 || array_index > array->size){
+        sprintf(err_msg, "array-ref : index out of range for array %s index %i", array_name, array_index);
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
+    }
+    // get the value from the array, convert to correct s7 type, and return
+    switch(array->type){
+        case 'i':
+            s7_return_value = s7_make_integer(s7, array->data[array_index].i);
+            break;
+        case 'f':
+            s7_return_value = s7_make_real(s7, array->data[array_index].f);
+            break;
+        case 's':
+            s7_return_value = s7_make_string(s7, array->data[array_index].s);
+            break;
+        case 'c':
+            s7_return_value = s7_make_string(s7, array->data[array_index].c);
+            break;
+    }
+    return s7_return_value;
 }
 
 // store an s7 vector in a named array, args: vector, array
@@ -1325,12 +1396,11 @@ static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args){
         // prevent writing past end of array
         if( dest_index >= array->size )
             break;
-
         s7_pointer *source_value = s7_vector_values[i];
         // branch on array type and then do conversion in scheme
-        if( array->type == 'i'){
+        if( array->type == 'f'){
             if( s7_is_number(source_value) ){
-                array->data[dest_index].i = (double) s7_real(source_value);
+                array->data[dest_index].f = (double) s7_real(source_value);
             }else{
                 sprintf(err_msg, "array-set-from-vector! : non-number used for float s4m array");
                 return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
@@ -1342,15 +1412,22 @@ static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args){
                 sprintf(err_msg, "array-set-from-vector! : non-number used for int s4m array");
                 return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
             }
-        }else { // it's a string array 
+        }else if( array->type == 'c' ){
+            // for char arrays, we copy all the data that will fit into the preallocated char buffers
             if( s7_is_string(source_value) ){
-                array->data[dest_index].s = (char *) s7_string(source_value);
+                //array->data[dest_index].s = (char *) s7_string(source_value);
+                strncpy_zero( array->data[dest_index].c, (char *) s7_string(source_value), CHAR_ARRAY_SIZE);
             }else{
-                array->data[dest_index].s = (char *) s7_object_to_c_string(s7, source_value);
+                //array->data[dest_index].s = (char *) s7_object_to_c_string(s7, source_value);
+                strncpy_zero( array->data[dest_index].c, (char *)  s7_object_to_c_string(s7, source_value), CHAR_ARRAY_SIZE);
             }
+        }else { // case string array, make a copy of the s7 string value 
+            // copy the whole source string, allocating memory here
+            char *source =  s7_is_string(source_value) ? (char *) s7_string(source_value) : (char *) s7_object_to_c_string(s7, source_value);
+            array->data[dest_index].s = sysmem_newptr( sizeof( source ) );
+            strncpy_zero( array->data[dest_index].s, source, strlen(source) + 1 ); 
         }
     }
- 
     return s7_return_value;
 }
 
@@ -1422,6 +1499,9 @@ static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args) {
                 break;
             case 's':
                 s7_vector_set(s7, new_vector, i, s7_make_string(s7, array->data[index].s ) ); 
+                break;
+            case 'c':
+                s7_vector_set(s7, new_vector, i, s7_make_string(s7, array->data[index].c ) ); 
                 break;
         }
     }
