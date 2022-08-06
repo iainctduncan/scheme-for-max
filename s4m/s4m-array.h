@@ -2,6 +2,7 @@
 #define FILE_S4M_ARRAY
 
 #include "ext.h"
+#include "s7.h"
 
 #define CHAR_ARRAY_SIZE 16
 #define CHAR_ARRAY_BLANK "                "
@@ -23,5 +24,6 @@ typedef struct _s4m_array {
 
 // a global hash-table for buffers to store data between s4m instances
 t_hashtab *s4m_arrays;
+
 
 #endif

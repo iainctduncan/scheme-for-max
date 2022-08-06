@@ -284,7 +284,6 @@ void s4mgrid_fill_cell_float(t_s4mgrid *x, long row, long col, double value){
 
 
 // read from an array and update the data grid of strings
-// TODO: only reads string arrays right now
 void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
     //post("s4mgrid_readarray, array name: %s", array_name->s_name);
     t_s4m_array *array;
@@ -298,8 +297,7 @@ void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
     // figure out max points to write
     int num_grid_cells = x->num_rows * x->num_columns;
     int num_points = array->size < num_grid_cells ? array->size : num_grid_cells;
-    //post("s4mgrid_readarray %s type: %c, size: %i points: %i", array_name->s_name, 
-    //    array->type, array->size, num_points);
+    //post("s4mgrid_readarray %s type: %c, size: %i points: %i", array_name->s_name, array->type, array->size, num_points);
     for(int i=0; i < num_points; i++){
         int col = i % x->num_columns;
         int row = floor( i / x->num_columns );
@@ -307,14 +305,17 @@ void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
         // for reading numbers from the array
         // sprintf( x->data[row][col], "%i", array->data[i].num);
         switch( array->type ){
-            case('s'):
-                sprintf( x->data[row][col], array->data[i].s);
-                break;
             case('i'):
                 s4mgrid_fill_cell_int(x, row, col, array->data[i].i);
                 break;
             case('f'):
                 s4mgrid_fill_cell_float(x, row, col, array->data[i].f);
+                break;
+            case('s'):
+                sprintf( x->data[row][col], array->data[i].s);
+                break;
+            case('c'):
+                sprintf( x->data[row][col], array->data[i].c);
                 break;
         }
     }

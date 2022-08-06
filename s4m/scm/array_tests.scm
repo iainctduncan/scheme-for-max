@@ -1,5 +1,8 @@
 ; TODO: adapt these to proper tests
 
+
+(make-array :foo :string 4)
+
 ; int test
 (begin
   (post "RUNNING int array tests")
@@ -36,6 +39,8 @@
   (post "setting :af 1 to string from list" (array-set! :as 1 '(1 2 3)))
   (post "string ref 0 now:" (array-ref :as 0))
   (post "string ref 1 now:" (array-ref :as 1))
+  (post "making new array with same name")
+  ;(make-array :as :string 8)
   (post "PASSED")
 )
 ;char test

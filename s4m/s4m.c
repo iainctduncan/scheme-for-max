@@ -1677,60 +1677,7 @@ static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args) {
     // return nil 
     return s7_return_value;
 }
-
-// version for char buffers
-static s7_pointer s7_vector_set_chars_from_array(s7_scheme *s7, s7_pointer args) {
-    t_s4m *x = get_max_obj(s7);
-    t_s4m_array *array;
-    long array_offset = 0;   // default target index is 0 unless overridden
-    long vector_offset = 0;  // default start of vector to copy
-    char *array_name = NULL;
-    char err_msg[128]; 
-    s7_pointer *s7_return_value = s7_nil(s7); 
-
-    // arg 1 is the vector
-    s7_pointer *s7_dest_vector = s7_car(args);
-    if( !s7_is_vector(s7_dest_vector) ){
-        sprintf(err_msg, "vector-set-from-array! : arg 1 must be a vector");
-        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
-    }
-
-    // arg 2 is point in vector to update from
-    s7_pointer *arg_2 = s7_cadr(args);
-    if( !s7_is_integer( arg_2 ) ){
-        sprintf(err_msg, "vector-set-from-array! : arg 2 must be an int for vector index");
-        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
-    }
-    vector_offset = s7_integer( arg_2 );
-
-    // arg 3 is array name
-    s7_pointer *s7_array_name = s7_caddr(args);
-    if( !s7_is_symbol(s7_array_name) && !s7_is_string(s7_array_name) ){
-        sprintf(err_msg, "vector-set-from-array! : arg 3 must be a string or symbol of array name");
-        return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
-    }else{
-        array_name = s7_object_to_c_string(s7, s7_array_name);
-    }
-    // get the t_s4m_array struct from the registry
-    t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &array);
-    if(err){
-        sprintf(err_msg, "vector-set-from-array! : no array found with name %s", array_name);
-        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
-    }
-    // copy data, update vector with array data
-    // number of points to copy is whatever is smaller, the vector or the array
-    long vector_size = s7_vector_length(s7_dest_vector);
-    long num_points = vector_size < array->size ? vector_size : array->size;
-    for(long i=0; i < num_points; i++){
-        s7_pointer s7_value = s7_make_integer(s7, array->data[i].num);
-        s7_vector_set(s7, s7_dest_vector, vector_offset + i, s7_value);
-    }
-    //post("...data copied");
-    // return nil 
-    return s7_return_value;
-}
 */
-
 
 // call s7_call, with error logging
 void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args){
