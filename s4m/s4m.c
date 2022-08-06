@@ -260,6 +260,8 @@ static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_set_from_vector(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args);
+
+t_max_err s4m_free_array(t_symbol *array_name);
 //static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args);
 //static s7_pointer s7_vector_set_chars_from_array(s7_scheme *s7, s7_pointer args);
 
@@ -1019,6 +1021,9 @@ void s4m_free(t_s4m *x){
     object_free(x->clocks); 
     object_free(x->clocks_quant); 
 
+    // note that we do not free arrays here because they aren't actually owned
+    // by a particular s4m instance
+
     // XXX: the below were causing crashed, but pretty sure we're leaking memory now
     // free the handles that were created for reading in main source file contents
     // this is wrong, it's crashing max if the file loaded is invalid
@@ -1216,6 +1221,38 @@ int s4m_mc_buffer_write(t_s4m *x, char *buffer_name, int channel, long index, do
     return 0;
 }
 
+
+/********************************************************************************/
+// s4m array functions
+
+// free an array. Note that this does not get called from s4m_free
+// because arrays are not attached to an s4m instance
+// XXX: not sure if this is making memory leaks
+t_max_err s4m_free_array(t_symbol *array_sym){
+    //post("s4m_free_array() array name: %s", array_sym->s_name);
+    t_s4m_array *array;
+    t_max_err err = hashtab_lookup(s4m_arrays, array_sym, &array);
+    // if array doesn't exist, just return
+    if(err){
+        //post("no previous array found, returning");
+        return;
+    }
+    // for string arrays we need to free all the substrings
+    // TODO: this produces free bad ptr errors, check on this
+    //if(array->type == 's'){
+    //    for(int i=0; i < array->size; i++){
+    //        //post("freeing string");
+    //        //if( array->data[i].s )
+    //        //    sysmem_freeptr(array->data[i].s);
+    //    }
+    //}
+    // remove it from the array registry (without freeing)
+    hashtab_chuckkey(s4m_arrays, array_sym);
+    // free memory
+    sysmem_freeptr(array);
+    //post("freed previous array");
+}
+
 // make an s4m array: (make-array :name :int size
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     //post("s7_make_array");
@@ -1257,6 +1294,11 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     //}
     // post("s7_make_array, type: %s name: %s size: %i", array_type, array_name, array_size );
 
+    // attempt to free a previous array with the same name
+    post("attempting free of old array");
+    s4m_free_array( gensym(array_name) );
+
+
     // create the new array, sysmem_newptrclear inits to zeros
     t_s4m_array_point *new_array_data = (t_s4m_array_point *)sysmem_newptr( sizeof( t_s4m_array_point ) * array_size);
     t_s4m_array *new_array = (t_s4m_array *)sysmem_newptr( sizeof(t_s4m_array) );
@@ -1277,12 +1319,10 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
             strncpy_zero( new_array->data[i].c, CHAR_ARRAY_BLANK, CHAR_ARRAY_SIZE);
         }
     }
-
     // hashtabs only store t_object pointers, so cast it to a t_object pointer
     hashtab_store(s4m_arrays, gensym(array_name), (t_object *)new_array);
     //post("new array created and stored in hashtab under %s", array_name);
 }
-
 static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args){
     // post("s7_array_ref()");
     t_s4m *x = get_max_obj(s7);
@@ -1584,8 +1624,8 @@ static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args) {
     return new_vector;
 }
 
-/*
 // working, but does not have all the controls from vector-set-from-table! yet
+/*
 static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args) {
     // post("s7_set_vector_from_array()");
     t_s4m *x = get_max_obj(s7);
