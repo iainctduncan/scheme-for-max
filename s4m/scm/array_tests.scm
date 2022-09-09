@@ -51,7 +51,7 @@
   (arrsv :ac 0 cv)
   (post (a->v :ac))
   (post "array-ref char:" (array-ref :ac 0) (array-ref :ac 2))
-  (post "setting :ac 0 to string" (array-set! :ac 0 "foobar"))
+  (post "setting :ac 0 to string" (array-set! :ac 0 "foo"))
   (post "setting :ac 1 to string from list" (array-set! :ac 1 '(1 2 3)))
   (post "setting :ac 2 to too-long string" (array-set! :ac 2 "i am too long to fit in the space provided"))
   (post "char ref 0 now:" (array-ref :ac 0))

@@ -391,7 +391,7 @@ void ext_main(void *r){
 
     // initialize s4mgrid stuff
     s4mgrid_main(r);
-    post("s4m.c ext_main() done");
+    //post("s4m.c ext_main() done");
 }
 
 
@@ -1239,6 +1239,7 @@ t_max_err s4m_free_array(t_symbol *array_sym){
     }
     // for string arrays we need to free all the substrings
     // TODO: this produces free bad ptr errors, check on this
+    // shelving for now
     //if(array->type == 's'){
     //    for(int i=0; i < array->size; i++){
     //        //post("freeing string");
@@ -1246,6 +1247,7 @@ t_max_err s4m_free_array(t_symbol *array_sym){
     //        //    sysmem_freeptr(array->data[i].s);
     //    }
     //}
+
     // remove it from the array registry (without freeing)
     hashtab_chuckkey(s4m_arrays, array_sym);
     // free memory
@@ -1295,7 +1297,7 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     // post("s7_make_array, type: %s name: %s size: %i", array_type, array_name, array_size );
 
     // attempt to free a previous array with the same name
-    post("attempting free of old array");
+    // this will return harmlessly if there isn't one
     s4m_free_array( gensym(array_name) );
 
 
@@ -1323,6 +1325,7 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     hashtab_store(s4m_arrays, gensym(array_name), (t_object *)new_array);
     //post("new array created and stored in hashtab under %s", array_name);
 }
+
 static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args){
     // post("s7_array_ref()");
     t_s4m *x = get_max_obj(s7);

@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ -1757.0, 169.0, 1072.0, 681.0 ],
+		"rect" : [ -1634.0, 155.0, 1175.0, 734.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -39,6 +39,30 @@
 		"subpatcher_template" : "s4m",
 		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
+				"box" : 				{
+					"cellchars" : 4,
+					"cellheight" : 20,
+					"cellsperbar" : 16,
+					"cellsperbeat" : 4,
+					"cellwidth" : 29,
+					"color" : [ 1.0, 1.0, 1.0, 1.0 ],
+					"columns" : 16,
+					"floatdigits" : 2,
+					"fontsize" : 11.0,
+					"id" : "obj-11",
+					"maxclass" : "s4m.grid",
+					"notenames" : 0,
+					"noterow" : 0,
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 48.25, 482.0, 464.0, 160.0 ],
+					"printzero" : 1,
+					"rotate" : 0,
+					"rows" : 8
+				}
+
+			}
+, 			{
 				"box" : 				{
 					"id" : "obj-18",
 					"maxclass" : "message",
@@ -83,31 +107,6 @@
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 236.0, 345.0, 29.5, 22.0 ],
 					"text" : ":ai"
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"cellchars" : 4,
-					"cellheight" : 20,
-					"cellsperbar" : 16,
-					"cellsperbeat" : 4,
-					"cellwidth" : 29,
-					"color" : [ 1.0, 1.0, 1.0, 1.0 ],
-					"columns" : 16,
-					"floatdigits" : 2,
-					"fontsize" : 11.0,
-					"id" : "obj-8",
-					"maxclass" : "s4m.grid",
-					"notenames" : 0,
-					"noterow" : 0,
-					"numinlets" : 1,
-					"numoutlets" : 1,
-					"outlettype" : [ "int" ],
-					"patching_rect" : [ 131.0, 424.0, 464.0, 160.0 ],
-					"printzero" : 1,
-					"rotate" : 0,
-					"rows" : 8
 				}
 
 			}
@@ -345,7 +344,7 @@
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-8", 0 ],
+					"destination" : [ "obj-11", 0 ],
 					"source" : [ "obj-13", 0 ]
 				}
 
@@ -359,7 +358,7 @@
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-8", 0 ],
+					"destination" : [ "obj-11", 0 ],
 					"source" : [ "obj-15", 0 ]
 				}
 
