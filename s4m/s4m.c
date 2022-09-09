@@ -325,7 +325,7 @@ void ext_main(void *r){
 
     // IN PROGRESS
     // test of making things with this patcher 
-    //class_addmethod(c, (method)s4m_make, "make", NULL, 0);
+    class_addmethod(c, (method)s4m_make, "make", NULL, 0);
 
     // generic message handlers  
     class_addmethod(c, (method)s4m_bang, "bang", NULL, 0);
@@ -731,7 +731,7 @@ void s4m_make(t_s4m *x){
     // send a message to the patcher object to create a thing
     // the below works, but makes patcher box instead of just the table data object
     post("creating object with newobject_sprintf()");
-    x->test_obj = newobject_sprintf(x->patcher, "@maxclass newobj @text \"table foobar\" @size 4 @hidden 1 @patching_position %.2f %.2f", 10, 10);
+    x->test_obj = newobject_sprintf(x->patcher, "@maxclass newobj @text \"message\" @size 4 @hidden 1 @patching_position %.2f %.2f", 10, 10);
     //table_dirty( gensym("foobar") );
 
     //t_atom arg_atoms[ MAX_ATOMS_PER_MESSAGE ];
