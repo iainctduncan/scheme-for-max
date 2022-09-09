@@ -3,6 +3,8 @@ Scheme For Max (s4m) is an open source Max/MSP external to enable scripting, liv
 Max/MSP with s7 Scheme Lisp. It is available as a packages for Mac (Intel and M1) and Windows (32 and 64 bit), and as source. It has been developed and tested on Max 8. It also works in Max for Live on Ableton Live 10 and 11.
 
 ## Recent News
+**2022-07-28**: There is now an official forum thanks to the Discourse community program. https://schemeformax.discourse.group/
+
 **2022-02-22**: There is now a Universal Binary build for Apple Silicon up for 0.3. This is a drop in replacement for the external object and should work on M1 and Intel Macs.
 
 **2021-11-27**: 0.3.0 is released. This includes convenience features like directly passing code messages to the s4m object, a threading macro similar to Clojure and Rackets, supporting delay from the low-priority thread, garbage collector interface functions, and tools for using the Ableton Live API from Max4Live. Please report any bugs as github issues. Note: This has not been built for Apple Silicon yet. If you are able to help do this, please get in touch.
@@ -81,6 +83,8 @@ sample source code in the package. Clicking "launch" on the package menu will op
 
 Narative documentation is here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
+The online community lives here: https://schemeformax.discourse.group/
+
 Learn S7 Scheme and Scheme For Max E-book: https://iainctduncan.github.io/learn-scheme-for-max/index.html 
 
 Tutorials on sequencing with Scheme For Max: https://iainctduncan.github.io/s4m-stk/
@@ -92,8 +96,8 @@ To file tickets about errors or improvement suggestions for the docs, use the do
 The S7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html
 
 For release and tutorial announcements, questions, suggestions, installation issues, and bug reports, 
-please join the scheme-for-max google group and check the discussion board on this github page.
-
+please join the scheme-for-max forum or google group and check the discussion board on this github page.
+https://schemeformax.discourse.group/
 https://groups.google.com/forum/#!forum/scheme-for-max
 
 
