@@ -128,8 +128,6 @@ void s4mgrid_main(void *r){
     CLASS_ATTR_STYLE_LABEL(c,"textcolor",0,"rgba","Text Color");
     CLASS_STICKY_ATTR_CLEAR(c, "category");
     
-    
-
     class_register(CLASS_BOX, c);
     s_s4mgrid_class = c;
     
