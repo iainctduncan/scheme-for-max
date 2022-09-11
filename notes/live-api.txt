@@ -1,0 +1,27 @@
+Notes on making the Live API not require patchers
+
+STATUS:
+- have function that creates a subpatcher with what we need in it
+  - deletes previous ones if found
+- gets called on the init-live-api message or the s4m-init-live-api scheme function
+- made high level init function, build-live-api, that calls this after delay 0,
+  and put it in the live-api.scm code
+
+ISSUES:
+- deleting the previous one really can't go off the internal storage in case
+  the user has deleted it, it needs to traverse the patcher and get rid of it. Grr
+- problem is, if user deletes it, we need operations to fail safely
+  - need to test that
+  - it might mean we need to use regular send and scan, so as not to try to send to invalid objects
+
+- I think we have to use patcher sends etc or we unavoidably have the situation where
+  a user could have deleted the api patcher, and we have invalid references in our object
+
+- so I think this means we shouldn't even be hanging on to references for those objects in
+  the externals storage...
+  - but lets get it working and double back to that later
+
+
+STILL TODO:
+- make the subpatcher show up right next to the s4m object
+- add in ability to delete the previous version by traversing through the patcher
