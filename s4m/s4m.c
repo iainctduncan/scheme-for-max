@@ -69,7 +69,7 @@ typedef struct _s4m {
     double clock_listen_ms_t_interval;   // time in ms for the listen-ms-t clock  
 
     t_object *test_obj; 
-
+    
     // array of atoms when using @expr
     t_atom *expr_argv;
     long    expr_argc;
@@ -109,6 +109,10 @@ t_max_err s4m_heap_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
 t_max_err s4m_thread_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
 t_max_err s4m_expr_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
 
+// IN PROG, functions for thispatcher scripting up the live-api rig
+void s4m_make(t_s4m *x);
+void s4m_init_live_api(t_s4m *x);
+void s4m_connect_objects(t_object *patcher, t_object *source, int source_outlet_num, t_object *dest, int dest_inlet_num);
 
 // helpers to do s7 calls with error loggging
 void s4m_post_s7_res(t_s4m *x, s7_pointer res);
@@ -144,8 +148,6 @@ void s4m_handle_msg(t_s4m *x, int inlet_num, t_symbol *s, long argc, t_atom *arg
 
 void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file);
 void s4m_dblclick(t_s4m *x);
-// IN PROG
-void s4m_make(t_s4m *x);
 
 void s4m_scan(t_s4m *x);
 long s4m_scan_iterator(t_s4m *x, t_object *b);
@@ -265,6 +267,8 @@ t_max_err s4m_free_array(t_symbol *array_name);
 //static s7_pointer s7_vector_set_from_array(s7_scheme *s7, s7_pointer args);
 //static s7_pointer s7_vector_set_chars_from_array(s7_scheme *s7, s7_pointer args);
 
+static s7_pointer s7_init_live_api(s7_scheme *s7, s7_pointer args);
+
 /********************************************************************************
 / some helpers */
 // return true if a string begins and ends with quotes
@@ -326,6 +330,7 @@ void ext_main(void *r){
     // IN PROGRESS
     // test of making things with this patcher 
     class_addmethod(c, (method)s4m_make, "make", NULL, 0);
+    class_addmethod(c, (method)s4m_init_live_api, "init-live-api", NULL, 0);
 
     // generic message handlers  
     class_addmethod(c, (method)s4m_bang, "bang", NULL, 0);
@@ -358,9 +363,10 @@ void ext_main(void *r){
     CLASS_ATTR_INVISIBLE(c, "heap", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
     CLASS_ATTR_SAVE(c, "heap", 0);   // save with patcher
 
-    CLASS_ATTR_ATOM_VARSIZE(c, "expr", 0, t_s4m, expr_argv, expr_argc, 128);
-    CLASS_ATTR_ACCESSORS(c, "expr", NULL, s4m_expr_set);
-    CLASS_ATTR_INVISIBLE(c, "expr", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
+    // not in use right now was attempt at making s4m expression objects
+    //CLASS_ATTR_ATOM_VARSIZE(c, "expr", 0, t_s4m, expr_argv, expr_argc, 128);
+    //CLASS_ATTR_ACCESSORS(c, "expr", NULL, s4m_expr_set);
+    //CLASS_ATTR_INVISIBLE(c, "expr", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
     //CLASS_ATTR_SAVE(c, "expr", 0);   // save with patcher
 
     // attrs for the internal time and quantize objects
@@ -481,6 +487,7 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     // save the patcher object (equiv of thispatcher)
     object_obex_lookup(x, gensym("#P"), &x->patcher);
 
+    
     // init source file from argument
     x->source_file = _sym_nothing;
     if(argc){
@@ -576,6 +583,8 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "s4m-send", s7_send_message, 2, 0, true, "(send 'var-name message ..args.. ) sents 'message' with args to 'var-name");
     s7_define_function(x->s7, "isr?", s7_isr, 0, 0, true, "(isr?)");
 
+    s7_define_function(x->s7, "s4m-init-live-api", s7_init_live_api, 0, 0, false, "");
+
     // transport fuctions, v0.2
     s7_define_function(x->s7, "transport-state", s7_itm_get_state, 0, 0, true, "");
     s7_define_function(x->s7, "t-state", s7_itm_get_state, 0, 0, true, "");
@@ -624,8 +633,6 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "gc-run", s7_gc_run, 0, 0, true, "(gc-run)");
     s7_define_function(x->s7, "gc-try", s7_gc_try, 0, 0, true, "(gc-try)");
 
-
-
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
     uintptr_t max_obj_ptr = (uintptr_t)x;
@@ -655,6 +662,8 @@ void s4m_init_s7(t_s4m *x){
     if( x->source_file != _sym_nothing){
         s4m_doread(x, x->source_file, true);
     }
+
+    
     //post("s4m_init_s7 complete");
 }
 
@@ -689,7 +698,6 @@ void s4m_reset(t_s4m *x){
     hashtab_clear(x->clocks); 
     hashtab_clear(x->clocks_quant); 
 
-    //s4m_scan(x);
     // reset the interpreter
     s4m_init_s7(x);
     //post("running scan...");
@@ -725,13 +733,14 @@ void s4m_reload(t_s4m *x){
 
 // test of making a thing via the patcher object triggered by "make" message
 void s4m_make(t_s4m *x){
-    post("s4m_make(), attempting to make a table");
+    post("s4m_make(), attempting to make a message box");
     t_max_err err;
 
     // send a message to the patcher object to create a thing
     // the below works, but makes patcher box instead of just the table data object
     post("creating object with newobject_sprintf()");
-    x->test_obj = newobject_sprintf(x->patcher, "@maxclass newobj @text \"message\" @size 4 @hidden 1 @patching_position %.2f %.2f", 10, 10);
+    //x->test_obj = newobject_sprintf(x->patcher, "@maxclass newobj @text \"message\" @size 4 @hidden 1 @patching_position %.2f %.2f", 10, 10);
+    x->test_obj = newobject_sprintf(x->patcher, "@maxclass newobj @text \"message\" @varname testobj @size 4 @hidden 0 @patching_position %.2f %.2f", 10, 10);
     //table_dirty( gensym("foobar") );
 
     //t_atom arg_atoms[ MAX_ATOMS_PER_MESSAGE ];
@@ -748,7 +757,96 @@ void s4m_make(t_s4m *x){
     //if(err){
     //    object_error((t_object *)x, "s4m: (send) error sending message");
     //}
-    post("did we get a new table named foobar?");
+    post("s4m_make finished");
+}
+
+/********************************************************************************/
+// Live API functions
+
+// note: to make this more manageable we will need to put all this in a subpatcher
+// because hidden objects are visible in edit mode...arg
+// bound to Max message "init-live-api"
+void s4m_init_live_api(t_s4m *x){
+    //post("s4m_init_live_api()");
+    post("s4m: building live api subpatcher");
+    t_max_err err;
+
+    // if user attempts this in a high thread instance, error and abort
+    if( isr() ){
+        object_error((t_object *)x, "s4m: live-api can only be run in low thread instances, aborting");
+        return;
+    }
+ 
+    // objects for the live api patcher
+    t_object *live_subpatch_box;
+    t_object *live_patcher;
+    t_object *live_path_box;
+    t_object *live_path_obj;
+    t_object *live_route_id_box;
+    t_object *live_prepend_id_box;
+    t_object *live_object_box;
+    t_object *live_route_value_box;
+    t_object *live_prepend_value_box;
+    t_object *live_subpatch_outlet;
+    t_object *live_print_box;
+
+    // TODO if the live-api subpatcher already exists, delete and replace
+    // this needs to go off the patcher traversal, not internal storage  
+
+    // create subpatch box and get the subpatcher object from it
+    live_subpatch_box = newobject_sprintf(x->patcher, "@maxclass newobj @text \"p s4m-live-api\" @varname s4m-live-api-patcher @hidden 0 @patching_position %.2f %.2f", 0, 0);
+    live_patcher = jbox_get_object(live_subpatch_box);
+
+    // create the contents of the live-api subpatch
+    // note, the below are acutally jboxes, not objects!
+    live_path_box = newobject_sprintf(live_patcher, "@maxclass newobj @text \"live.path\" @varname s4m-live-path  @patching_position %i %i", 10, 10);
+    live_route_id_box = newobject_sprintf(live_patcher, "@maxclass newobj @text \"route id\" @patching_position %i %i", 10, 40);
+    live_prepend_id_box = newobject_sprintf(live_patcher, "@maxclass newobj @text \"prepend live-api 'id\"  @patching_position %i %i", 10, 70);
+    
+    live_object_box = newobject_sprintf(live_patcher, "@maxclass newobj @text \"live.object\" @varname s4m-live-object @patching_position %i %i", 200, 10);
+    live_route_value_box = newobject_sprintf(live_patcher, "@maxclass newobj @text \"route value\"  @patching_position %i %i", 200, 40);
+    live_prepend_value_box = newobject_sprintf(live_patcher, "@maxclass newobj @text \"prepend live-api 'value\"  @patching_position %i %i", 200, 70);
+    live_subpatch_outlet = newobject_sprintf(live_patcher, "@maxclass newobj @text \"outlet\" @patching_position %i %i", 120, 110);;
+
+    // connect the api objects
+    // chain 1: live.api -> route id -> prepend live-api-id -> self
+    s4m_connect_objects(live_patcher, live_path_box, 0, live_route_id_box, 0);
+    s4m_connect_objects(live_patcher, live_route_id_box, 0, live_prepend_id_box, 0);
+    s4m_connect_objects(live_patcher, live_prepend_id_box, 0, live_subpatch_outlet, 0);
+    // chain 2: live.path -> route value -> prepend live-api-value -> self
+    s4m_connect_objects(live_patcher, live_object_box, 0, live_route_value_box, 0);
+    s4m_connect_objects(live_patcher, live_route_value_box, 0, live_prepend_value_box, 0);
+    s4m_connect_objects(live_patcher, live_prepend_value_box, 0, live_subpatch_outlet, 0);
+
+    // for debugging, a print object named api-test connected to the live.path and live.object output
+    //live_print_box = newobject_sprintf(live_patcher, "@maxclass newobj @text \"print api-test\" @hidden 0 @varname testobj @patching_position %i %i", 150, 250);
+    //s4m_connect_objects(live_patcher, live_path_box, 0, live_print_box, 0);
+    //s4m_connect_objects(live_patcher, live_object_box, 0, live_print_box, 0);
+
+    // connect the subpatch object to the s4m box
+    t_box *this_box;
+    object_obex_lookup(x, gensym("#B"), (t_object **)&this_box);
+    s4m_connect_objects(x->patcher, live_subpatch_box, 0, this_box, 0);
+
+    // run scan to pick up the new scripting names
+    s4m_scan(x);
+    //post("s4m_init_live_api finished");
+}
+
+// scheme binding to call s4m_init_live_api, called as (s4m-init-live-api)
+static s7_pointer s7_init_live_api(s7_scheme *s7, s7_pointer args) {
+    //post("s7_init_live_api()");
+    t_s4m *x = get_max_obj(s7);
+    s4m_init_live_api(x);
+}
+
+void s4m_connect_objects(t_object *patcher, t_object *source, int source_outlet_num, t_object *dest, int dest_inlet_num){
+    t_atom msg[4], rv;
+    atom_setobj(msg, source);         
+    atom_setlong(msg + 1, source_outlet_num);             
+    atom_setobj(msg + 2, dest);         
+    atom_setlong(msg + 3, dest_inlet_num);             
+    object_method_typed(patcher, gensym("connect"), 4, msg, &rv); 
 }
 
 void s4m_eval_atoms_as_string(t_s4m *x, t_symbol *sym, long argc, t_atom *argv){
@@ -804,9 +902,9 @@ void s4m_scan(t_s4m *x){
     //post("patcher scanned for varnames");
     long result = 0;
     t_max_err err = NULL;
-    t_object *patcher;
     // clear out the hashtab on each scan
     hashtab_clear(x->registry);
+    t_object *patcher;
     err = object_obex_lookup(x, gensym("#P"), &patcher);
     if(!err){
         object_method(patcher, gensym("iterate"), s4m_scan_iterator, (void *)x,
@@ -1021,6 +1119,7 @@ void s4m_free(t_s4m *x){
     object_free(x->clocks); 
     object_free(x->clocks_quant); 
 
+    
     // note that we do not free arrays here because they aren't actually owned
     // by a particular s4m instance
 

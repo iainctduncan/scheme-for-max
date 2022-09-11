@@ -21,13 +21,14 @@
 
 ; function for getting attributes from the s4m object
 ; this is a function so that users won't try to set on the attr hash from scheme
+; this only has access to attributes set explicitly from the C code
 (define (*s4m* key)
   (_s4m_ key))
 
 (define (send . args)
   (apply s4m-send args))
 
-; s4m-send expects flat args, flatten args
+; s4m-send expects flat args, send* allows calling with list 
 (define (send* . args)
   ;(post "send" args)
   (apply s4m-send
@@ -191,6 +192,9 @@
 (define (out-6 args) (max-output 6 args))
 (define (out-7 args) (max-output 7 args))
 
+
 (define s4m-done-bootstrap #t)
+
+
 
 ;(post "s4m.scm init complete")
