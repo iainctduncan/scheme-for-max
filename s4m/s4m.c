@@ -61,12 +61,12 @@ typedef struct _s4m {
 
     t_object *time_listen_ticks;         // time obj for the listen every X ticks callback
     t_object *time_listen_ticks_q;       // quantize for the above
-
     t_object *time_listen_ms;            // time obj used for listen-ms-t (uses transport)
+
     t_object *clock_listen_ms;           // clock obj used for listen-ms (no attached transport)
     t_object *clock_listen_ms_low;       // version of the above for use from low thread s4m instances
     double clock_listen_ms_interval;     // time in ms for the listen-ms clock  
-    double clock_listen_ms_t_interval;   // time in ms for the listen-ms-t clock  
+    double clock_listen_ms_t_interval;   // time in ticks for the listen-ms-t clock  
 
     t_object *test_obj; 
     
@@ -76,10 +76,10 @@ typedef struct _s4m {
     int     num_expr_inputs;
     char    *expr_code;
 
-    bool  gc_enabled;
-    int   gc_delay_ms;
-    int   gc_delay_ticks;
-    long  s7_heap_size;                    // initial heapsize   
+    bool  gc_enabled;                   // high level gc enabled flag
+    t_object *gc_clock_ms;              // clock obj used for listen-ms (no attached transport)
+    double gc_ms_interval;        // ms interval for the gc clock
+    long  s7_heap_size;                 // initial heapsize   
 
     bool initialized;                   // gets set to true after object initialization complete
     char log_repl;                      // whether to post the return values of evaluating scheme functions
@@ -163,9 +163,15 @@ int s4m_mc_buffer_read(t_s4m *x, char *buffer_name, int channel, long index, dou
 int s4m_mc_buffer_write(t_s4m *x, char *buffer_name, int channel, long index, double value);
 
 
-// customer getters and setters for attributes 'outs' and 'ins'
+// custom getters and setters for attributes 'outs' and 'ins'
 t_max_err s4m_inlets_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
 t_max_err s4m_outlets_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
+// custom setter for gc-ms
+t_max_err s4m_gc_ms_set(t_s4m *x, t_object *attr, long argc, t_atom *argv);
+void s4m_gc_ms_cb(t_s4m *x);
+void s4m_gc_ms_stop(t_s4m *x);
+void s4m_gc_ms_start(t_s4m *x);
+static s7_pointer s7_gc_ms_set(s7_scheme *s7, s7_pointer args);
 
 // misc helpers
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap);
@@ -256,6 +262,9 @@ static s7_pointer s7_gc_enable(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_gc_disable(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_gc_run(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_gc_start(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_gc_stop(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_gc_ms(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args);
@@ -332,6 +341,10 @@ void ext_main(void *r){
     class_addmethod(c, (method)s4m_make, "make", NULL, 0);
     class_addmethod(c, (method)s4m_init_live_api, "init-live-api", NULL, 0);
 
+    // messages to start and stop the gc-clock (gc-ms attr also exists to set it)
+    class_addmethod(c, (method)s4m_gc_ms_stop, "gc-stop", NULL, 0);
+    class_addmethod(c, (method)s4m_gc_ms_start, "gc-start", NULL, 0);
+
     // generic message handlers  
     class_addmethod(c, (method)s4m_bang, "bang", NULL, 0);
     class_addmethod(c, (method)s4m_int, "int", A_LONG, 0);
@@ -363,6 +376,10 @@ void ext_main(void *r){
     CLASS_ATTR_INVISIBLE(c, "heap", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE);
     CLASS_ATTR_SAVE(c, "heap", 0);   // save with patcher
 
+    CLASS_ATTR_FLOAT(c, "gc-ms", 0, t_s4m, gc_ms_interval);
+    CLASS_ATTR_ACCESSORS(c, "gc-ms", NULL, s4m_gc_ms_set);
+    CLASS_ATTR_INVISIBLE(c, "gc-ms", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
+ 
     // not in use right now was attempt at making s4m expression objects
     //CLASS_ATTR_ATOM_VARSIZE(c, "expr", 0, t_s4m, expr_argv, expr_argc, 128);
     //CLASS_ATTR_ACCESSORS(c, "expr", NULL, s4m_expr_set);
@@ -370,7 +387,7 @@ void ext_main(void *r){
     //CLASS_ATTR_SAVE(c, "expr", 0);   // save with patcher
 
     // attrs for the internal time and quantize objects
-    // we set them to not be settable from the patcher or to appear in the inspector
+    // we set them to not be settable from the patcher or to appear in the gc-mspector
     class_time_addattr(c, "_delaytime", "Delay Time", TIME_FLAGS_TICKSONLY | TIME_FLAGS_USECLOCK | TIME_FLAGS_TRANSPORT);
     CLASS_ATTR_ADD_FLAGS(c, "_delaytime", ATTR_GET_OPAQUE_USER | ATTR_SET_OPAQUE_USER);
     class_time_addattr(c, "_quantize", "Quantization", TIME_FLAGS_TICKSONLY);   
@@ -440,18 +457,24 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     x->num_outlets = 1;
     x->thread = 'h';
 
-    //  TODO: add gc delay inits with attrs
-    x->gc_enabled = true;
-    x->gc_delay_ms = 50;
-    x->gc_delay_ticks = NULL;
-
     x->expr_argv = NULL;
     x->expr_argc = 0;
     x->num_expr_inputs = 0;
     x->expr_code = NULL;
 
+    x->gc_ms_interval = 0;
+
     // process @ args, which will possibly override the above
     attr_args_process(x, argc, argv);
+
+    // gc helper setup
+    x->gc_enabled = true;
+    x->gc_clock_ms = (t_object *) clock_new((t_object *)x, (method) s4m_gc_ms_cb);  
+    if( x->gc_ms_interval ){
+        // start the clock right away
+        clock_fdelay(x->gc_clock_ms, x->gc_ms_interval);
+    }
+    
 
     // create generic outlets (from right to left)
     if( x->num_outlets > MAX_NUM_OUTLETS ){
@@ -487,7 +510,6 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     // save the patcher object (equiv of thispatcher)
     object_obex_lookup(x, gensym("#P"), &x->patcher);
 
-    
     // init source file from argument
     x->source_file = _sym_nothing;
     if(argc){
@@ -632,6 +654,9 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "gc-disable", s7_gc_disable, 0, 0, true, "(gc-disable)");
     s7_define_function(x->s7, "gc-run", s7_gc_run, 0, 0, true, "(gc-run)");
     s7_define_function(x->s7, "gc-try", s7_gc_try, 0, 0, true, "(gc-try)");
+    s7_define_function(x->s7, "gc-start", s7_gc_start, 0, 0, true, "(gc-start)");
+    s7_define_function(x->s7, "gc-stop", s7_gc_start, 0, 0, true, "(gc-start)");
+    s7_define_function(x->s7, "gc-ms-set!", s7_gc_ms_set, 1, 0, true, "(gc-ms-set!)");
 
     // make the address of this object available in scheme as "maxobj" so that 
     // scheme functions can get access to our C functions
@@ -648,7 +673,7 @@ void s4m_init_s7(t_s4m *x){
     // set the heapsize to the default,
     // it will otherwise start with the compiled heap, set at 16k
     char heap_init[128]; 
-    sprintf(heap_init, "(set! (*s7* 'heap-size) %i)", (x->s7_heap_size * 1000));
+    sprintf(heap_init, "(set! (*s7* 'heap-size) %i )", (int) (x->s7_heap_size * 1000));
     s7_eval_c_string(x->s7, heap_init);
     //post("s7 heap size: %i", x->s7_heap_size * 1000);
     s7_hash_table_set(x->s7, s4m_attrs, s7_make_keyword(x->s7, "heap-size"), s7_make_integer(x->s7, x->s7_heap_size * 1000));
@@ -663,6 +688,10 @@ void s4m_init_s7(t_s4m *x){
         s4m_doread(x, x->source_file, true);
     }
 
+    // if boot up has set a gc timer through the attribute, disable auto gc
+    if(!x->gc_enabled){
+        s7_gc_on(x->s7, false);    
+    }
     
     //post("s4m_init_s7 complete");
 }
@@ -994,6 +1023,8 @@ t_max_err s4m_heap_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     return 0;
 }
 
+
+
 // setter for the object thread, only does anything at start up time
 t_max_err s4m_expr_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     post("s4m_expr_set() argc: %i", argc);
@@ -1108,6 +1139,7 @@ void s4m_free(t_s4m *x){
     object_free(x->time_listen_ticks_q);    
     object_free(x->time_listen_ms);        
     object_free(x->clock_listen_ms); 
+    object_free(x->gc_clock_ms); 
 
     object_free(x->expr_argv);
 
@@ -2543,26 +2575,27 @@ static s7_pointer s7_isr(s7_scheme *s7, s7_pointer args){
     };
 }
 
-// gc functions (s4m 0.3)
+////////////////////////////////////////////////////////////////////////////////
+// gc functions (s4m 0.3 and 0.4)
 static s7_pointer s7_gc_is_enabled(s7_scheme *s7, s7_pointer args){
     //post("s7_gc_is_enabled()");
     t_s4m *x = get_max_obj(s7);
     return s7_make_boolean(s7, x->gc_enabled);
 }
 static s7_pointer s7_gc_enable(s7_scheme *s7, s7_pointer args){
-    //post("s7_gc_enable()");
+    post("s4m: enabling auto gc");
     t_s4m *x = get_max_obj(s7);
     x->gc_enabled = true;
     // note: unlike (gc), this does not *trigger* the gc to run
     s7_gc_on(s7, true);    
-    return s7_make_boolean(s7, true);
+    return s7_nil(s7);
 }
 static s7_pointer s7_gc_disable(s7_scheme *s7, s7_pointer args){
-    //post("s7_gc_disable()");
+    post("s4m: disabling auto gc");
     t_s4m *x = get_max_obj(s7);
     x->gc_enabled = false;
     s7_gc_on(s7, false);    
-    return s7_make_boolean(s7, false);
+    return s7_nil(s7);
 }
 // run forces the gc to run, whether or not enabled
 // does not change enabled status, returns nil
@@ -2594,11 +2627,75 @@ static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args){
     return s7_nil(s7);
 }
 
+// attribute setter for gc-ms
+t_max_err s4m_gc_ms_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
+    //post("s4m_gc_ms_set()");
+    double value = atom_getfloat(argv);
+    if(value){
+        post("s4m: setting gc timer to: %.2f ms, disabling auto gc", value);
+        x->gc_ms_interval = value;
+        x->gc_enabled = false;
+        // note, s7 is not yet necessarily initialized so lock out of auto gc
+        // happens in a check at end of s4m_init_s7
+        if(x->initialized){
+            clock_fdelay(x->gc_clock_ms, x->gc_ms_interval);
+        }
+    }
+}
+// clock call back for the gc clock
+void s4m_gc_ms_cb(t_s4m *x){
+    // post("s4m_gc_ms_cb");
+    // need to call the scheme level function, as it does trigger the gc
+    // unlike the s7 gc enable function (which does not force it to run NOW)
+    s7_call(x->s7, s7_name_to_value(x->s7, "s4m-gc"), s7_nil(x->s7));
+    // as scheme call to (gc) also enables the gc, set our high level flag back
+    // to whatever it was before the call to run it
+    if(x->gc_enabled){
+        s7_gc_on(x->s7, true);    
+    }else{
+        s7_gc_on(x->s7, false);    
+    } 
+    // and schedule the next interation
+    if(x->gc_ms_interval)
+        clock_fdelay(x->gc_clock_ms, x->gc_ms_interval);
+}
+// restart the gc-clock, also disables the auto gc
+void s4m_gc_ms_start(t_s4m *x){
+    //post("starting gc clock");
+    post("s4m: disabling auto gc and starting gc timer in %.2f ms", x->gc_ms_interval);      
+    x->gc_enabled = false;
+    s7_gc_on(x->s7, false);    
+    clock_fdelay(x->gc_clock_ms, x->gc_ms_interval);
+}
+void s4m_gc_ms_stop(t_s4m *x){
+    post("s4m: stopping gc clock, renabling auto gc");
+    x->gc_enabled = true;
+    s7_gc_on(x->s7, true);    
+    clock_unset(x->gc_clock_ms);
+}
+// scheme wrappers for the above
+static s7_pointer s7_gc_start(s7_scheme *s7, s7_pointer args){
+    t_s4m *x = get_max_obj(s7);
+    s4m_gc_ms_start(x);
+}
+static s7_pointer s7_gc_stop(s7_scheme *s7, s7_pointer args){
+    t_s4m *x = get_max_obj(s7);
+    s4m_gc_ms_stop(x);
+}
+// function for calling (gc-ms-set! X) 
+// note: scheme version does not automatically start, just changes the value
+static s7_pointer s7_gc_ms_set(s7_scheme *s7, s7_pointer args){
+    t_s4m *x = get_max_obj(s7);
+    double ms = (double) s7_real( s7_car(args) );
+    x->gc_ms_interval = ms; 
+}
+// end GC functions 
+
 
 // load a scheme file, searching the max paths to find it
 static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args) {
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
-    char *file_name = s7_string( s7_car(args) );
+    char *file_name = (char *)s7_string( s7_car(args) );
     t_s4m *x = get_max_obj(s7);
     s4m_doread(x, gensym(file_name), false);    
     return s7_nil(s7);
@@ -2608,7 +2705,7 @@ static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args) {
 // log to the max console 
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
-    char *msg = s7_string( s7_car(args) );
+    char *msg = (char *)s7_string( s7_car(args) );
     post("s4m: %s", msg);
     return s7_nil(s7);
 }
@@ -2618,7 +2715,7 @@ static s7_pointer s7_post(s7_scheme *s7, s7_pointer args) {
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args){
     //post("s7_max_output()");
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
-    int outlet_num = s7_integer( s7_car(args) );
+    int outlet_num = (int )s7_integer( s7_car(args) );
     //post("s7_max_output, outlet: %i", outlet_num);
     t_s4m *x = get_max_obj(s7);
 
@@ -2715,9 +2812,9 @@ static s7_pointer s7_is_table(s7_scheme *s7, s7_pointer args) {
     t_s4m *x = get_max_obj(s7);
 
     if( s7_is_symbol( s7_car(args) ) ){ 
-        table_name = s7_symbol_name( s7_car(args) );
+        table_name = (char *)s7_symbol_name( s7_car(args) );
     }else if( s7_is_string( s7_car(args) ) ){
-        table_name = s7_string( s7_car(args) );
+        table_name = (char *)s7_string( s7_car(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
             "table name is not a keyword, string, or symbol"));
@@ -2740,14 +2837,14 @@ static s7_pointer s7_table_length(s7_scheme *s7, s7_pointer args) {
     t_s4m *x = get_max_obj(s7);
 
     if( s7_is_symbol( s7_car(args) ) ){ 
-        table_name = s7_symbol_name( s7_car(args) );
+        table_name = (char *)s7_symbol_name( s7_car(args) );
     }else if( s7_is_string( s7_car(args) ) ){
-        table_name = s7_string( s7_car(args) );
+        table_name = (char *)s7_string( s7_car(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
             "table name is not a keyword, string, or symbol"));
     }
-    long index = s7_integer( s7_cadr(args) );
+    long index = (long) s7_integer( s7_cadr(args) );
 
     if( table_get(gensym(table_name), &table_data, &table_size) ){
         sprintf(err_msg, "could not load table %s from Max", table_name);
@@ -2768,14 +2865,14 @@ static s7_pointer s7_table_ref(s7_scheme *s7, s7_pointer args) {
     t_s4m *x = get_max_obj(s7);
 
     if( s7_is_symbol( s7_car(args) ) ){ 
-        table_name = s7_symbol_name( s7_car(args) );
+        table_name = (char *)s7_symbol_name( s7_car(args) );
     }else if( s7_is_string( s7_car(args) ) ){
-        table_name = s7_string( s7_car(args) );
+        table_name = (char *)s7_string( s7_car(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
             "table name is not a keyword, string, or symbol"));
     }
-    long index = s7_integer( s7_cadr(args) );
+    long index = (long) s7_integer( s7_cadr(args) );
 
     if( table_get(gensym(table_name), &table_data, &table_size) ){
         sprintf(err_msg, "could not load table %s from Max", table_name);
@@ -2801,21 +2898,21 @@ static s7_pointer s7_table_set(s7_scheme *s7, s7_pointer args) {
     t_s4m *x = get_max_obj(s7);
 
     if( s7_is_symbol( s7_car(args) ) ){ 
-        table_name = s7_symbol_name( s7_car(args) );
+        table_name = (char *)s7_symbol_name( s7_car(args) );
     } else if( s7_is_string( s7_car(args) ) ){
-        table_name = s7_string( s7_car(args) );
+        table_name = (char *)s7_string( s7_car(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
             "table name is not a keyword, string, or symbol"));
     }
-    int index = s7_integer( s7_cadr(args) );
+    int index = (int) s7_integer( s7_cadr(args) );
 
     // value can be int or real (cast to int), others are error
     s7_pointer *value_arg = s7_caddr( args );
     if( s7_is_real( value_arg ) ){
         value = (long) s7_real( value_arg );     
     }else if( s7_is_integer( value_arg ) ){
-        value = s7_integer( value_arg );     
+        value = (long) s7_integer( value_arg );     
     }else{
         sprintf(err_msg, "table-set! takes int or float only");
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, err_msg)); 
@@ -2850,9 +2947,9 @@ static s7_pointer s7_table_to_vector(s7_scheme *s7, s7_pointer args) {
 
     // first args is the table name
     if( s7_is_symbol( s7_car(args) ) ){ 
-        table_name = s7_symbol_name( s7_car(args) );
+        table_name = (char *)s7_symbol_name( s7_car(args) );
     } else if( s7_is_string( s7_car(args) ) ){
-        table_name = s7_string( s7_car(args) );
+        table_name = (char *)s7_string( s7_car(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
             "table name is not a keyword, string, or symbol"));
@@ -2864,11 +2961,11 @@ static s7_pointer s7_table_to_vector(s7_scheme *s7, s7_pointer args) {
     }
     // (table->vector tab-name index) copy all of table from index on into vector 
     if( s7_list_length(s7, args) >= 2 ){
-        target_index = s7_integer( s7_cadr(args) );
+        target_index = (long) s7_integer( s7_cadr(args) );
     }
     // (table->vector tab-name index count) copy count points from index into vector
     if( s7_list_length(s7, args) == 3){
-        count = s7_integer( s7_caddr(args) );
+        count = (long) s7_integer( s7_caddr(args) );
     }else{
         // if no count given, we're copying the rest of the table
         count = table_size - target_index;
@@ -2910,7 +3007,7 @@ static s7_pointer s7_vector_set_from_table(s7_scheme *s7, s7_pointer args) {
         sprintf(err_msg, "vector-set-from-table! : arg 2 must be an int for vector index");
         return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
     }
-    vector_offset = s7_integer( arg_2 );
+    vector_offset = (long) s7_integer( arg_2 );
 
     // arg 3 is table name
     s7_pointer *s7_table_name = s7_caddr(args);
@@ -2918,7 +3015,7 @@ static s7_pointer s7_vector_set_from_table(s7_scheme *s7, s7_pointer args) {
         sprintf(err_msg, "vector-set-from-table! : arg 3 must be a string or symbol of table name");
         return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
     }else{
-        table_name = s7_object_to_c_string(s7, s7_table_name);
+        table_name = (char *)s7_object_to_c_string(s7, s7_table_name);
     }
 
     // optional 4th arg is starting table offset: 
@@ -2928,7 +3025,7 @@ static s7_pointer s7_vector_set_from_table(s7_scheme *s7, s7_pointer args) {
             sprintf(err_msg, "vector-set-from-table! : arg 4 (optional) must be an integer of table index");
             return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
         }else{ 
-            table_offset = s7_integer( arg_4 );
+            table_offset = (long) s7_integer( arg_4 );
         }
     }
 
@@ -2939,7 +3036,7 @@ static s7_pointer s7_vector_set_from_table(s7_scheme *s7, s7_pointer args) {
             sprintf(err_msg, "vector-set-from-table! : arg 5 (optional) must be an integer of points to copy");
             return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
         }else
-            count = s7_integer( arg_5 );
+            count = (long) s7_integer( arg_5 );
     }
     
     // get the table
@@ -2950,7 +3047,7 @@ static s7_pointer s7_vector_set_from_table(s7_scheme *s7, s7_pointer args) {
         sprintf(err_msg, "table-ref-vector : could not load Max table");
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg) );
     }
-    long vector_size = s7_vector_length(s7_dest_vector);
+    long vector_size = (long) s7_vector_length(s7_dest_vector);
     // if no count specified, we will copy the whole table into the vector, or whatever fits
     if( count == NULL ) count = table_size - table_offset; 
     if( count > table_size - table_offset) count = table_size - table_offset;
@@ -2997,7 +3094,7 @@ static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args) {
         sprintf(err_msg, "table-set-from-vector! : arg 1 must be a string or symbol of table name");
         return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
     }
-    table_name = s7_object_to_c_string(s7, s7_table_name);
+    table_name = (char *)s7_object_to_c_string(s7, s7_table_name);
 
     // arg 2 is table index to write to (or start writing)
     s7_pointer *arg_2 = s7_cadr(args);
@@ -3005,7 +3102,7 @@ static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args) {
         sprintf(err_msg, "table-set-from-vector! : arg 2 must be an integer of dest table index");
         return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
     }
-    table_offset = s7_integer( arg_2 );
+    table_offset = (long) s7_integer( arg_2 );
 
     // arg 3 is source vector
     s7_pointer *s7_source_vector = s7_caddr(args);
@@ -3021,7 +3118,7 @@ static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args) {
             sprintf(err_msg, "table-set-from-vector! : arg 4 (optional) must be an integer of vector index");
             return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
         }else
-            vector_offset = s7_integer( arg_4 );
+            vector_offset = (long) s7_integer( arg_4 );
     }
 
     // optional 5th arg is count of data points to copy
@@ -3031,11 +3128,11 @@ static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args) {
             sprintf(err_msg, "table-set-from-vector! : arg 4 (optional) must be an integer of points to copy");
             return s7_error(s7, s7_make_symbol(s7, "wrong-arg-type"), s7_make_string(s7, err_msg));
         }else
-            count = s7_integer( arg_5 );
+            count = (long) s7_integer( arg_5 );
     }
 
     // get the vector and table
-    long vector_size = s7_vector_length(s7_source_vector);
+    long vector_size = (long) s7_vector_length(s7_source_vector);
     s7_int *s7_vector_values = s7_vector_elements(s7_source_vector);
     long **table_data = NULL;
     long table_size;
@@ -3071,7 +3168,7 @@ static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args) {
         if( s7_is_real(source_value) ){
             value = (long)s7_real(source_value);     
         }else if( s7_is_integer(source_value) ){
-            value = s7_integer(source_value);     
+            value = (long) s7_integer(source_value);     
         }else{     
             sprintf(err_msg, "table-set-from-vector! : value is not an int or float, aborting");
             return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg) );
@@ -3093,9 +3190,9 @@ static s7_pointer s7_is_buffer(s7_scheme *s7, s7_pointer args) {
     t_s4m *x = get_max_obj(s7);
     char *buffer_name;
     if( s7_is_symbol( s7_car(args) ) ){ 
-        buffer_name = s7_symbol_name( s7_car(args) );
+        buffer_name = (char *)s7_symbol_name( s7_car(args) );
     } else if( s7_is_string( s7_car(args) ) ){
-        buffer_name = s7_string( s7_car(args) );
+        buffer_name = (char *)s7_string( s7_car(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
             "buffer name is not a keyword, string, or symbol"));

@@ -3,6 +3,6 @@ Notes for Version 4
 Major features:
 - s4m-arrays
 - s4m-grid
-- internal live api
+- live-api builder
 - package manager
 - ?automatic gc clock?

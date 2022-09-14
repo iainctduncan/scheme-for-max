@@ -1,0 +1,13 @@
+Notes on the gc clock feature
+
+- messages:
+  gc-ms
+  gc-start
+  gc-stop
+  
+- gc-ms sets the gc timer, disabling auto gc and running it on the timer
+  - each run resets the high level flag to whatever it was
+- gc-start starts the gc timer and disables auto gc
+- gc-stop stops the timer and renables auto gc
+
+
