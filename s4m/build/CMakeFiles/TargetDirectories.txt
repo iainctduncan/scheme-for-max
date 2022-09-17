@@ -1,0 +1,3 @@
+/Users/iainduncan/Documents/Max 8/Packages/max-sdk/source/scheme-for-max/s4m/build/CMakeFiles/s4m.dir
+/Users/iainduncan/Documents/Max 8/Packages/max-sdk/source/scheme-for-max/s4m/build/CMakeFiles/ALL_BUILD.dir
+/Users/iainduncan/Documents/Max 8/Packages/max-sdk/source/scheme-for-max/s4m/build/CMakeFiles/ZERO_CHECK.dir
