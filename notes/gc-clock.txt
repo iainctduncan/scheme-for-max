@@ -5,9 +5,13 @@ Notes on the gc clock feature
   gc-start
   gc-stop
   
-- gc-ms sets the gc timer, disabling auto gc and running it on the timer
-  - each run resets the high level flag to whatever it was
+- gc-ms sets the gc timer, disabling auto gc and starts running it on the timer
+- the callback for the gc clock (s4m_gc_ms_cb) resets the high level gc enabled flag to whatever it was
+  so that it runs without changing this (it will always run it)
 - gc-start starts the gc timer and disables auto gc
 - gc-stop stops the timer and renables auto gc
+- (gc-ms-set! 500) - sets the gc timer interval but, unlike the Max message, does not start the clock
 
-
+- attempting to call any gc-ms related functions when thread is low will
+  print error message and abort
+- this includes setting @thread l @gc-ms X in object attributes

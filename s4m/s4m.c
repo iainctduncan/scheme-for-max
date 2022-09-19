@@ -471,11 +471,14 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     x->gc_enabled = true;
     x->gc_clock_ms = (t_object *) clock_new((t_object *)x, (method) s4m_gc_ms_cb);  
     if( x->gc_ms_interval ){
-        // start the clock right away
-        clock_fdelay(x->gc_clock_ms, x->gc_ms_interval);
+        if(x->thread == 'l'){
+            object_error((t_object *)x, "Error: gc timer cannot be used when s4m thread is low");                
+        }else{
+            // start the clock right away
+            clock_fdelay(x->gc_clock_ms, x->gc_ms_interval);
+        }
     }
     
-
     // create generic outlets (from right to left)
     if( x->num_outlets > MAX_NUM_OUTLETS ){
         post("ERROR: only up to %i outlets supported", MAX_NUM_OUTLETS);
@@ -2630,6 +2633,10 @@ static s7_pointer s7_gc_try(s7_scheme *s7, s7_pointer args){
 // attribute setter for gc-ms
 t_max_err s4m_gc_ms_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
     //post("s4m_gc_ms_set()");
+    if(x->thread == 'l'){
+        object_error((t_object *)x, "Error: gc timer cannot be used when s4m thread is low");                
+        return;
+    }
     double value = atom_getfloat(argv);
     if(value){
         post("s4m: setting gc timer to: %.2f ms, disabling auto gc", value);
@@ -2642,9 +2649,12 @@ t_max_err s4m_gc_ms_set(t_s4m *x, t_object *attr, long argc, t_atom *argv){
         }
     }
 }
+
 // clock call back for the gc clock
+// this should never get executed in a low thread instance as it would
+// call into s7 from the high (timer) thread
 void s4m_gc_ms_cb(t_s4m *x){
-    // post("s4m_gc_ms_cb");
+    //post("s4m_gc_ms_cb");
     // need to call the scheme level function, as it does trigger the gc
     // unlike the s7 gc enable function (which does not force it to run NOW)
     s7_call(x->s7, s7_name_to_value(x->s7, "s4m-gc"), s7_nil(x->s7));
@@ -2660,15 +2670,25 @@ void s4m_gc_ms_cb(t_s4m *x){
         clock_fdelay(x->gc_clock_ms, x->gc_ms_interval);
 }
 // restart the gc-clock, also disables the auto gc
+// note, cannot be done from thread low
 void s4m_gc_ms_start(t_s4m *x){
     //post("starting gc clock");
+    if(x->thread == 'l'){
+        object_error((t_object *)x, "Error: gc timer cannot be used when s4m thread is low");                
+        return;
+    }
     post("s4m: disabling auto gc and starting gc timer in %.2f ms", x->gc_ms_interval);      
     x->gc_enabled = false;
     s7_gc_on(x->s7, false);    
     clock_fdelay(x->gc_clock_ms, x->gc_ms_interval);
 }
 void s4m_gc_ms_stop(t_s4m *x){
+    if(x->thread == 'l'){
+        object_error((t_object *)x, "Error: gc timer cannot be used when s4m thread is low");                
+        return;
+    }
     post("s4m: stopping gc clock, renabling auto gc");
+    // restart automatic gc, disable gc clock
     x->gc_enabled = true;
     s7_gc_on(x->s7, true);    
     clock_unset(x->gc_clock_ms);
@@ -2677,17 +2697,24 @@ void s4m_gc_ms_stop(t_s4m *x){
 static s7_pointer s7_gc_start(s7_scheme *s7, s7_pointer args){
     t_s4m *x = get_max_obj(s7);
     s4m_gc_ms_start(x);
+    return s7_nil(s7);
 }
 static s7_pointer s7_gc_stop(s7_scheme *s7, s7_pointer args){
     t_s4m *x = get_max_obj(s7);
     s4m_gc_ms_stop(x);
+    return s7_nil(s7);
 }
 // function for calling (gc-ms-set! X) 
 // note: scheme version does not automatically start, just changes the value
 static s7_pointer s7_gc_ms_set(s7_scheme *s7, s7_pointer args){
     t_s4m *x = get_max_obj(s7);
-    double ms = (double) s7_real( s7_car(args) );
-    x->gc_ms_interval = ms; 
+    if(x->thread == 'l'){
+        object_error((t_object *)x, "Error: gc timer cannot be used when s4m thread is low");                
+    }else{
+        double ms = (double) s7_real( s7_car(args) );
+        x->gc_ms_interval = ms; 
+    }
+    return s7_nil(s7);
 }
 // end GC functions 
 
