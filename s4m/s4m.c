@@ -1407,10 +1407,16 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     // arg 2 is type, :int :float or :string
     if( s7_is_symbol( s7_cadr(args) ) ){ 
         array_type = (char *) s7_symbol_name( s7_cadr(args) );
-        //post("array_type: '%s'", array_type);
+        if( strcmp(":int", array_type) &&
+            strcmp(":float", array_type) && 
+            strcmp(":char", array_type) &&
+            strcmp(":string", array_type) ){
+          return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+              "error making array, second argument should be type, (:int :float :char :string)"));
+        }
     }else{
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
-            "error making array, second argument should be type, (:int :float :string)"));
+            "error making array, second argument should be type, (:int :float :char :string)"));
     }
     // arg 3 is size
     if( s7_is_integer( s7_caddr(args) ) ){ 
@@ -1428,12 +1434,11 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     //          "error making array, optional third argument should be an integer for the string lenghts"));
     //  }
     //}
-    // post("s7_make_array, type: %s name: %s size: %i", array_type, array_name, array_size );
+    //post("s7_make_array, type: %s name: %s size: %i", array_type, array_name, array_size );
 
     // attempt to free a previous array with the same name
     // this will return harmlessly if there isn't one
     s4m_free_array( gensym(array_name) );
-
 
     // create the new array, sysmem_newptrclear inits to zeros
     t_s4m_array_point *new_array_data = (t_s4m_array_point *)sysmem_newptr( sizeof( t_s4m_array_point ) * array_size);
@@ -1441,7 +1446,7 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     new_array->name = gensym(array_name);
     new_array->size = array_size;
     new_array->strlen = str_len;
-    new_array->type = array_type[1]; // will be 'i','f', 's', or 'c' from keywords :int, :float, or :string
+    new_array->type = array_type[1]; // will be 'i','f', 's', or 'c' from keywords :int, :float, :char, or :string
     new_array->data = new_array_data;
     for(int i = 0; i < new_array->size; i++){ 
         if(new_array->type == 's'){
