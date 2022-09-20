@@ -11,10 +11,10 @@ def do(command):
 
 if __name__=="__main__":
     print("removing package and replacing sdk")
-    do("mv ~/Documents/Max\ 8/max-sdk-8.0.3 ~/Documents/Max\ 8/Packages/max-sdk-8.0.3")
+    do("mv ~/Documents/Max\ 8/max-sdk ~/Documents/Max\ 8/Packages/max-sdk")
     # remove installed package
     do("rm -fr ~/Documents/Max\ 8/Packages/Scheme-For-Max")  
     # recreate symlink
-    do("ln -s ~/Documents/Max\ 8/Packages/max-sdk-8.0.3/source/scheme4max/Scheme-For-Max "
+    do("ln -s ~/Documents/Max\ 8/Packages/max-sdk/source/scheme4max/Scheme-For-Max "
         "~/Documents/Max\ 8/Packages/Scheme-For-Max")
     print("DONE")

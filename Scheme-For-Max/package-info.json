@@ -7,7 +7,7 @@
     "name" : "Scheme-for-Max",
     "os" : {
         "macintosh" : {
-            "platform" : [ "x64" ],
+            "platform" : [ "x64", "arm64" ],
             "min_version" : "none"
         },
         "windows" : {
@@ -16,9 +16,9 @@
         }
     },
     "package_extra" : {
-        "copyright" : "Copyright (c) 2021 Iain Duncan. (Bill Schottstaedt, s7)"
+        "copyright" : "Copyright (c) 2022 Iain Duncan. (Bill Schottstaedt, s7)"
     },
     "tags" : [ "scheme", "lisp", "S7", "live coding", "scripting"],
-    "version" : "0.3.0",
+    "version" : "0.4.0",
     "website" : "https://github.com/iainctduncan/scheme-for-max"
 }

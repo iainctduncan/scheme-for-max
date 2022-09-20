@@ -8,7 +8,7 @@ import os
 
 version = "0.4.0"     # appended to tarball name
 dry_run = False
-do_install = True
+do_install = False
 
 externals_src = "../../externals"
 externals_dest = "dist/Scheme-For-Max/extensions"
