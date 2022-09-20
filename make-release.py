@@ -1,17 +1,17 @@
 import os
 
-# this script assumes you have installed the max 8 SDK and checked out scheme-for-max at
-# Max 8/Packages/max-sdk-8.0.3/source/scheme4max
+# this script assumes you have checked out and built the max 8.3 SDK and checked out scheme-for-max at
+# Max 8/Packages/max-sdk/source/scheme-for-max
 
 # its job is to copy the package, including the binary assets and scm files, into the 
 # dist directory, ready for zipping up for release
 
-version = "0.3.0"     # appended to tarball name
+version = "0.4.0"     # appended to tarball name
 dry_run = False
 do_install = True
 
 externals_src = "../../externals"
-externals_dest = "dist/Scheme-For-Max/externals"
+externals_dest = "dist/Scheme-For-Max/extensions"
 scm_src = "s4m/scm"
 scm_dest = "dist/Scheme-For-Max/extras"
 patcher_src = "s4m/patchers"
@@ -84,7 +84,7 @@ if __name__=="__main__":
     # so that we are running the released package 
     if do_install:
         print("\n...Installing to Max")
-        do("mv ~/Documents/Max\ 8/Packages/max-sdk-8.0.3 ~/Documents/Max\ 8/max-sdk-8.0.3")
+        do("mv ~/Documents/Max\ 8/Packages/max-sdk ~/Documents/Max\ 8/max-sdk")
         # remove the symlink
         do("rm ~/Documents/Max\ 8/Packages/Scheme-For-Max")
         do("cp -rp dist/Scheme-For-Max ~/Documents/Max\ 8/Packages/")
