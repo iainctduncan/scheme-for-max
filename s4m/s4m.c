@@ -1463,6 +1463,7 @@ static s7_pointer s7_make_array(s7_scheme *s7, s7_pointer args){
     // hashtabs only store t_object pointers, so cast it to a t_object pointer
     hashtab_store(s4m_arrays, gensym(array_name), (t_object *)new_array);
     //post("new array created and stored in hashtab under %s", array_name);
+    return s7_nil(s7);
 }
 
 static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args){
