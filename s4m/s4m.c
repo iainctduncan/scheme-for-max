@@ -320,7 +320,7 @@ char *trim_symbol_quote(char *input){
 * main C code 
 */
 void ext_main(void *r){
-    post("Scheme For Max 0.3, (c) Iain C.T. Duncan, 2022");
+    post("Scheme For Max 0.4.0, (c) Iain C.T. Duncan Sept 2022");
 
     t_class *c;
     common_symbols_init();
