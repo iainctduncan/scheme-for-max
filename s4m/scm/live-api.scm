@@ -1,4 +1,4 @@
-(post "live-api.scm")
+(post "loading live-api.scm")
 
 ; Scheme for Max Live-API interface
 ; by Iain Duncan, September 2022
@@ -37,16 +37,13 @@
   (live-api 'send-path `(live_set scenes ,scene) '(call fire)))
 
 (define (stop-scene scene)
-  ;(post "(stop-scene)" scene)
   (live-api 'send-path `(live_set scenes ,scene) '(call stop)))
-  
+
 (define (set-device-parameter track device param value)
-  ;(post "(set-device-param")
   (live-api 'send-path `(live_set tracks ,track devices ,device parameters ,param) 
      `(set value ,value)))
 
 (define (get-device-parameter track device param)
-  ;(post "(get-device-param")
   (live-api 'send-path `(live_set tracks ,track devices ,device parameters ,param) 
      `(get value)))
 
@@ -114,7 +111,7 @@
 ))    
 
 
-; function to build the live api, can be called from user source code
+; function to build the live api subpatch, can be called from user source code
 (define (make-live-api)
   ; use a delay here to ensure everything has settled
   (delay 0 s4m-init-live-api))
