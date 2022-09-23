@@ -1,6 +1,6 @@
 ; s4m-live-example.scm - a drunken walk sequencer
 ; plays random pentatonic notes that are within a M3rd
-(post "loading s4m-live-random-walk.scm??")
+(post "loading s4m-live-random-walk.scm")
 
 ; two octaves of pentatonic and a base midi note number
 (define pentatonic-notes '(0 2 4 7 9 12 14 16 19 21 24))

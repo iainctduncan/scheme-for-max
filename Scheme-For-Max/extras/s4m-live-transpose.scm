@@ -1,4 +1,4 @@
-; s4m-live-example.scm - a simple midi note transposer
+; s4m-live-transpose.scm - a simple midi note transposer
 ; transposes note on/off messages, filters out any others
 (post "loading s4m-live-transpose.scm")
 
