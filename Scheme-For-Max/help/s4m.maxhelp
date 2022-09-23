@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ -1691.0, 115.0, 1131.0, 877.0 ],
+		"rect" : [ -1737.0, 104.0, 1131.0, 877.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -200,7 +200,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 249.0, 345.5, 540.0, 73.0 ],
+									"patching_rect" : [ 249.0, 345.5, 544.0, 73.0 ],
 									"text" : "create a new array, arguments are name (a symbol or keyword), the type, and size. Type must be one of :int, :float, :char, or :string. Strings are currently hard-set to 16 characters long. Arrays are initialized to contain zero. Go ahead and click the readarray message above after clicking this one."
 								}
 
@@ -279,7 +279,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 11.0, 50.0, 778.0, 104.0 ],
+									"patching_rect" : [ 11.0, 50.0, 781.0, 104.0 ],
 									"text" : "The s4m.grid is a UI object for making light-weight tabular read-only displays. You can update its contents by sending a list message or asking it to read from an s4m array (see below). \nAttributes @rows and @columns set the dimensions. Check the inspector for various other attributes you can use to control the display. Setting attribute \"midi note names for ints\" will automatically convert 0-127 to C5 etc, which can be done for only 1 row or all rows, and \"rotate to vertical\" will allow setting to a vertical display (like a tracker interface)."
 								}
 
@@ -300,7 +300,8 @@
 									"notenames" : 1,
 									"noterow" : 2,
 									"numinlets" : 1,
-									"numoutlets" : 0,
+									"numoutlets" : 1,
+									"outlettype" : [ "int" ],
 									"patching_rect" : [ 11.0, 244.0, 232.0, 80.0 ],
 									"printzero" : 1,
 									"rotate" : 0,
@@ -950,7 +951,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ -1737.0, 130.0, 1131.0, 851.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1566,7 +1567,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 19.0, 50.0, 845.0, 288.0 ],
-									"text" : "Scheme for Max works well in Max For Live, but there are a few things you'll want to know. In M4L, Max always runs as if Audio in Interrupt is selected, and the signal vector size is always 64. If the Live audio engine is not on, the high priority thread will not run (and thus your object will not do anything!). If your s4m object is unresponsive, check this. udpreceive is useful for receiving Scheme code, but a word of warning: if you are editing patches while you use it, it can hang. Changing the port number fixes this.\n\nTempo dependent delays and clocks run off the Live transport. The easiest way to get perfect lock up is to use the quantized delay and clock methods: delay-tq and clock-ticks. When Live's transport starts, these will start too and will stay in sync with the main transport. The plugsync~ object is useful for triggering Scheme functions from the Live transport without running into the M4L error that one gets if you try to use the Live API from a notification triggered event.\n\nYou can use Scheme for Max with the Live API. However, the Live API objects always run in the low priority thread. Messages to them from a high priority event are implicitly deferred. So you should make your Live API calls from a low-thread s4m object. S4M 0.4  includes delays and clocks in the low thread object to do this, or you can send messages to your low priority instance from a high priority instance. To use the the live-api object in the examples below, you probably want to add (load-from-max \"live-api.scm\") to your s4m.scm file. You can edit live-api.scm to add your own convenience functions, like the fire-clip examples below.\n\nExample code for using the Live API is in the live-api.scm file, and there is a sample Live device in the Extras folder of the Scheme for Max package. Or you can copy the objects here to a M4L device to try it out. It is worth reading the source of live-api.scm!"
+									"text" : "Scheme for Max works well in Max For Live, but there are a few things you'll want to know. In M4L, Max always runs as if Audio in Interrupt is selected, and the signal vector size is always 64. If the Live audio engine is not on, the high priority thread will not run (and thus your object will not do anything!). If your s4m object is unresponsive, check this. udpreceive is useful for receiving Scheme code, but a word of warning: if you are editing patches while you use it, it can hang. Changing the port number fixes this.\n\nTempo dependent delays and clocks run off the Live transport. The easiest way to get perfect lock up is to use the quantized delay and clock methods: delay-tq and clock-ticks. When Live's transport starts, these will start too and will stay in sync with the main transport. The plugsync~ object is useful for triggering Scheme functions from the Live transport without running into the M4L error that one gets if you try to use the Live API from a notification triggered event.\n\nYou can use Scheme for Max with the Live API. However, the Live API objects always run in the low priority thread. Messages to them from a high priority event are implicitly deferred. So you should make your Live API calls from a low-thread s4m object. S4M 0.4  includes delays and clocks in the low thread object to do this, or you can send messages to your low priority instance from a high priority instance. To use the the live-api object in the examples below, you probably want to add (load-from-max \"live-api.scm\") to your s4m.scm file. You can edit live-api.scm to add your own convenience functions, like the fire-clip examples below.\n\nExample code for using the Live API is in the live-api.scm file, and there is a sample Live device in the Extras folder of the Scheme for Max package so that you can run the below in Live."
 								}
 
 							}
@@ -4805,7 +4806,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ -1691.0, 141.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4839,12 +4840,12 @@
 									"fontface" : 0,
 									"fontsize" : 16.0,
 									"id" : "obj-4",
-									"linecount" : 40,
+									"linecount" : 39,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 32.0, 51.0, 1010.0, 721.0 ],
-									"text" : "Scheme for Max (S4M) is an open source Max external to enable scripting, live coding, and algorithmic composition in Max with s7 Scheme Lisp. It is available as a package for OSX and Windows, and as source code. It also runs on Max For Live with Live 10+\n\nScheme for Max 0.4 features include:\n- Hot reloading code & live code evaluation from a REPL\n- Evaluating max messages as Scheme code \n- Sending remote messages to other objects\n- Dynamic creation of listener functions for input and output\n- Reading and writing to buffers and tables, with conversions to/from Scheme vectors\n- Reading and writing to dictionaries, with conversions to/from Scheme hash-tables\n- Reading and writing to s4m arrays, light-weight typed arrays for fast data passing between instances\n- A grid UI object for creating light-weight user interfaces, with integration with s4m arrays\n- Choice of high or low priority thread execution, with automatic promotion/deferal of input (@thread low or high)\n- Integration with the Max master tempo controls (including the Live transport if in Max For Live)\n- Scheduling Scheme functions, by ms or Max tempo based ticks\n- Registering repeating clock functions, by ms or ticks\n- Quantization of scheduled calls with the Max master transport settings (including in M4L)\n- Garbage collector control with a gc-timer for more deterministic garbage collection\n\nScheme for Max uses s7 Scheme, a Common-Lisp-influenced Scheme implementation by Bill Schottstaedt at CCRMA, based originally on Tiny Scheme.  s7 is a minimal Scheme and is the Scheme engine used in the Common Music algorithmic composition toolkit, and the Snd editor from CCRMA. It has keywords, Common-Lisp-style macros, first-class environments, thread safety, applicative syntax, and a straight forward FFI (foreign function interface) to enable extending with C. Linguistically, it is mostly R5RS with some later extensions, is quite similar to Guile, and shares many design decisions with Clojure. Scheme for Max uses S74, an optional convenience layer over s7 that providing various high-level functions to make music coding easier, borrowing from other Lisp dialects such as Racket, Clojure, and Chez.\n\nDocumentation is here: https://github.com/iainctduncan/scheme-for-max-docs\n\nA language tutorial is available here: https://iainctduncan.github.io/learn-scheme-for-max/introduction.html\nDemo and tutorial videos are posted here: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA\nBug reports and feature requests can be filed here: https://github.com/iainctduncan/scheme-for-max or in the forum\n\nFor questions, suggestions, bug reports, and to share your work, please join the Scheme for Max Forum\nhttps://schemeformax.discourse.group/\n\nThe s7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html\n\nScheme for Max is authored by Iain C.T. Duncan. Many thanks go to Bill Schottstaedt and Heinrich Taube - S4M builds on their work on s7 and Common Music, and would not be possible without it. Luigi Castelli has also been tremendously helpful with coding challenges during its development."
+									"patching_rect" : [ 32.0, 51.0, 1010.0, 704.0 ],
+									"text" : "Scheme for Max (S4M) is an open source Max external to enable scripting, live coding, and algorithmic composition in Max with s7 Scheme Lisp. It is available as a package for OSX and Windows, and as source code. It also runs on Max For Live with Live 10+\n\nScheme for Max 0.4 features include:\n- Hot reloading code & live code evaluation from a REPL\n- Evaluating Max messages as Scheme code \n- Sending remote messages to other objects by scripting name\n- Dynamic creation of listener functions for input and output\n- Reading and writing to buffers and tables, with conversions to/from Scheme vectors\n- Reading and writing to dictionaries, with conversions to/from Scheme hash-tables\n- Reading and writing to s4m arrays, light-weight typed arrays for fast data passing between instances\n- A grid UI object for creating light-weight tabular displays, with integration with s4m arrays\n- Choice of high or low priority thread execution, with automatic promotion/deferal of input (@thread low or high)\n- Integration with the Max master tempo controls (including the Live transport if in Max For Live)\n- Scheduling Scheme functions, by ms or Max tempo based ticks\n- Registering repeating clock functions, by ms or ticks\n- Quantization of scheduled calls with the Max master transport settings (including in M4L)\n- Garbage collector control with a gc-timer for more deterministic garbage collection\n\nScheme for Max uses s7 Scheme, a Common-Lisp-influenced Scheme implementation by Bill Schottstaedt at CCRMA, based originally on Tiny Scheme.  s7 is a minimal Scheme and is the Scheme engine used in the Common Music algorithmic composition toolkit and the Snd editor. It has keywords, Common-Lisp-style macros, first-class environments, thread safety, applicative syntax, and a straight forward FFI (foreign function interface) to enable extending with C. Linguistically, it is mostly R5RS with some later extensions, is quite similar to Guile, and shares many design decisions with Clojure. Scheme for Max uses S74, an optional convenience layer over s7 that providing various high-level functions to make music coding easier, borrowing from other Lisp dialects such as Racket, Clojure, and Chez.\n\nDocumentation is here: https://github.com/iainctduncan/scheme-for-max-docs\nA language tutorial is available here: https://iainctduncan.github.io/learn-scheme-for-max/introduction.html\nDemo and tutorial videos are posted here: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA\nBug reports and feature requests can be filed here: https://github.com/iainctduncan/scheme-for-max or in the forum\n\nFor questions, suggestions, bug reports, and to share your work, please join the Scheme for Max Forum\nhttps://schemeformax.discourse.group/\n\nThe s7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html\n\nScheme for Max is authored by Iain C.T. Duncan. Many thanks go to Bill Schottstaedt and Heinrich Taube - S4M builds on their work on s7 and Common Music, and would not be possible without it. Luigi Castelli has also been tremendously helpful with coding challenges during its development."
 								}
 
 							}
@@ -5695,12 +5696,12 @@
 									"bubbleside" : 2,
 									"fontsize" : 13.0,
 									"id" : "obj-67",
-									"linecount" : 3,
+									"linecount" : 4,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 24.0, 277.0, 276.0, 69.0 ],
-									"text" : "Double-click to view source with examples, or open s4m_help_listeners.scm from the Scheme for Max package help directory."
+									"patching_rect" : [ 24.0, 258.0, 276.0, 84.0 ],
+									"text" : "Open s4m_help_listeners.scm from the Scheme for Max package help directory to see examples. (double click the s4m box to get the full path)"
 								}
 
 							}
@@ -5895,7 +5896,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 87.0, 236.0, 35.0, 22.0 ],
+									"patching_rect" : [ 34.0, 217.0, 35.0, 22.0 ],
 									"text" : "reset"
 								}
 
@@ -5984,7 +5985,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 96.5, 266.0, 20.5, 266.0 ],
+									"midpoints" : [ 43.5, 245.0, 20.5, 245.0 ],
 									"source" : [ "obj-11", 0 ]
 								}
 
@@ -6790,7 +6791,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 155.300000011920929, 389.20000022649765, 187.0, 54.0 ],
+									"patching_rect" : [ 155.300000071525574, 358.20000022649765, 187.0, 54.0 ],
 									"text" : "Attributes to control logging to the console. These can also be set in the inspector."
 								}
 
@@ -6803,7 +6804,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "int" ],
 									"parameter_enable" : 0,
-									"patching_rect" : [ 93.300000011920929, 389.20000022649765, 24.0, 24.0 ]
+									"patching_rect" : [ 93.300000071525574, 358.20000022649765, 24.0, 24.0 ]
 								}
 
 							}
@@ -6815,7 +6816,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "int" ],
 									"parameter_enable" : 0,
-									"patching_rect" : [ 35.800000011920929, 389.20000022649765, 24.0, 24.0 ]
+									"patching_rect" : [ 35.800000071525574, 358.20000022649765, 24.0, 24.0 ]
 								}
 
 							}
@@ -6830,7 +6831,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 6.999999940395355, 517.200000464916229, 485.0, 98.0 ],
+									"patching_rect" : [ 7.0, 486.200000464916229, 485.0, 98.0 ],
 									"text" : "The intepreter starts off by bootstrapping with the s4m.scm file automatically. This file is in the Scheme for Max package, and you can edit it if you want to change startup up definitions or have some files of your own that you want always loaded on boot. You might also want to look at the s74.scm file to check out the convenience functions loaded by default as an extension to s7."
 								}
 
@@ -6869,7 +6870,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 35.800000011920929, 417.000000417232513, 49.0, 22.0 ],
+									"patching_rect" : [ 35.800000071525574, 386.000000417232513, 49.0, 22.0 ],
 									"text" : "log-repl"
 								}
 
@@ -6881,7 +6882,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 93.300000011920929, 417.000000417232513, 47.0, 22.0 ],
+									"patching_rect" : [ 93.300000071525574, 386.000000417232513, 47.0, 22.0 ],
 									"text" : "log-null"
 								}
 
@@ -6895,7 +6896,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 498.399999856948853, 397.20000022649765, 324.0, 40.0 ],
+									"patching_rect" : [ 499.399999856948853, 381.20000022649765, 324.0, 40.0 ],
 									"text" : "Another way to dynamically create Scheme code in messages boxes."
 								}
 
@@ -6907,7 +6908,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 383.999999701976776, 405.20000022649765, 102.0, 22.0 ],
+									"patching_rect" : [ 376.999999761581421, 390.20000022649765, 102.0, 22.0 ],
 									"text" : "(out 0 (+ 99 100))"
 								}
 
@@ -6921,7 +6922,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 86.899999916553497, 327.200000762939453, 263.0, 40.0 ],
+									"patching_rect" : [ 112.899999916553497, 272.200000762939453, 263.0, 40.0 ],
 									"text" : "reset will wipe any definitions you've done in the REPL and reload files."
 								}
 
@@ -6933,7 +6934,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 42.800000011920929, 336.200000762939453, 35.0, 22.0 ],
+									"patching_rect" : [ 65.800000011920929, 281.200000762939453, 35.0, 22.0 ],
 									"text" : "reset"
 								}
 
@@ -6944,23 +6945,8 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 11.800000011920929, 483.000000417232513, 121.0, 22.0 ],
+									"patching_rect" : [ 11.800000071525574, 452.000000417232513, 121.0, 22.0 ],
 									"text" : "print out-0 @popup 1"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"bubble" : 1,
-									"bubblepoint" : 0.4,
-									"fontsize" : 13.0,
-									"id" : "obj-6",
-									"linecount" : 2,
-									"maxclass" : "comment",
-									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 126.0, 278.100000977516174, 335.800000011920929, 40.0 ],
-									"text" : "eval-string \"(my-funct 1 2)\" sends raw scheme code to the intepreter for evaluation."
 								}
 
 							}
@@ -6973,7 +6959,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 155.300000011920929, 456.000000417232513, 187.0, 40.0 ],
+									"patching_rect" : [ 155.300000071525574, 425.000000417232513, 187.0, 40.0 ],
 									"text" : "Each instance of s4m has its own isolated interpreter."
 								}
 
@@ -6985,7 +6971,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 11.800000011920929, 456.000000417232513, 83.0, 22.0 ],
+									"patching_rect" : [ 11.800000071525574, 425.000000417232513, 83.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"heap" : 32,
 										"ins" : 1,
@@ -7001,7 +6987,6 @@
 , 							{
 								"box" : 								{
 									"bubble" : 1,
-									"bubblepoint" : 0.2,
 									"fontsize" : 13.0,
 									"id" : "obj-37",
 									"linecount" : 7,
@@ -7082,7 +7067,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 45.300000011920929, 445.600006639957428, 21.300000011920929, 445.600006639957428 ],
+									"midpoints" : [ 45.300000071525574, 414.600006639957428, 21.300000071525574, 414.600006639957428 ],
 									"source" : [ "obj-10", 0 ]
 								}
 
@@ -7090,7 +7075,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 52.300000011920929, 359.400000214576721, 21.300000011920929, 359.400000214576721 ],
+									"midpoints" : [ 75.300000011920929, 313.400000214576721, 21.300000071525574, 313.400000214576721 ],
 									"source" : [ "obj-11", 0 ]
 								}
 
@@ -7098,7 +7083,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 36.5, 253.0, 21.300000011920929, 253.0 ],
+									"midpoints" : [ 36.5, 253.0, 21.300000071525574, 253.0 ],
 									"source" : [ "obj-16", 0 ]
 								}
 
@@ -7127,7 +7112,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 393.499999701976776, 451.200006723403931, 21.300000011920929, 451.200006723403931 ],
+									"midpoints" : [ 386.499999761581421, 419.200006723403931, 21.300000071525574, 419.200006723403931 ],
 									"source" : [ "obj-5", 0 ]
 								}
 
@@ -7135,7 +7120,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 102.800000011920929, 446.400006651878357, 21.300000011920929, 446.400006651878357 ],
+									"midpoints" : [ 102.800000071525574, 415.400006651878357, 21.300000071525574, 415.400006651878357 ],
 									"source" : [ "obj-7", 0 ]
 								}
 
