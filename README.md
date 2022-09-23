@@ -58,7 +58,7 @@ https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA.  The overview (https:/
 
 ## Releases and Installation
 Binary packages are available for OSX and Windows: https://github.com/iainctduncan/scheme-for-max/releases
-Download the Scheme-For-Max zip file and expand it in your Max Packages directory. 
+Download the Scheme-For-Max tar file and expand it in your Max Packages directory. 
 The Package manager should detect the Scheme For Max package and enable you to launch the help patcher.
 Note that as of 0.4, s4m is an extension instead of an external, and should go in a folder called "extensions".
 Note: if you get errors with the s4m object not being found, double check that the external files are actually in the extensions directory. Some users have reported issues where security software quarantined or blocked these files on a seemingly successful install. The external should be s4m.mxo on Mac, or s4m.mxe and s4m.mxe64 on windows.
