@@ -108,7 +108,6 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 62.0, 569.0, 170.0, 22.0 ],
-									"presentation_linecount" : 2,
 									"text" : "(out 0 (array->vector :display))"
 								}
 
@@ -124,7 +123,6 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 249.0, 437.0, 317.0, 42.0 ],
-									"presentation_linecount" : 2,
 									"text" : "Read and write with array-ref and array-set! \nAliases: arrr & arrs."
 								}
 
@@ -175,7 +173,6 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 249.0, 506.0, 537.599999845027924, 42.0 ],
-									"presentation_linecount" : 2,
 									"text" : "Update an array from a vector. Arguments are array name, starting index of array, and vector to copy. This will copy all that fits in the array.  Alias: arrsv"
 								}
 
@@ -203,8 +200,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 249.0, 345.5, 537.599999845027924, 73.0 ],
-									"presentation_linecount" : 4,
+									"patching_rect" : [ 249.0, 345.5, 540.0, 73.0 ],
 									"text" : "create a new array, arguments are name (a symbol or keyword), the type, and size. Type must be one of :int, :float, :char, or :string. Strings are currently hard-set to 16 characters long. Arrays are initialized to contain zero. Go ahead and click the readarray message above after clicking this one."
 								}
 
@@ -220,7 +216,6 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 257.0, 200.0, 528.599999845027924, 104.0 ],
-									"presentation_linecount" : 5,
 									"text" : "The readarray message update from the contents of a named s4m array.\nThis will cause an error until we run the code below to make and fill our array.\nReadarray does direct memory access in C and thus is significantly faster than list messages if running a lot of updates. You can thus drive s4m.grid UIs from  s4m arrays to allow updating many more grid elements in real time than is possible with the jit.cellblock."
 								}
 
@@ -284,7 +279,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 11.0, 50.0, 774.599999845027924, 104.0 ],
+									"patching_rect" : [ 11.0, 50.0, 778.0, 104.0 ],
 									"text" : "The s4m.grid is a UI object for making light-weight tabular read-only displays. You can update its contents by sending a list message or asking it to read from an s4m array (see below). \nAttributes @rows and @columns set the dimensions. Check the inspector for various other attributes you can use to control the display. Setting attribute \"midi note names for ints\" will automatically convert 0-127 to C5 etc, which can be done for only 1 row or all rows, and \"rotate to vertical\" will allow setting to a vertical display (like a tracker interface)."
 								}
 
@@ -305,8 +300,7 @@
 									"notenames" : 1,
 									"noterow" : 2,
 									"numinlets" : 1,
-									"numoutlets" : 1,
-									"outlettype" : [ "int" ],
+									"numoutlets" : 0,
 									"patching_rect" : [ 11.0, 244.0, 232.0, 80.0 ],
 									"printzero" : 1,
 									"rotate" : 0,
@@ -956,7 +950,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ -1691.0, 141.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1186,7 +1180,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 19.0, 347.5, 294.0, 88.0 ],
+									"patching_rect" : [ 19.0, 347.5, 297.0, 88.0 ],
 									"text" : "Click to see the Max console in Live. The API objects are in the live-api sub-patch. The s4m instance will send messages to the Live API objects in this subpatch. "
 								}
 
@@ -1213,8 +1207,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 430.0, 578.0, 31.0, 22.0 ],
-									"text" : "stop"
+									"patching_rect" : [ 447.0, 578.0, 53.0, 22.0 ],
+									"text" : "live-stop"
 								}
 
 							}
@@ -1225,8 +1219,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 390.0, 578.0, 31.0, 22.0 ],
-									"text" : "play"
+									"patching_rect" : [ 390.0, 578.0, 53.0, 22.0 ],
+									"text" : "live-play"
 								}
 
 							}
@@ -1650,7 +1644,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-17", 0 ],
-									"midpoints" : [ 439.5, 605.0, 245.5, 605.0 ],
+									"midpoints" : [ 456.5, 605.0, 245.5, 605.0 ],
 									"source" : [ "obj-19", 0 ]
 								}
 
@@ -4811,7 +4805,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ -1691.0, 141.0, 1131.0, 851.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
