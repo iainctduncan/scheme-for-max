@@ -27,7 +27,6 @@ scm_files = [
     ("live-api.scm", "live-api.scm"),
 ]
 
-
 def do(command):
     "wrapper to allow executing dry runs"
     print(command)
