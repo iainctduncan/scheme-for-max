@@ -14,8 +14,6 @@ externals_src = "../../externals"
 externals_dest = "dist/Scheme-For-Max/extensions"
 scm_src = "s4m/scm"
 scm_dest = "dist/Scheme-For-Max/extras"
-patcher_src = "s4m/patchers"
-patcher_dest = "dist/Scheme-For-Max/patchers"
 
 # list of scheme files required, will be copied into patcher dir in package
 # tuple of source/dest
@@ -28,11 +26,7 @@ scm_files = [
     ("schedule.scm", "schedule.scm"),
     ("live-api.scm", "live-api.scm"),
 ]
-# list of patchers aside from the external
-patcher_files = [
-    "s4m.repl.maxpat",
-    "tests",
-]
+
 
 def do(command):
     "wrapper to allow executing dry runs"
@@ -56,10 +50,6 @@ def package_release():
     print("\n... Copying the scm files")
     for f in scm_files:
         do("cp %s/%s %s/%s" % (scm_src, f[0], scm_dest, f[1])) 
-
-    print("\n... Copying the max patcher files")
-    for f in patcher_files:
-        do("cp -r %s/%s %s" % (patcher_src, f, patcher_dest)) 
 
     print("\n... Removing any swap files")
     do("find dist -type f -name \"*.sw[klmnop]\" -delete")
