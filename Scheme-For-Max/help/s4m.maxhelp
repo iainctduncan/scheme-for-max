@@ -4,13 +4,13 @@
 		"appversion" : 		{
 			"major" : 8,
 			"minor" : 3,
-			"revision" : 1,
+			"revision" : 2,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ -1737.0, 104.0, 1131.0, 877.0 ],
+		"rect" : [ 58.0, 79.0, 1049.0, 735.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -51,13 +51,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -470,13 +470,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -945,13 +945,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ -1737.0, 130.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1316,7 +1316,7 @@
 										"appversion" : 										{
 											"major" : 8,
 											"minor" : 3,
-											"revision" : 1,
+											"revision" : 2,
 											"architecture" : "x64",
 											"modernui" : 1
 										}
@@ -1750,13 +1750,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -2306,13 +2306,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -3285,13 +3285,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4068,13 +4068,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4480,13 +4480,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4800,13 +4800,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 58.0, 105.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -4840,12 +4840,12 @@
 									"fontface" : 0,
 									"fontsize" : 16.0,
 									"id" : "obj-4",
-									"linecount" : 39,
+									"linecount" : 38,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 32.0, 51.0, 1010.0, 704.0 ],
-									"text" : "Scheme for Max (S4M) is an open source Max external to enable scripting, live coding, and algorithmic composition in Max with s7 Scheme Lisp. It is available as a package for OSX and Windows, and as source code. It also runs on Max For Live with Live 10+\n\nScheme for Max 0.4 features include:\n- Hot reloading code & live code evaluation from a REPL\n- Evaluating Max messages as Scheme code \n- Sending remote messages to other objects by scripting name\n- Dynamic creation of listener functions for input and output\n- Reading and writing to buffers and tables, with conversions to/from Scheme vectors\n- Reading and writing to dictionaries, with conversions to/from Scheme hash-tables\n- Reading and writing to s4m arrays, light-weight typed arrays for fast data passing between instances\n- A grid UI object for creating light-weight tabular displays, with integration with s4m arrays\n- Choice of high or low priority thread execution, with automatic promotion/deferal of input (@thread low or high)\n- Integration with the Max master tempo controls (including the Live transport if in Max For Live)\n- Scheduling Scheme functions, by ms or Max tempo based ticks\n- Registering repeating clock functions, by ms or ticks\n- Quantization of scheduled calls with the Max master transport settings (including in M4L)\n- Garbage collector control with a gc-timer for more deterministic garbage collection\n\nScheme for Max uses s7 Scheme, a Common-Lisp-influenced Scheme implementation by Bill Schottstaedt at CCRMA, based originally on Tiny Scheme.  s7 is a minimal Scheme and is the Scheme engine used in the Common Music algorithmic composition toolkit and the Snd editor. It has keywords, Common-Lisp-style macros, first-class environments, thread safety, applicative syntax, and a straight forward FFI (foreign function interface) to enable extending with C. Linguistically, it is mostly R5RS with some later extensions, is quite similar to Guile, and shares many design decisions with Clojure. Scheme for Max uses S74, an optional convenience layer over s7 that providing various high-level functions to make music coding easier, borrowing from other Lisp dialects such as Racket, Clojure, and Chez.\n\nDocumentation is here: https://github.com/iainctduncan/scheme-for-max-docs\nA language tutorial is available here: https://iainctduncan.github.io/learn-scheme-for-max/introduction.html\nDemo and tutorial videos are posted here: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA\nBug reports and feature requests can be filed here: https://github.com/iainctduncan/scheme-for-max or in the forum\n\nFor questions, suggestions, bug reports, and to share your work, please join the Scheme for Max Forum\nhttps://schemeformax.discourse.group/\n\nThe s7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html\n\nScheme for Max is authored by Iain C.T. Duncan. Many thanks go to Bill Schottstaedt and Heinrich Taube - S4M builds on their work on s7 and Common Music, and would not be possible without it. Luigi Castelli has also been tremendously helpful with coding challenges during its development."
+									"patching_rect" : [ 32.0, 51.0, 1010.0, 686.0 ],
+									"text" : "Scheme for Max (S4M) is an open source Max external to enable scripting, live coding, and algorithmic composition in Max with s7 Scheme Lisp. It is available as a package for OSX and Windows, and as source code. It also runs on Max For Live with Live 10+\n\nScheme for Max 0.4 features include:\n- Hot reloading code & live code evaluation from a REPL\n- Evaluating Max messages as Scheme code \n- Sending remote messages to other objects by scripting name\n- Dynamic creation of listener functions for input and output\n- Reading and writing to buffers and tables, with conversions to/from Scheme vectors\n- Reading and writing to dictionaries, with conversions to/from Scheme hash-tables\n- Reading and writing to s4m arrays, light-weight typed arrays for fast data passing between instances\n- A grid UI object for creating light-weight tabular displays, with integration with s4m arrays\n- Choice of high or low priority thread execution, with automatic promotion/deferal of input (@thread low or high)\n- Integration with the Max master tempo controls (including the Live transport if in Max For Live)\n- Scheduling Scheme functions, by ms or Max tempo based ticks\n- Registering repeating clock functions, by ms or ticks\n- Quantization of scheduled calls with the Max master transport settings (including in M4L)\n- Garbage collector control with a gc-timer for more deterministic garbage collection\n\nScheme for Max uses s7 Scheme, a Common-Lisp-influenced Scheme implementation by Bill Schottstaedt at CCRMA, based originally on Tiny Scheme.  s7 is a minimal Scheme and is the Scheme engine used in the Common Music algorithmic composition toolkit and the Snd editor. It has keywords, Common-Lisp-style macros, first-class environments, thread safety, applicative syntax, and a straight forward FFI (foreign function interface) to enable extending with C. Scheme for Max uses S74, an optional convenience layer over s7 that providing various high-level functions to make music coding easier, borrowing from other Lisp dialects such as Racket, Clojure, and Chez.\n\nDocumentation is here: https://github.com/iainctduncan/scheme-for-max-docs\nA language tutorial is available here: https://iainctduncan.github.io/learn-scheme-for-max/introduction.html\nDemo and tutorial videos are posted here: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA\nBug reports and feature requests can be filed here: https://github.com/iainctduncan/scheme-for-max or in the forum\n\nFor questions, suggestions, bug reports, and to share your work, please join the Scheme for Max Forum\nhttps://schemeformax.discourse.group/\n\nThe s7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html\n\nScheme for Max is authored by Iain C.T. Duncan. Many thanks go to Bill Schottstaedt and Heinrich Taube - S4M builds on their work on s7 and Common Music, and would not be possible without it. Luigi Castelli has also been tremendously helpful with coding challenges during its development."
 								}
 
 							}
@@ -4890,13 +4890,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -5488,13 +5488,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -5700,7 +5700,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 24.0, 258.0, 276.0, 84.0 ],
+									"patching_rect" : [ 24.0, 316.0, 276.0, 84.0 ],
 									"text" : "Open s4m_help_listeners.scm from the Scheme for Max package help directory to see examples. (double click the s4m box to get the full path)"
 								}
 
@@ -5712,7 +5712,7 @@
 									"numinlets" : 0,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 210.0, 338.0, 84.0, 22.0 ],
+									"patching_rect" : [ 210.0, 396.0, 84.0, 22.0 ],
 									"text" : "r #0_inlet_1"
 								}
 
@@ -5873,7 +5873,7 @@
 									"numinlets" : 0,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 24.0, 338.0, 84.0, 22.0 ],
+									"patching_rect" : [ 24.0, 396.0, 84.0, 22.0 ],
 									"text" : "r #0_inlet_0"
 								}
 
@@ -5884,7 +5884,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 11.0, 442.0, 121.0, 22.0 ],
+									"patching_rect" : [ 11.0, 500.0, 121.0, 22.0 ],
 									"text" : "print out-1 @popup 1"
 								}
 
@@ -5896,7 +5896,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 34.0, 217.0, 35.0, 22.0 ],
+									"patching_rect" : [ 34.0, 275.0, 35.0, 22.0 ],
 									"text" : "reset"
 								}
 
@@ -5907,7 +5907,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 11.0, 405.0, 121.0, 22.0 ],
+									"patching_rect" : [ 11.0, 463.0, 121.0, 22.0 ],
 									"text" : "print out-0 @popup 1"
 								}
 
@@ -5919,7 +5919,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 11.0, 367.0, 252.0, 22.0 ],
+									"patching_rect" : [ 11.0, 425.0, 252.0, 22.0 ],
 									"saved_object_attributes" : 									{
 										"heap" : 32,
 										"ins" : 2,
@@ -5970,7 +5970,7 @@
 						"lines" : [ 							{
 								"patchline" : 								{
 									"destination" : [ "obj-54", 0 ],
-									"midpoints" : [ 253.5, 396.0, 148.0, 396.0, 148.0, 435.0, 20.5, 435.0 ],
+									"midpoints" : [ 253.5, 454.0, 148.0, 454.0, 148.0, 493.0, 20.5, 493.0 ],
 									"source" : [ "obj-1", 1 ]
 								}
 
@@ -5985,7 +5985,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 43.5, 245.0, 20.5, 245.0 ],
+									"midpoints" : [ 43.5, 303.0, 20.5, 303.0 ],
 									"source" : [ "obj-11", 0 ]
 								}
 
@@ -6160,13 +6160,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -6720,13 +6720,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -6757,8 +6757,20 @@
 						"assistshowspatchername" : 0,
 						"boxes" : [ 							{
 								"box" : 								{
+									"id" : "obj-6",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 11.0, 210.5, 111.0, 22.0 ],
+									"text" : "prepend eval-string"
+								}
+
+							}
+, 							{
+								"box" : 								{
 									"bubble" : 1,
-									"bubblepoint" : 0.25,
+									"bubblepoint" : 0.75,
 									"fontsize" : 13.0,
 									"id" : "obj-17",
 									"linecount" : 3,
@@ -6777,7 +6789,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 27.0, 218.200003385543823, 97.0, 22.0 ],
+									"patching_rect" : [ 23.800000071525574, 242.5, 97.0, 22.0 ],
 									"text" : "udpreceive 7000"
 								}
 
@@ -7083,7 +7095,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
-									"midpoints" : [ 36.5, 253.0, 21.300000071525574, 253.0 ],
+									"midpoints" : [ 33.300000071525574, 270.0, 21.300000071525574, 270.0 ],
 									"source" : [ "obj-16", 0 ]
 								}
 
@@ -7097,15 +7109,15 @@
 							}
 , 							{
 								"patchline" : 								{
-									"destination" : [ "obj-1", 0 ],
-									"source" : [ "obj-30", 0 ]
+									"destination" : [ "obj-34", 0 ],
+									"source" : [ "obj-30", 1 ]
 								}
 
 							}
 , 							{
 								"patchline" : 								{
-									"destination" : [ "obj-34", 0 ],
-									"source" : [ "obj-30", 1 ]
+									"destination" : [ "obj-6", 0 ],
+									"source" : [ "obj-30", 0 ]
 								}
 
 							}
@@ -7114,6 +7126,13 @@
 									"destination" : [ "obj-1", 0 ],
 									"midpoints" : [ 386.499999761581421, 419.200006723403931, 21.300000071525574, 419.200006723403931 ],
 									"source" : [ "obj-5", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-1", 0 ],
+									"source" : [ "obj-6", 0 ]
 								}
 
 							}
@@ -7158,13 +7177,13 @@
 						"appversion" : 						{
 							"major" : 8,
 							"minor" : 3,
-							"revision" : 1,
+							"revision" : 2,
 							"architecture" : "x64",
 							"modernui" : 1
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1131.0, 851.0 ],
+						"rect" : [ 0.0, 26.0, 1049.0, 709.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -7660,8 +7679,8 @@
 			}
 , 			{
 				"name" : "s4m.repl.maxpat",
-				"bootpath" : "~/Documents/Max 8/Packages/max-sdk/source/scheme-for-max/Scheme-For-Max/patchers",
-				"patcherrelativepath" : "../patchers",
+				"bootpath" : "~/Documents/Max 8/Packages/Scheme-For-Max/extras",
+				"patcherrelativepath" : "../extras",
 				"type" : "JSON",
 				"implicit" : 1
 			}
