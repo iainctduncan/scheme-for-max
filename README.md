@@ -1,6 +1,6 @@
 # Scheme For Max - v0.4 (Sep 2022)
 Scheme For Max (s4m) is an open source Max/MSP external to enable scripting, live coding, and algorithmic music in 
-Max/MSP with s7 Scheme Lisp. It is available as a packages for Mac (Intel and M1) and Win64, and as source. It has been developed and tested on Max 8. It also works in Max for Live on Ableton Live 10 and 11.
+Max/MSP and Ableton Live with s7 Scheme Lisp. It is available as a packages for Mac (Intel and M1) and Win64, and as source. It has been developed and tested on Max 8. It also works in Max for Live on Ableton Live 10 and 11.
 
 ## Recent News
 **2022-09-22**: Scheme for Max 0.4 is up as a beta release! New features include the s4m grid and arrays, gc timers, and more Live examples.
@@ -58,7 +58,7 @@ https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA.  The overview (https:/
 
 ## Releases and Installation
 Binary packages are available for OSX and Windows: https://github.com/iainctduncan/scheme-for-max/releases
-Download the Scheme-For-Max zip file and expand it in your Max Packages directory. 
+Download the Scheme-For-Max tar file and expand it in your Max Packages directory. 
 The Package manager should detect the Scheme For Max package and enable you to launch the help patcher.
 Note that as of 0.4, s4m is an extension instead of an external, and should go in a folder called "extensions".
 Note: if you get errors with the s4m object not being found, double check that the external files are actually in the extensions directory. Some users have reported issues where security software quarantined or blocked these files on a seemingly successful install. The external should be s4m.mxo on Mac, or s4m.mxe and s4m.mxe64 on windows.
