@@ -80,6 +80,8 @@ Narative documentation is here: https://iainctduncan.github.io/scheme-for-max-do
 
 Learn S7 Scheme and Scheme For Max E-book: https://iainctduncan.github.io/learn-scheme-for-max/index.html 
 
+Cookbook examples: https://github.com/iainctduncan/scheme-for-max-cookbook
+
 Tutorials on sequencing with Scheme For Max: https://iainctduncan.github.io/s4m-stk/
 
 To file bug reports or fork Scheme For Max, use the github repo: https://github.com/iainctduncan/scheme-for-max
