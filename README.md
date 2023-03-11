@@ -91,8 +91,7 @@ To file tickets about errors or improvement suggestions for the docs, use the do
 The S7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html
 
 For release and tutorial announcements, questions, suggestions, installation issues, and bug reports, 
-please join the scheme-for-max forum or check the discussion board on this github page.
-https://schemeformax.discourse.group/
+please use the discussion board on this github page. (The forum didn't get enough activity to keep it going.)
 
 ## Building from Source
 You will need the newest Max SDK and Max 8.3, and some understanding of how to build Max externals. The S7 sources are included here. Details on building from source are in the narrative docs here https://iainctduncan.github.io/scheme-for-max-docs/building.html
