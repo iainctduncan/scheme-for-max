@@ -7,7 +7,7 @@ Max/MSP and Ableton Live with s7 Scheme Lisp. It is available as a packages for 
 
 **2022-02-22**: There is now a Universal Binary build for Apple Silicon up for 0.3. This is a drop in replacement for the external object and should work on M1 and Intel Macs.
 
-**2021-11-27**: 0.3.0 is released. This includes convenience features like directly passing code messages to the s4m object, a threading macro similar to Clojure and Rackets, supporting delay from the low-priority thread, garbage collector interface functions, and tools for using the Ableton Live API from Max4Live. Please report any bugs as github issues. Note: This has not been built for Apple Silicon yet. If you are able to help do this, please get in touch.
+**2021-11-27**: 0.3.0 is released. This includes convenience features like directly passing code messages to the s4m object, a threading macro similar to Clojure and Rackets, supporting delay from the low-priority thread, garbage collector interface functions, and tools for using the Ableton Live API from Max4Live. Please report any bugs as github issues. 
 
 **2021-04-20**: I've put up an e-book tutorial on writing sequencers, along with sample code and patchers in the Scheme for Max Sequencing toolkit here:
 https://iainctduncan.github.io/s4m-stk/
@@ -43,7 +43,7 @@ Features of v0.4 include:
 * s4m.grid - a fast read-only grid UI that can read from s4m arrays
 
 Scheme-for-Max uses S7 Scheme, an embeddable Scheme Lisp implementation by Bill Schottstaedt at
-CCRMA, based originally on Tiny Scheme.  S7 is a minimal Scheme, with many nice features for algorithmic 
+CCRMA, the author of Common Lisp Music and Snd, among many other things.  S7 is a minimal Scheme, with many nice features for algorithmic 
 composition and embedding, and is the Scheme engine used in the Common Music algorithmic composition
 toolkit and the Snd editor. It has keywords, Common Lisp style macros, first-class environments, 
 thread safety, applicative syntax, and a very straight forward FFI (foreign function interface). 
