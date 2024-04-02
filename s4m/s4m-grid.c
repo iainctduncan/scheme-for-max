@@ -23,6 +23,7 @@ void s4mgrid_main(void *r){
     class_addmethod(c, (method)s4mgrid_list, "list", A_GIMME, 0);
     class_addmethod(c, (method)s4mgrid_clear, "clear", 0);
     class_addmethod(c, (method)s4mgrid_readarray, "readarray", A_DEFSYM, 0);
+	  class_addmethod(c, (method)s4mgrid_mousedown,	"mousedown",	A_CANT, 0);
 
     // @rows, @columns, @size attributes
     //CLASS_STICKY_ATTR(c, "category", 0, "Dimensions");
@@ -189,7 +190,14 @@ void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv) {
     x->u_box.b_firstin = (void *)x;
     
     // set up an outlet, note we need the cast to t_object
-    x->u_out = intout((t_object *)x);
+    x->u_outlet = listout((t_object *)x);
+
+    // default to no clicked cell, signified by -1
+    x->clicked_col = -1;
+    x->clicked_row = -1;
+    // for testing paint
+    x->clicked_col = 0;
+    x->clicked_row = 0;
 
     // do any internal state initialization here
     attr_dictionary_process(x, d);
@@ -384,11 +392,12 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
 
     // color for filling boxes on every quarter
     // TODO: set with attributes
-    t_jrgba rgb_text, rgb_cell_bkg, rgb_beat_highlight, rgb_bar_highlight;
+    t_jrgba rgb_text, rgb_cell_bkg, rgb_beat_highlight, rgb_bar_highlight, rgb_cell_clicked;
     jrgba_set( &rgb_text, 1, 1, 1, 1);
     jrgba_set( &rgb_cell_bkg, 0.0, 0.0, 0.0, 1.0);
     jrgba_set( &rgb_beat_highlight, 0.25, 0.25, 0.25, 1.0);
     jrgba_set( &rgb_bar_highlight, 0.3, 0.3, 0.3, 1.0);
+    jrgba_set( &rgb_cell_clicked, 0.4, 0.4, 0.4, 1.0);
 
     for(int row=0; row < num_rows; row++){
         for(int col=0; col < num_columns; col++){
@@ -399,7 +408,12 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
                 jgraphics_set_source_jrgba(g, &rgb_beat_highlight);
             }else{
                 jgraphics_set_source_jrgba(g, &rgb_cell_bkg);
-            }  
+            } 
+            // if in selected cell, override colour
+            if( col == x->clicked_col && row == x->clicked_row ){
+                jgraphics_set_source_jrgba(g, &rgb_cell_clicked);
+            }
+
             jgraphics_rectangle(g, x_offset, y_offset, col_width, row_height);
             jgraphics_fill(g);
             jgraphics_stroke(g);
@@ -423,7 +437,7 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
 
     // draw a grid of text
     t_jfont *font = jfont_create( "Futura", JGRAPHICS_FONT_SLANT_NORMAL, JGRAPHICS_FONT_WEIGHT_NORMAL, x->font_size);
-	t_jtextlayout *text_layout = jtextlayout_create( );
+	  t_jtextlayout *text_layout = jtextlayout_create( );
     jtextlayout_settextcolor(text_layout, &rgb_text);
 
     // loop to update from the text model
@@ -459,9 +473,25 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
 
     // Clean up
   	jgraphics_stroke ( g );
-	jfont_destroy ( font );
-	jtextlayout_destroy ( text_layout );
+	  jfont_destroy ( font );
+	  jtextlayout_destroy ( text_layout );
   
+}
+void s4mgrid_mousedown(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifiers){
+	post("mousedown! x: %f y: %f", pt.x, pt.y);
+  // figure out which cell we are in and save
+  x->clicked_col = (long) floor( pt.x / x->cell_width );
+  x->clicked_row = (long) floor( pt.y / x->cell_height );
+  //post(" - row: %i col: %i", row, col);
+
+  // send a message out the outlet of "mousedown {col} {row}"
+  t_atom out_msg[2];
+  atom_setlong(out_msg, x->clicked_col);
+  atom_setlong(out_msg + 1, x->clicked_row);
+  outlet_anything(x->u_outlet, gensym("mousedown"), 2, &out_msg);
+
+  // call paint so the clicked cell is a different bkg colour 
+	jbox_redraw((t_jbox *)x);
 }
 
 // bang reads the framebuffer and repaints 
