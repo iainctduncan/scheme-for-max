@@ -286,7 +286,12 @@ void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
     //post("s4mgrid_readarray, array name: %s", array_name->s_name);
     t_s4m_array *array;
     // get the t_s4m_array struct from the registry
-    t_max_err err = hashtab_lookup(s4m_arrays, array_name, &(t_object *)array);
+    #ifdef _WIN64
+      t_max_err err = hashtab_lookup(s4m_arrays, array_name, &(t_object *)array);
+    #else
+      t_max_err err = hashtab_lookup(s4m_arrays, array_name, &array);
+    #endif
+
     if(err){
         object_error((t_object *)x, 
           "no s4m-array named '%s'", array_name->s_name); 

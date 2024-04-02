@@ -1365,7 +1365,11 @@ int s4m_mc_buffer_write(t_s4m *x, char *buffer_name, int channel, long index, do
 t_max_err s4m_free_array(t_symbol *array_sym){
     //post("s4m_free_array() array name: %s", array_sym->s_name);
     t_s4m_array *array;
-    t_max_err err = hashtab_lookup(s4m_arrays, array_sym, &(t_object *)array);
+    #ifdef _WIN64
+      t_max_err err = hashtab_lookup(s4m_arrays, array_sym, &(t_object *)array);
+    #else
+      t_max_err err = hashtab_lookup(s4m_arrays, array_sym, &array);
+    #endif
     // if array doesn't exist, just return
     if(err){
         //post("no previous array found, returning");
@@ -1494,7 +1498,11 @@ static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args){
     //post("array-ref, array: %s index: %i", array_name, array_index);
 
     // get the t_s4m_array struct from the registry
-    t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &(t_object *)array);
+    #ifdef _WIN64
+      t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &(t_object *)array);
+    #else
+      t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &array);
+    #endif
     if(err){
         sprintf(err_msg, "array-ref : no array found with name %s", array_name);
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
@@ -1555,7 +1563,11 @@ static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args){
     //post("array-set!, array: %s index: %i value: %s", array_name, array_index, (char *) s7_object_to_c_string(s7, s7_value));
 
     // get the t_s4m_array struct from the registry
-    t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &(t_object *)array);
+    #ifdef _WIN64
+      t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &(t_object *)array);
+    #else
+      t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &array);
+    #endif
     if(err){
         sprintf(err_msg, "array-set! : no array found with name %s", array_name);
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
@@ -1731,7 +1743,11 @@ static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args) {
     }
 
     // get the t_s4m_array struct from the registry
-    t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &(t_object *)array);
+    #ifdef _WIN64
+      t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &(t_object *)array);
+    #else
+      t_max_err err = hashtab_lookup(s4m_arrays, gensym(array_name), &array);
+    #endif
     if(err){
         sprintf(err_msg, "array->vector : no array found with name %s", array_name);
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, err_msg));
