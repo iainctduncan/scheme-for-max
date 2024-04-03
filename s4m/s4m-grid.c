@@ -24,6 +24,8 @@ void s4mgrid_main(void *r){
     class_addmethod(c, (method)s4mgrid_clear, "clear", 0);
     class_addmethod(c, (method)s4mgrid_readarray, "readarray", A_DEFSYM, 0);
 	  class_addmethod(c, (method)s4mgrid_mousedown,	"mousedown",	A_CANT, 0);
+	  class_addmethod(c, (method)s4mgrid_mousedrag,	"mousedrag",	A_CANT, 0);
+	  class_addmethod(c, (method)s4mgrid_mouseup,	"mouseup",	A_CANT, 0);
 
     // @rows, @columns, @size attributes
     //CLASS_STICKY_ATTR(c, "category", 0, "Dimensions");
@@ -192,12 +194,12 @@ void *s4mgrid_new(t_symbol *s, long argc, t_atom *argv) {
     // set up an outlet, note we need the cast to t_object
     x->u_outlet = listout((t_object *)x);
 
-    // default to no clicked cell, signified by -1
+    // default to no clicked/selected cell(s), signified by -1
     x->clicked_col = -1;
     x->clicked_row = -1;
-    // for testing paint
-    x->clicked_col = 0;
-    x->clicked_row = 0;
+    x->released_col, x->released_row = -1;
+    x->selected_from_col, x->selected_from_row = -1; 
+    x->selected_to_col, x->selected_to_row = -1; 
 
     // do any internal state initialization here
     attr_dictionary_process(x, d);
@@ -376,7 +378,8 @@ void s4mgrid_clear(t_s4mgrid *x){
 }
 
 void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
-    //post("s4mgrid_paint()");
+    post("s4mgrid_paint()");
+    post("selected range: %i %i %i %i", x->selected_from_col, x->selected_from_row, x->selected_to_col, x->selected_to_row);
 
     int col_width = x->cell_width;
     int row_height = x->cell_height;
@@ -392,12 +395,13 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
 
     // color for filling boxes on every quarter
     // TODO: set with attributes
-    t_jrgba rgb_text, rgb_cell_bkg, rgb_beat_highlight, rgb_bar_highlight, rgb_cell_clicked;
+    t_jrgba rgb_text, rgb_cell_bkg, rgb_beat_highlight, rgb_bar_highlight, rgb_cell_clicked, rgb_cell_selected;
     jrgba_set( &rgb_text, 1, 1, 1, 1);
     jrgba_set( &rgb_cell_bkg, 0.0, 0.0, 0.0, 1.0);
-    jrgba_set( &rgb_beat_highlight, 0.25, 0.25, 0.25, 1.0);
-    jrgba_set( &rgb_bar_highlight, 0.3, 0.3, 0.3, 1.0);
+    jrgba_set( &rgb_beat_highlight, 0.2, 0.2, 0.2, 1.0);
+    jrgba_set( &rgb_bar_highlight, 0.25, 0.25, 0.25, 1.0);
     jrgba_set( &rgb_cell_clicked, 0.4, 0.4, 0.4, 1.0);
+    jrgba_set( &rgb_cell_selected, 0.3, 0.3, 0.3, 1.0);
 
     for(int row=0; row < num_rows; row++){
         for(int col=0; col < num_columns; col++){
@@ -409,10 +413,21 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
             }else{
                 jgraphics_set_source_jrgba(g, &rgb_cell_bkg);
             } 
-            // if in selected cell, override colour
+            // if in clicked cell, override colour
             if( col == x->clicked_col && row == x->clicked_row ){
                 jgraphics_set_source_jrgba(g, &rgb_cell_clicked);
             }
+            // if in selected range or drag range, use selected colour
+            if( (col >= x->selected_from_col && row >= x->selected_from_row &&
+                 col <= x->selected_to_col && row <= x->selected_to_row) || 
+                (col >= x->drag_range_from_col && row >= x->drag_range_from_row &&
+                 col <= x->drag_range_to_col && row <= x->drag_range_to_row) ){
+                jgraphics_set_source_jrgba(g, &rgb_cell_selected);
+            }
+            //// or if is the drag cell itself
+            //if( col == x->drag_col && row == x->drag_row){
+            //    jgraphics_set_source_jrgba(g, &rgb_cell_selected);
+            //}
 
             jgraphics_rectangle(g, x_offset, y_offset, col_width, row_height);
             jgraphics_fill(g);
@@ -478,7 +493,14 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
   
 }
 void s4mgrid_mousedown(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifiers){
-	post("mousedown! x: %f y: %f", pt.x, pt.y);
+	post("mousedown x: %f y: %f", pt.x, pt.y);
+  // clear out the released and selected points etc.
+  x->released_col, x->released_row, x->drag_col, x->drag_row = -1;
+  x->selected_from_col, x->selected_to_col, x->selected_from_row, x->selected_to_row = -1;
+  x->drag_range_from_col, x->drag_range_to_col, x->drag_range_from_row, x->drag_range_to_row = -1;
+  // set the state var for the mouse down in the box
+  x->mousedown_inside = true;
+
   // figure out which cell we are in and save
   x->clicked_col = (long) floor( pt.x / x->cell_width );
   x->clicked_row = (long) floor( pt.y / x->cell_height );
@@ -486,12 +508,79 @@ void s4mgrid_mousedown(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifi
 
   // send a message out the outlet of "mousedown {col} {row}"
   t_atom out_msg[2];
-  atom_setlong(out_msg, x->clicked_col);
-  atom_setlong(out_msg + 1, x->clicked_row);
-  outlet_anything(x->u_outlet, gensym("mousedown"), 2, &out_msg);
+  atom_setlong(out_msg, (long)x->clicked_col);
+  atom_setlong(out_msg + 1, (long)x->clicked_row);
+  outlet_anything(x->u_outlet, gensym("clicked"), 2, &out_msg);
 
   // call paint so the clicked cell is a different bkg colour 
 	jbox_redraw((t_jbox *)x);
+}
+
+void s4mgrid_mouseup(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifiers){
+	//post("mouseup x: %f y: %f", pt.x, pt.y);
+  if( !x->mousedown_inside ){
+    //post("aborting");
+    return;
+  }
+  // figure out which cell we are in (we need to clamp it)
+  long col = (long) floor( pt.x / x->cell_width );
+  long row = (long) floor( pt.y / x->cell_height );
+  if( col < 0 ) col = 0;
+  if( row < 0 ) row = 0;
+  if( col >= x->num_columns ) col = x->num_columns - 1;
+  if( row >= x->num_rows ) row = x->num_rows - 1;
+
+  // otherwise we make a selection
+  x->released_col = col;
+  x->released_row = row;
+  x->selected_from_col = (x->released_col > x->clicked_col ? x->clicked_col : x->released_col );
+  x->selected_from_row = (x->released_row > x->clicked_row ? x->clicked_row : x->released_row );
+  x->selected_to_col   = (x->released_col > x->clicked_col ? x->released_col : x->clicked_col );
+  x->selected_to_row   = (x->released_row > x->clicked_row ? x->released_row : x->clicked_row );
+  post("selected range: %i %i %i %i", x->selected_from_col, x->selected_from_row, x->selected_to_col, x->selected_to_row);
+
+  // send a message out the outlet of "selected {col_from} {row_from} {col_to} {row_to}"
+  t_atom out_msg[4];
+  atom_setlong(out_msg,     (long)x->selected_from_col);
+  atom_setlong(out_msg + 1, (long)x->selected_from_row);
+  atom_setlong(out_msg + 2, (long)x->selected_to_col);
+  atom_setlong(out_msg + 3, (long)x->selected_to_row);
+  outlet_anything(x->u_outlet, gensym("selected"), 4, &out_msg);
+
+  // call paint so the clicked cell is a different bkg colour 
+	jbox_redraw((t_jbox *)x);
+}
+
+void s4mgrid_mousedrag(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifiers){
+  //post("mousedrag");
+  // figure out row and col, clamping to range of grid
+  long col = (long) floor( pt.x / x->cell_width );
+  long row = (long) floor( pt.y / x->cell_height );
+  if( col < 0 ) col = 0;
+  if( row < 0 ) row = 0;
+  if( col >= x->num_columns ) col = x->num_columns - 1;
+  if( row >= x->num_rows ) row = x->num_rows - 1;
+
+  if( col == x->clicked_col && row == x->clicked_row ){
+    x->drag_col = col;
+    x->drag_row = row;
+    // no need to repaint
+    return;
+  }else if( col == x->drag_col && row == x->drag_row){
+    // noop
+  }else {
+    x->drag_col = col;
+    x->drag_row = row;
+    post(" entered new cell... %i %i", x->drag_col, x->drag_row);
+    // figure out the drag range as a square (to make painting logic easier)
+    x->drag_range_from_col = (x->drag_col > x->clicked_col ? x->clicked_col : x->drag_col );
+    x->drag_range_from_row = (x->drag_row > x->clicked_row ? x->clicked_row : x->drag_row );
+    x->drag_range_to_col   = (x->drag_col > x->clicked_col ? x->drag_col : x->clicked_col );
+    x->drag_range_to_row   = (x->drag_row > x->clicked_row ? x->drag_row : x->clicked_row );
+
+    // repaint to show selection
+	  jbox_redraw((t_jbox *)x);
+  }
 }
 
 // bang reads the framebuffer and repaints 

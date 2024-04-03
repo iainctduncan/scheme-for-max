@@ -43,8 +43,6 @@ typedef struct _s4mgrid
     long num_columns;
     long cell_width;
     long cell_height;
-    long clicked_col;
-    long clicked_row;
     float font_size;
     long cell_chars;
     long cells_per_beat;
@@ -55,7 +53,22 @@ typedef struct _s4mgrid
     long note_row;
     long rotate;
     int float_precision;
-    
+   
+    bool mousedown_inside;  // was the mouseclicked in the box
+    long clicked_col;
+    long clicked_row;
+    long drag_row;
+    long drag_col;
+    long released_col;
+    long released_row;
+    long selected_from_col;
+    long selected_from_row;
+    long selected_to_col;
+    long selected_to_row;
+    long drag_range_from_col;
+    long drag_range_from_row;
+    long drag_range_to_col;
+    long drag_range_to_row;
 } t_s4mgrid;
 
 static t_class *s_s4mgrid_class;
@@ -72,6 +85,9 @@ void s4mgrid_free(t_s4mgrid *x);
 void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview);
 void s4mgrid_getdrawparams(t_s4mgrid *x, t_object *patcherview, t_jboxdrawparams *params);
 void s4mgrid_mousedown(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifiers);
+void s4mgrid_mouseup(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifiers);
+void s4mgrid_mouseleave(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifiers);
+void s4mgrid_mousedrag(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifiers);
 
 void s4mgrid_bang(t_s4mgrid *x);
 void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *argv);

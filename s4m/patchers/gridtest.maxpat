@@ -3,14 +3,14 @@
 		"fileversion" : 1,
 		"appversion" : 		{
 			"major" : 8,
-			"minor" : 3,
-			"revision" : 1,
+			"minor" : 6,
+			"revision" : 2,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ -1634.0, 155.0, 1175.0, 734.0 ],
+		"rect" : [ -1634.0, 155.0, 631.0, 753.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -40,11 +40,22 @@
 		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
+					"id" : "obj-19",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 88.0, 693.0, 123.0, 22.0 ]
+				}
+
+			}
+, 			{
+				"box" : 				{
 					"id" : "obj-21",
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 737.0, 222.0, 47.0, 22.0 ],
+					"patching_rect" : [ 373.0, 231.0, 47.0, 22.0 ],
 					"text" : "s #0_in"
 				}
 
@@ -56,7 +67,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 737.0, 189.0, 128.0, 22.0 ],
+					"patching_rect" : [ 373.0, 198.0, 128.0, 22.0 ],
 					"text" : "make-array 'foo :int 16"
 				}
 
@@ -79,7 +90,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "int" ],
-					"patching_rect" : [ 48.25, 482.0, 464.0, 160.0 ],
+					"patching_rect" : [ 48.25, 482.0, 471.0, 168.0 ],
 					"printzero" : 1,
 					"rotate" : 0,
 					"rows" : 8
@@ -361,6 +372,13 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-19", 1 ],
+					"source" : [ "obj-11", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-37", 0 ],
 					"source" : [ "obj-12", 0 ]
 				}
@@ -467,6 +485,10 @@
 			}
  ],
 		"dependency_cache" : [ 			{
+				"name" : "s4m.grid.mxo",
+				"type" : "iLaX"
+			}
+, 			{
 				"name" : "s4m.mxo",
 				"type" : "iLaX"
 			}
