@@ -178,6 +178,23 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *ap);
 //t_max_err s7_obj_to_string(s7_scheme *s7, s7_pointer *s7_obj, char *obj_string);
 
 t_s4m *get_max_obj(s7_scheme *s7);
+
+// Max array support patch, taken from the simplearray example
+// the following will become unnecessary once a new SDK is released
+#ifndef CLASS_FLAG_OBJECTAWARE
+#define CLASS_FLAG_OBJECTAWARE (0x10000000L) ///< this object can work with 'array' and 'string' objects
+
+extern void atomarray_dispose(t_atomarray* x);
+extern t_atomarray* arrayobj_register(t_atomarray* aa, t_symbol** name);
+extern t_max_err arrayobj_unregister(t_atomarray* aa);
+extern t_atomarray* arrayobj_findregistered_retain(t_symbol* name);
+extern t_atomarray* arrayobj_findregistered_clone(t_symbol* name);
+extern t_max_err arrayobj_release(t_atomarray* aa);
+extern t_symbol* arrayobj_namefromptr(t_atomarray* aa);
+extern void* outlet_array(t_outlet* x, t_symbol* s);
+#endif
+
+
 static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
@@ -207,6 +224,11 @@ static s7_pointer s7_dict_replace_recurser(s7_scheme *s7, t_atom *atom_container
 
 static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_hashtable_to_dict(s7_scheme *s7, s7_pointer args);
+
+// IN PROG - Max arrays
+static s7_pointer s7_is_array(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_array_size(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args);
 
@@ -591,6 +613,11 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "b->v", s7_buffer_to_vector, 1, 3, false, "create new vector from buffer");
     s7_define_function(x->s7, "buffer-set-from-vector!", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
     s7_define_function(x->s7, "bufsv", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
+
+    // IN PROG Max Array support
+    s7_define_function(x->s7, "array?", s7_is_array, 1, 0, false, "(array? 'foo) returns true if array named foo exists");
+    s7_define_function(x->s7, "array-size", s7_array_size, 1, 0, false, "(array-size 'foo) returns framecount of array"); 
+    s7_define_function(x->s7, "array-ref", s7_array_ref, 2, 1, false, "(array-ref :foo 4) returns value at channel 0, index 4 from array :foo");
 
 
     s7_define_function(x->s7, "dict-ref", s7_dict_ref, 2, 0, false, "(dict-ref 'dict :bar ) returns value from dict :foo at key :bar");
@@ -3558,6 +3585,90 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
     // return the vector
     return s7_return_vector;
 }
+
+// IN PROG - Max arrays
+static s7_pointer s7_is_array(s7_scheme *s7, s7_pointer args) {
+    // array names could come in from s7 as either strings or symbols, if using keyword array names
+    t_s4m *x = get_max_obj(s7);
+    s7_pointer *res;
+    char *array_name;
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        array_name = (char *)s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        array_name = (char *)s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "array name is not a keyword, string, or symbol"));
+    }
+    t_atomarray* aa = arrayobj_findregistered_retain( gensym(array_name) );
+    if(aa){
+      res = s7_make_boolean(s7, true);
+      arrayobj_release(aa);
+    }else{
+      res = s7_make_boolean(s7, false);
+    }
+    return res;
+}
+
+// get size of a max array (number of atoms
+static s7_pointer s7_array_size(s7_scheme *s7, s7_pointer args) {
+    // array names could come in from s7 as either strings or symbols, if using keyword array names
+    t_s4m *x = get_max_obj(s7);
+    s7_pointer *res;
+    char *array_name;
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        array_name = (char *)s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        array_name = (char *)s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "array name is not a keyword, string, or symbol"));
+    }
+    t_atomarray* aa = arrayobj_findregistered_retain( gensym(array_name) );
+    if( aa==NULL ){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "error fetching array"));
+    }else{
+        int length = aa->ac;
+        arrayobj_release(aa);
+        return s7_make_integer(s7, length);
+    }
+}
+
+// TODO throw error if called with no index
+static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args){
+    // array names could come in from s7 as either strings or symbols, if using keyword array names
+    t_s4m *x = get_max_obj(s7);
+    s7_pointer *res;
+    char *array_name;
+    char err_msg[128];
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        array_name = (char *)s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        array_name = (char *)s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "array name is not a keyword, string, or symbol"));
+    }
+    long index = (long) s7_integer( s7_cadr(args) ); 
+    t_atomarray* max_array = arrayobj_findregistered_retain( gensym(array_name) );
+    if( max_array==NULL ){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "error fetching array"));
+    }
+    post("array size: %i", max_array->ac);
+    if( index >= max_array->ac ){
+        sprintf(err_msg, "index %i out of range for Max array %s", index, array_name);
+        return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, err_msg));
+    }
+    // fetch a copy of the second atom in a previously existing array
+    t_atom max_atom;
+    atomarray_getindex(max_array, index, &max_atom);
+    arrayobj_release(max_array);
+    // now we need to convert to scheme value
+    return max_atom_to_s7_obj(s7, &max_atom); 
+}
+
 
 
 // read a value from a named dict, scheme function dict-ref

@@ -1,0 +1,22 @@
+Notes on adding Max Arrays for v0.5
+
+- working in branch max-arrays
+
+- to start, should work similar to what we do with dicts
+
+functions needed:
+- array?
+- array-size
+- (array-ref {array-name} {int index})
+- (array-set!
+
+- array-append {name} value
+
+- array->vector {name} {opt-start} {opt-count} 
+- array->list
+- vector->array
+- list->array
+
+- to begin, we should start with array-ref
+
+
