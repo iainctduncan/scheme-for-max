@@ -3,21 +3,7 @@ Scheme For Max (s4m) is an open source Max/MSP external to enable scripting, liv
 Max/MSP and Ableton Live with s7 Scheme Lisp. It is available as a packages for Mac (Intel and M1) and Win64, and as source. It has been developed and tested on Max 8. It also works in Max for Live on Ableton Live 10 and 11.
 
 ## Recent News
-**2023-11-15** I am working on adding support for the Ableton Notes API, hope to get that done soon for a release.
-
-**2023-07-01**: While there has not been a new release for some time, much is going on behind the scenes, not least of which is me writing all this up for my M.Mus theses. I am excited to announce I will beginning a funded PhD to continue working on Scheme for Max in the fall, working closely with George Tzanetakis here at the University of Victoria. A summer release is planned. :-)
-
-**2022-09-22**: Scheme for Max 0.4 is up as a beta release! New features include the s4m grid and arrays, gc timers, and more Live examples.
-
-**2022-02-22**: There is now a Universal Binary build for Apple Silicon up for 0.3. This is a drop in replacement for the external object and should work on M1 and Intel Macs.
-
-**2021-11-27**: 0.3.0 is released. This includes convenience features like directly passing code messages to the s4m object, a threading macro similar to Clojure and Rackets, supporting delay from the low-priority thread, garbage collector interface functions, and tools for using the Ableton Live API from Max4Live. Please report any bugs as github issues. 
-
-**2021-04-20**: I've put up an e-book tutorial on writing sequencers, along with sample code and patchers in the Scheme for Max Sequencing toolkit here:
-https://iainctduncan.github.io/s4m-stk/
-
-**2021-03-15**: I have released a free e-book on learning S7 Scheme and Scheme For Max, suitable for new and experienced programmers!
-https://iainctduncan.github.io/learn-scheme-for-max/index.html
+**2024-10-18** In main branch (but not on any releases) s4m arrays have been renamed "carrays" in preparation for adding Max Array support in v0.5
 
 **Main Documentation** lives here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
