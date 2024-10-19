@@ -6,7 +6,7 @@
 */
 
 void s4mgrid_main(void *r){
-    //post("s4mgrid_main()");
+    post("s4mgrid_main() - carray version");
     t_class *c;
     c = class_new("s4m.grid", (method)s4mgrid_new, (method)s4mgrid_free, sizeof(t_s4mgrid), 0L, A_GIMME, 0);
 
@@ -22,7 +22,7 @@ void s4mgrid_main(void *r){
     class_addmethod(c, (method)s4mgrid_bang, "bang", 0);
     class_addmethod(c, (method)s4mgrid_list, "list", A_GIMME, 0);
     class_addmethod(c, (method)s4mgrid_clear, "clear", 0);
-    class_addmethod(c, (method)s4mgrid_readarray, "readarray", A_DEFSYM, 0);
+    class_addmethod(c, (method)s4mgrid_read_carray, "readcarray", A_DEFSYM, 0);
 	  class_addmethod(c, (method)s4mgrid_mousedown,	"mousedown",	A_CANT, 0);
 	  class_addmethod(c, (method)s4mgrid_mousedrag,	"mousedrag",	A_CANT, 0);
 	  class_addmethod(c, (method)s4mgrid_mouseup,	"mouseup",	A_CANT, 0);
@@ -291,20 +291,20 @@ void s4mgrid_fill_cell_float(t_s4mgrid *x, long row, long col, double value){
 }
 
 
-// read from an array and update the data grid of strings
-void s4mgrid_readarray(t_s4mgrid *x, t_symbol *array_name){
-    //post("s4mgrid_readarray, array name: %s", array_name->s_name);
-    t_s4m_array *array;
+// read from a carray and update the data grid of strings
+void s4mgrid_read_carray(t_s4mgrid *x, t_symbol *array_name){
+    //post("s4mgrid_read_carray, array name: %s", array_name->s_name);
+    t_s4m_carray *array;
     // get the t_s4m_array struct from the registry
     #ifdef _WIN64
-      t_max_err err = hashtab_lookup(s4m_arrays, array_name, &(t_object *)array);
+      t_max_err err = hashtab_lookup(s4m_carrays, array_name, &(t_object *)array);
     #else
-      t_max_err err = hashtab_lookup(s4m_arrays, array_name, &array);
+      t_max_err err = hashtab_lookup(s4m_carrays, array_name, &array);
     #endif
 
     if(err){
         object_error((t_object *)x, 
-          "no s4m-array named '%s'", array_name->s_name); 
+          "no carray named '%s'", array_name->s_name); 
         return;
     }
     // figure out max points to write
@@ -378,8 +378,8 @@ void s4mgrid_clear(t_s4mgrid *x){
 }
 
 void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
-    post("s4mgrid_paint()");
-    post("selected range: %i %i %i %i", x->selected_from_col, x->selected_from_row, x->selected_to_col, x->selected_to_row);
+    //post("s4mgrid_paint()");
+    //post("selected range: %i %i %i %i", x->selected_from_col, x->selected_from_row, x->selected_to_col, x->selected_to_row);
 
     int col_width = x->cell_width;
     int row_height = x->cell_height;
@@ -424,10 +424,6 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
                  col <= x->drag_range_to_col && row <= x->drag_range_to_row) ){
                 jgraphics_set_source_jrgba(g, &rgb_cell_selected);
             }
-            //// or if is the drag cell itself
-            //if( col == x->drag_col && row == x->drag_row){
-            //    jgraphics_set_source_jrgba(g, &rgb_cell_selected);
-            //}
 
             jgraphics_rectangle(g, x_offset, y_offset, col_width, row_height);
             jgraphics_fill(g);
@@ -493,7 +489,7 @@ void s4mgrid_paint(t_s4mgrid *x, t_object *patcherview) {
   
 }
 void s4mgrid_mousedown(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifiers){
-	post("mousedown x: %f y: %f", pt.x, pt.y);
+	// post("mousedown x: %f y: %f", pt.x, pt.y);
   // clear out the released and selected points etc.
   x->released_col, x->released_row, x->drag_col, x->drag_row = -1;
   x->selected_from_col, x->selected_to_col, x->selected_from_row, x->selected_to_row = -1;
@@ -537,7 +533,7 @@ void s4mgrid_mouseup(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifier
   x->selected_from_row = (x->released_row > x->clicked_row ? x->clicked_row : x->released_row );
   x->selected_to_col   = (x->released_col > x->clicked_col ? x->released_col : x->clicked_col );
   x->selected_to_row   = (x->released_row > x->clicked_row ? x->released_row : x->clicked_row );
-  post("selected range: %i %i %i %i", x->selected_from_col, x->selected_from_row, x->selected_to_col, x->selected_to_row);
+  //post("selected range: %i %i %i %i", x->selected_from_col, x->selected_from_row, x->selected_to_col, x->selected_to_row);
 
   // send a message out the outlet of "selected {col_from} {row_from} {col_to} {row_to}"
   t_atom out_msg[4];
@@ -571,7 +567,6 @@ void s4mgrid_mousedrag(t_s4mgrid *x, t_object *patcherview, t_pt pt, long modifi
   }else {
     x->drag_col = col;
     x->drag_row = row;
-    post(" entered new cell... %i %i", x->drag_col, x->drag_row);
     // figure out the drag range as a square (to make painting logic easier)
     x->drag_range_from_col = (x->drag_col > x->clicked_col ? x->clicked_col : x->drag_col );
     x->drag_range_from_row = (x->drag_row > x->clicked_row ? x->clicked_row : x->drag_row );

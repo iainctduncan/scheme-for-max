@@ -16,7 +16,7 @@
 #include "jpatcher_api.h"
 #include "jgraphics.h"
 
-#include "s4m-array.h"
+#include "s4m-carray.h"
 
 // defaults
 #define DEFAULT_ROWS 8
@@ -93,7 +93,7 @@ void s4mgrid_bang(t_s4mgrid *x);
 void s4mgrid_list(t_s4mgrid *x, t_symbol *s, long argc, t_atom *argv);
 void s4mgrid_int(t_s4mgrid *x, long n);
 void s4mgrid_clear(t_s4mgrid *x);
-void s4mgrid_readarray(t_s4mgrid *x, t_symbol *s);
+void s4mgrid_read_carray(t_s4mgrid *x, t_symbol *s);
 
 void s4mgrid_int_to_note_name(t_s4mgrid *x, char *dest, int note_num);
 void s4mgrid_fill_cell_int(t_s4mgrid *x, long row, long col, long value);

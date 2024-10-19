@@ -19,7 +19,7 @@ file(GLOB PROJECT_SRC
 	"s7.c"
   "s4m-grid.h"
   "s4m-grid.c"
-  "s4m-array.h"
+  "s4m-carray.h"
 )
 
 # this specifies output
