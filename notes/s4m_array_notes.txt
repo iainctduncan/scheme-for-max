@@ -1,30 +1,31 @@
-S4M array notes, sept 2022
+S4M carray notes, sept 2024
 
-- there are tests for all the types (i,f,s,c) in scm/array_tests.scm
-  - they test make-array, arrsv, a->v, array-ref, and array-set!
+2024: renamed to carrays so won't be confused with max arrays
+
+- there are tests for all the types (i,f,s,c) in scm/carray_tests.scm
+  - they test make-carray, arrsv, a->v, carray-ref, and carray-set!
   - these need to be added to the regression suite though
 
 WORKING 
-- make-array
-- array->vector
-- arrsv (array set from vector)
-- array-ref
-- array-set!
+- make-carray
+- carray->vector
+- arrsv (carray set from vector)
+- carray-ref
+- carray-set!
 
-- s4m_free_array - sort of working
+- s4m_free_carray - sort of working
 
 TODO:
-- bring back vector set from array later, ok without it for now
-- add the array tests to the main regression suite
+- bring back vector set from carray later, ok without it for now
+- add the carray tests to the main regression suite
 
 
 
 ISSUES:
-- what happens if we make a new array overwriting a previous one?
+- what happens if we make a new carray overwriting a previous one?
   - it should automatically free the old one
 - have I written free functions for these properly?
-  - what happens if an s4m instance is delete when an array exists?
+  - what happens if an s4m instance is delete when an carray exists?
     - doesn't crash
-- do we protect against trying to put bad types in the array yet?
+- do we protect against trying to put bad types in the carray yet?
 
-- is it working with p
