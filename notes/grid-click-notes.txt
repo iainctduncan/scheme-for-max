@@ -1,0 +1,11 @@
+Grid Click notes:
+
+x->cell_width, x->cell_height
+x->num_rows, x->num_columns;
+
+
+- DONE add ability to select a cell and region from an input message
+
+TODO:
+- allow receiving messages to click or highlight a range
+- see if I can pick up key strokes only when in the box
