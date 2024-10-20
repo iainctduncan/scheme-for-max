@@ -175,6 +175,7 @@ static s7_pointer s7_gc_ms_set(s7_scheme *s7, s7_pointer args);
 // misc helpers
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap);
 t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *ap);
+t_max_err s7_obj_to_simple_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *ap);
 //t_max_err s7_obj_to_string(s7_scheme *s7, s7_pointer *s7_obj, char *obj_string);
 
 t_s4m *get_max_obj(s7_scheme *s7);
@@ -229,6 +230,9 @@ static s7_pointer s7_hashtable_to_dict(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_is_array(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_size(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args);
+//static s7_pointer s7_array_to_list(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args);
 
@@ -617,8 +621,10 @@ void s4m_init_s7(t_s4m *x){
     // IN PROG Max Array support
     s7_define_function(x->s7, "array?", s7_is_array, 1, 0, false, "(array? 'foo) returns true if array named foo exists");
     s7_define_function(x->s7, "array-size", s7_array_size, 1, 0, false, "(array-size 'foo) returns framecount of array"); 
-    s7_define_function(x->s7, "array-ref", s7_array_ref, 2, 1, false, "(array-ref :foo 4) returns value at channel 0, index 4 from array :foo");
-
+    s7_define_function(x->s7, "array-ref", s7_array_ref, 2, 0, false, "(array-ref :foo 4) returns value at index 4 from array :foo");
+    s7_define_function(x->s7, "array-set!", s7_array_set, 3, 0, false, "(array-set! :foo 4 99) sets value at index 4 of array :foo to 99");
+    s7_define_function(x->s7, "array->vector", s7_array_to_vector, 1, 3, false, "create new vector from array");
+    //s7_define_function(x->s7, "array->list", s7_array_to_list, 1, 3, false, "create new list from array");
 
     s7_define_function(x->s7, "dict-ref", s7_dict_ref, 2, 0, false, "(dict-ref 'dict :bar ) returns value from dict :foo at key :bar");
     s7_define_function(x->s7, "dictr", s7_dict_ref, 2, 0, false, "(dict-ref 'dict :bar ) returns value from dict :foo at key :bar");
@@ -2548,11 +2554,51 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
 
     // booleans are cast to ints 
     else if( s7_is_boolean(s7_obj) ){
-        // post("creating int from s7 boolean");
+        //post("creating int from s7 boolean");
         atom_setlong(atom, (int)s7_boolean(s7, s7_obj));  
     }
     else if( s7_is_integer(s7_obj)){
-        // post("creating int atom, %i", s7_integer(s7_obj));
+        //post("creating int atom, %i", s7_integer(s7_obj));
+        atom_setlong(atom, s7_integer(s7_obj));
+    }
+    else if( s7_is_real(s7_obj)){
+        //post("creating float atom, %.2f", s7_real(s7_obj));
+        atom_setfloat(atom, s7_real(s7_obj));
+    }
+    else if( s7_is_symbol(s7_obj) ){
+        // both s7 symbols and strings are converted to max symbols
+        //post("creating symbol atom, %s", s7_symbol_name(s7_obj));
+        atom_setsym(atom, gensym( s7_symbol_name(s7_obj)));
+    }
+    else if( s7_is_string(s7_obj) ){
+        //post("creating symbol atom from string, %s", s7_string(s7_obj));
+        atom_setsym(atom, gensym( s7_string(s7_obj)));
+    }
+    else if( s7_is_character(s7_obj) ){
+        //post("creating symbol atom from character");
+        char out[2] = " \0";
+        out[0] = s7_character(s7_obj);
+        atom_setsym(atom, gensym(out));
+    }
+    else{
+        post("ERROR: unhandled Scheme to Max conversion for: %s", s7_object_to_c_string(s7, s7_obj));
+        // TODO: should return t_errs I guess?
+        return (t_max_err) 1;     
+    } 
+    return (t_max_err) 0;
+}
+
+// version of converting s7 obj to max atom that only allows ints, floats, and symbols
+t_max_err s7_obj_to_simple_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
+    post("s7_obj_to_simple_max_atom");
+    
+    // booleans are cast to ints 
+    if( s7_is_boolean(s7_obj) ){
+        // post("creating int from s7 boolean");
+        atom_setlong(atom, (int)s7_boolean(s7, s7_obj));  
+    }
+    else if( s7_is_integer(s7_obj) || 1){
+        //post("creating int atom, %i", s7_integer(s7_obj));
         atom_setlong(atom, s7_integer(s7_obj));
     }
     else if( s7_is_real(s7_obj)){
@@ -2581,7 +2627,6 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
     } 
     return (t_max_err) 0;
 }
-
 /*********************************************************************************
 * S7 FFI functions, these are the implementations of functions added to scheme
 */
@@ -3366,7 +3411,7 @@ static s7_pointer s7_buffer_set(s7_scheme *s7, s7_pointer args) {
 // in scheme: buffer->vector aka b->v
 // opt args for chan start count
 static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
-    // post("s7_make_vector_from_buffer()");
+    // post("s7_buffer_to_vector()");
     char *buffer_name = NULL;
     long buffer_size = NULL;
     long channel = 0;
@@ -3402,7 +3447,7 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
                 "arg 3 must be an integer of starting index"));
         }
         buffer_offset = (long) s7_integer( s7_list_ref(s7, args, 2) );
-        //post("buffer_offset: %i", channel);
+        //post("buffer_offset: %i", buffer_offset);
     }
     // get optional count
     if( num_args >= 4 ){
@@ -3411,7 +3456,7 @@ static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args) {
                 "arg 4 must be an integer count of points to copy"));
         }
         count = (long) s7_integer( s7_list_ref(s7, args, 3) );
-        //post("count: %i", channel);
+        //post("count: %i", count);
     }
 
     // get buffer from Max, also fetches buffer size
@@ -3635,7 +3680,6 @@ static s7_pointer s7_array_size(s7_scheme *s7, s7_pointer args) {
     }
 }
 
-// TODO throw error if called with no index
 static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args){
     // array names could come in from s7 as either strings or symbols, if using keyword array names
     t_s4m *x = get_max_obj(s7);
@@ -3669,6 +3713,182 @@ static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args){
     return max_atom_to_s7_obj(s7, &max_atom); 
 }
 
+
+static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args){
+    // array names could come in from s7 as either strings or symbols, if using keyword array names
+    t_s4m *x = get_max_obj(s7);
+    s7_pointer *res;
+    t_max_err err;
+    char *array_name;
+    char err_msg[128];
+    long index;
+    s7_pointer s7_value_arg, s7_return_value;
+
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        array_name = (char *)s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        array_name = (char *)s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "array name is not a keyword, string, or symbol"));
+    }
+    // look up the named array, return error if not found
+    t_atomarray* array = arrayobj_findregistered_retain( gensym(array_name) );
+    if(array == NULL){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "no array found"));
+    }
+    // get index arg, check range and error if beyond array length
+    index = (long) s7_integer( s7_cadr(args) ); 
+    if(index >= array->ac){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "array index out of range"));
+    }
+    // make atom pointers to be our data copy that we can mutate and then write 
+    // to the array
+    long ac = 0;
+    t_atom *av = NULL;
+    atomarray_copyatoms(array, &ac, &av);
+    // convert the scheme value and write into the correct copied atom
+    s7_value_arg = s7_caddr(args);
+    err = s7_obj_to_max_atom(s7, s7_value_arg, av + index);
+    if(err){
+        arrayobj_release(array);
+        sysmem_freeptr(av);
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "unhandled type for array storage"));
+    }
+
+    // clear the contents of the named array
+    atomarray_dispose(array);
+    // copy new atoms back in
+    atomarray_appendatoms(array, ac, av);
+    arrayobj_release(array);
+    
+    // free copied atoms list
+    sysmem_freeptr(av);
+
+    return s7_value_arg;
+}
+
+static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args) {
+    // array names could come in from s7 as either strings or symbols, if using keyword array names
+    t_s4m *x = get_max_obj(s7);
+    s7_pointer *res;
+    t_max_err err;
+    long array_offset = 0;     // where in the array to start copying from
+    long count = NULL;
+    char *array_name;
+    char err_msg[128];
+    long index;
+    s7_pointer s7_value_arg, s7_return_value;
+    int num_args = (int) s7_list_length(s7, args);
+
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        array_name = (char *)s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        array_name = (char *)s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "array name is not a keyword, string, or symbol"));
+    }
+    // get optional start index
+    if( num_args >= 2 ){
+        if( ! s7_is_integer(s7_list_ref(s7, args, 1) ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "arg 2 must be an integer of starting index"));
+        }
+        array_offset = (long) s7_integer( s7_list_ref(s7, args, 1) );
+    }
+    // get optional count
+    if( num_args >= 3 ){
+        if( ! s7_is_integer(s7_list_ref(s7, args, 2) ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "arg 3 must be an integer count of points to copy"));
+        }
+        count = (long) s7_integer( s7_list_ref(s7, args, 2) );
+        if(count <= 0){
+          return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "arg 3 (optional) must be a positive integer"));
+        }
+    }
+
+    // look up the named array, return error if not found
+    t_atomarray* array = arrayobj_findregistered_retain( gensym(array_name) );
+    if(array == NULL){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "no array found"));
+    }
+    // allow negative offsets to count backwards from end
+    if( array_offset < 0 ){
+      array_offset = array->ac + array_offset;
+      if(array_offset < 0) array_offset = 0;
+    }
+    if( count == NULL) count = array->ac;
+    long vec_len = (array->ac - array_offset);
+    if(vec_len > count) vec_len = count;
+
+    //post("length: %i offset: %i count: %i", vec_len, array_offset, count);
+    if( vec_len <= 0 || count <= 0){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "array out-of-bounds error"));
+        arrayobj_release(array);
+    }
+    s7_pointer *new_vector = s7_make_vector(s7, vec_len); 
+
+    t_atom source_atom;
+    long i, j;
+    for(i = array_offset, j=0; j < vec_len; i++, j++) {
+        atomarray_getindex(array, i, &source_atom);
+        s7_vector_set(s7, new_vector, j, max_atom_to_s7_obj(s7, &source_atom));   
+    }
+
+    arrayobj_release(array);
+    return new_vector;
+}
+
+//static s7_pointer s7_array_to_list(s7_scheme *s7, s7_pointer args) {
+//}
+
+
+
+// test of replacing an arrays contents safely
+// this appears to work!
+static s7_pointer s7_array_replace(s7_scheme *s7, s7_pointer args){
+    // array names could come in from s7 as either strings or symbols, if using keyword array names
+    t_s4m *x = get_max_obj(s7);
+    s7_pointer *res;
+    char *array_name;
+    char err_msg[128];
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        array_name = (char *)s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        array_name = (char *)s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "array name is not a keyword, string, or symbol"));
+    }
+    //long index = (long) s7_integer( s7_cadr(args) ); 
+    t_atomarray* array = arrayobj_findregistered_retain( gensym(array_name) );
+
+    // make atom pointers to be our data copy that we can mutate
+    long ac = 0;
+    t_atom *av = NULL;
+    atomarray_copyatoms(array, &ac, &av);
+    // update my atoms as needed
+    atom_setlong(av, 666);
+
+    // clear the contents of the named array
+    atomarray_dispose(array);
+    // copy new atoms back in
+    atomarray_appendatoms(array, ac, av);
+    arrayobj_release(array);
+    
+    // free copied atoms list
+    sysmem_freeptr(av);
+
+    return s7_nil(s7);
+}
 
 
 // read a value from a named dict, scheme function dict-ref
