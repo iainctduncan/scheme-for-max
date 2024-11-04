@@ -3959,29 +3959,139 @@ static s7_pointer s7_vector_to_marray(s7_scheme *s7, s7_pointer args) {
 
     t_atom temp_atom;
     long i, j;
+    
     // make the vector we return to s7 (which is the copied portion)
-    s7_pointer new_s7_vector = s7_make_vector(s7, (s7_int) count); 
+    // Changed my mind, going to return null for efficiency. Leaving this here in case I change it back
+    // s7_pointer new_s7_vector = s7_make_vector(s7, (s7_int) count); 
 
     for(i = vector_offset, j=0; i < count + vector_offset; i++, j++) {
         //post("setting point: %i", i);
         err = s7_obj_to_max_atom(s7, s7_vector_ref(s7, s7_vector_arg, i), &temp_atom); 
         // the 1 below is because we are doing this one atom at a time
         atomarray_appendatoms(array, 1, &temp_atom);
-        s7_vector_set(s7, new_s7_vector, j, s7_vector_ref(s7, s7_vector_arg, i) );
+        //s7_vector_set(s7, new_s7_vector, j, s7_vector_ref(s7, s7_vector_arg, i) );
     }
 
     // we don't release if we made a new array
     if(is_new_array == false)
         arrayobj_release(array);
     // return the portion of the vector copied
-    return new_s7_vector;
+    //return new_s7_vector;
+    return s7_nil(s7);
 }
 
-// LEFT OFF
 static s7_pointer s7_list_to_marray(s7_scheme *s7, s7_pointer args) {
-    // hmm, no s7_list_to_vector function in the FFI.... weird
-    //s7_pointer source_vector = s7_list_to_vector(s7, s7_list_ref(s7, args, 0) );
-    //return s7_vector_to_marray(s7, s7_cons(s7, source_vector, s7_cdr(s7, args)));
+    //post("s7_list_to_marray()");
+    // array names could come in from s7 as either strings or symbols, if using keyword array names
+    t_s4m *x = get_max_obj(s7);
+    s7_pointer *res;
+    t_max_err err;
+    long list_offset = 0;     // where in the array to start copying from
+    long count = NULL;
+    char *array_name;
+    char err_msg[128];
+    long index;
+    // check on these
+    s7_pointer s7_list_arg, s7_value_arg, s7_return_value;
+    int num_args = (int) s7_list_length(s7, args);
+
+    //post("num_args: %i", num_args);
+
+    // first arg is the list, after that args are as above in marray to list
+    if( ! s7_is_list(s7, s7_car(args))){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "list->array: arg 1 must be a Scheme list"));
+        }
+    s7_list_arg = s7_car(args);
+
+    if( s7_is_symbol( s7_cadr(args) ) ){ 
+        array_name = (char *)s7_symbol_name( s7_cadr(args) );
+    } else if( s7_is_string( s7_cadr(args) ) ){
+        array_name = (char *)s7_string( s7_cadr(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "list->array: array name is not a keyword, string, or symbol"));
+    }
+    // get optional start index
+    if( num_args >= 3 ){
+        if( ! s7_is_integer(s7_list_ref(s7, args, 2) ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "list->array: arg 3 must be an integer of starting index"));
+        }
+        list_offset = (long) s7_integer( s7_list_ref(s7, args, 2) );
+    }
+    // get optional count
+    if( num_args >= 4 ){
+        if( ! s7_is_integer(s7_list_ref(s7, args, 3) ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "list->array: arg 4 must be an integer count of points to copy"));
+        }
+        count = (long) s7_integer( s7_list_ref(s7, args, 3) );
+        if(count <= 0){
+          return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "list->array: arg 4 (optional) must be a positive integer"));
+        }
+    }
+
+    // temp, list length
+    int list_len = (int) s7_list_length(s7, s7_list_arg);
+    
+    // sanity checks 
+    if( list_offset >= list_len || list_offset * -1 > list_len){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "list->array: list offset out of range"));
+    }
+    // allow negative offsets to count backwards from end
+    if( list_offset < 0 ){
+        list_offset = list_len + list_offset;
+        if(list_offset < 0) list_offset = 0;
+    }
+    if( count == NULL) 
+        count = list_len - list_offset;
+
+    // sanity checks 
+    //post("array: %s length: %i offset: %i count: %i", array_name, list_len, list_offset, count);
+    if( count > list_len - list_offset ){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "list->array: count out of range"));
+    }
+    if( list_len <= 0 || count <= 0){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "list->array: out-of-bounds error"));
+    }
+
+    // look up the named array, make a new one if not found
+    t_atomarray* array = arrayobj_findregistered_retain( gensym(array_name) );
+    bool is_new_array = false;
+    if(array == NULL){
+        // make a new, empty array and register it (refcount++)
+        //post("making new array with name %s", array_name);
+        t_symbol* array_name_sym = gensym(array_name);
+        array = arrayobj_register(atomarray_new(0, NULL), &array_name_sym); 
+        // copied from the simplearray example, sets to free any object types stored in the array
+        atomarray_flags(array, ATOMARRAY_FLAG_FREECHILDREN); 
+        is_new_array = true;
+    }else{
+        // clear the array, free any objects inside of it
+        atomarray_dispose(array); 
+        // array is now empty 
+    }
+
+    t_atom temp_atom;
+    long i, j;
+    
+    for(i = list_offset, j=0; i < count + list_offset; i++, j++) {
+        //post("setting point: %i", i);
+        err = s7_obj_to_max_atom(s7, s7_list_ref(s7, s7_list_arg, i), &temp_atom); 
+        // the 1 below is because we are doing this one atom at a time
+        atomarray_appendatoms(array, 1, &temp_atom);
+    }
+
+    // we don't release if we made a new array
+    if(is_new_array == false)
+        arrayobj_release(array);
+
+    return s7_nil(s7);
 }
 
 
