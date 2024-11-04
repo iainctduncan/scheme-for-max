@@ -227,12 +227,14 @@ static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_hashtable_to_dict(s7_scheme *s7, s7_pointer args);
 
 // IN PROG - Max arrays
-static s7_pointer s7_is_array(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_array_size(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args);
-static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args);
-//static s7_pointer s7_array_to_list(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_is_marray(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_marray_size(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_marray_ref(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_marray_set(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_marray_to_vector(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_marray_to_list(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_vector_to_marray(s7_scheme *s7, s7_pointer args);
+static s7_pointer s7_list_to_marray(s7_scheme *s7, s7_pointer args);
 
 static s7_pointer s7_send_message(s7_scheme *s7, s7_pointer args);
 
@@ -619,12 +621,18 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "bufsv", s7_buffer_set_from_vector, 2, 4, false, "copy contents of a vector to a Max buffer");
 
     // IN PROG Max Array support
-    s7_define_function(x->s7, "array?", s7_is_array, 1, 0, false, "(array? 'foo) returns true if array named foo exists");
-    s7_define_function(x->s7, "array-size", s7_array_size, 1, 0, false, "(array-size 'foo) returns framecount of array"); 
-    s7_define_function(x->s7, "array-ref", s7_array_ref, 2, 0, false, "(array-ref :foo 4) returns value at index 4 from array :foo");
-    s7_define_function(x->s7, "array-set!", s7_array_set, 3, 0, false, "(array-set! :foo 4 99) sets value at index 4 of array :foo to 99");
-    s7_define_function(x->s7, "array->vector", s7_array_to_vector, 1, 3, false, "create new vector from array");
-    //s7_define_function(x->s7, "array->list", s7_array_to_list, 1, 3, false, "create new list from array");
+    s7_define_function(x->s7, "array?", s7_is_marray, 1, 0, false, "(array? 'foo) returns true if array named foo exists");
+    s7_define_function(x->s7, "array-size", s7_marray_size, 1, 0, false, "(array-size 'foo) returns framecount of array"); 
+    s7_define_function(x->s7, "array-ref", s7_marray_ref, 2, 0, false, "(array-ref :foo 4) returns value at index 4 from array :foo");
+    s7_define_function(x->s7, "array-set!", s7_marray_set, 3, 0, false, "(array-set! :foo 4 99) sets value at index 4 of array :foo to 99");
+    s7_define_function(x->s7, "array->vector", s7_marray_to_vector, 1, 2, false, "create new vector from array");
+    s7_define_function(x->s7, "a->v", s7_marray_to_vector, 1, 2, false, "create new vector from Max array");
+    s7_define_function(x->s7, "array->list", s7_marray_to_list, 1, 2, false, "create new list from Max array");
+    s7_define_function(x->s7, "a->l", s7_marray_to_list, 1, 2, false, "create new list from Max array");
+    s7_define_function(x->s7, "vector->array", s7_vector_to_marray, 2, 2, false, "create new Max array from vector");
+    s7_define_function(x->s7, "v->a", s7_vector_to_marray, 2, 2, false, "create new Max array from vector");
+    s7_define_function(x->s7, "list->array", s7_list_to_marray, 2, 2, false, "create new Max array from list");
+    s7_define_function(x->s7, "l->a", s7_list_to_marray, 2, 2, false, "create new Max array from list");
 
     s7_define_function(x->s7, "dict-ref", s7_dict_ref, 2, 0, false, "(dict-ref 'dict :bar ) returns value from dict :foo at key :bar");
     s7_define_function(x->s7, "dictr", s7_dict_ref, 2, 0, false, "(dict-ref 'dict :bar ) returns value from dict :foo at key :bar");
@@ -3632,7 +3640,7 @@ static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args) {
 }
 
 // IN PROG - Max arrays
-static s7_pointer s7_is_array(s7_scheme *s7, s7_pointer args) {
+static s7_pointer s7_is_marray(s7_scheme *s7, s7_pointer args) {
     // array names could come in from s7 as either strings or symbols, if using keyword array names
     t_s4m *x = get_max_obj(s7);
     s7_pointer *res;
@@ -3656,7 +3664,7 @@ static s7_pointer s7_is_array(s7_scheme *s7, s7_pointer args) {
 }
 
 // get size of a max array (number of atoms
-static s7_pointer s7_array_size(s7_scheme *s7, s7_pointer args) {
+static s7_pointer s7_marray_size(s7_scheme *s7, s7_pointer args) {
     // array names could come in from s7 as either strings or symbols, if using keyword array names
     t_s4m *x = get_max_obj(s7);
     s7_pointer *res;
@@ -3680,7 +3688,7 @@ static s7_pointer s7_array_size(s7_scheme *s7, s7_pointer args) {
     }
 }
 
-static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args){
+static s7_pointer s7_marray_ref(s7_scheme *s7, s7_pointer args){
     // array names could come in from s7 as either strings or symbols, if using keyword array names
     t_s4m *x = get_max_obj(s7);
     s7_pointer *res;
@@ -3695,26 +3703,26 @@ static s7_pointer s7_array_ref(s7_scheme *s7, s7_pointer args){
             "array name is not a keyword, string, or symbol"));
     }
     long index = (long) s7_integer( s7_cadr(args) ); 
-    t_atomarray* max_array = arrayobj_findregistered_retain( gensym(array_name) );
-    if( max_array==NULL ){
+    t_atomarray* marray = arrayobj_findregistered_retain( gensym(array_name) );
+    if( marray==NULL ){
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "error fetching array"));
     }
-    post("array size: %i", max_array->ac);
-    if( index >= max_array->ac ){
+    post("array size: %i", marray->ac);
+    if( index >= marray->ac ){
         sprintf(err_msg, "index %i out of range for Max array %s", index, array_name);
         return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, err_msg));
     }
     // fetch a copy of the second atom in a previously existing array
     t_atom max_atom;
-    atomarray_getindex(max_array, index, &max_atom);
-    arrayobj_release(max_array);
+    atomarray_getindex(marray, index, &max_atom);
+    arrayobj_release(marray);
     // now we need to convert to scheme value
     return max_atom_to_s7_obj(s7, &max_atom); 
 }
 
 
-static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args){
+static s7_pointer s7_marray_set(s7_scheme *s7, s7_pointer args){
     // array names could come in from s7 as either strings or symbols, if using keyword array names
     t_s4m *x = get_max_obj(s7);
     s7_pointer *res;
@@ -3771,7 +3779,7 @@ static s7_pointer s7_array_set(s7_scheme *s7, s7_pointer args){
     return s7_value_arg;
 }
 
-static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args) {
+static s7_pointer s7_marray_to_vector(s7_scheme *s7, s7_pointer args) {
     // array names could come in from s7 as either strings or symbols, if using keyword array names
     t_s4m *x = get_max_obj(s7);
     s7_pointer *res;
@@ -3847,9 +3855,134 @@ static s7_pointer s7_array_to_vector(s7_scheme *s7, s7_pointer args) {
     return new_vector;
 }
 
-//static s7_pointer s7_array_to_list(s7_scheme *s7, s7_pointer args) {
-//}
+static s7_pointer s7_marray_to_list(s7_scheme *s7, s7_pointer args) {
+    s7_pointer *new_vector = s7_marray_to_vector(s7, args);
+    return s7_vector_to_list(s7, new_vector);
+}
 
+static s7_pointer s7_vector_to_marray(s7_scheme *s7, s7_pointer args) {
+    //post("s7_vector_to_marray()");
+    // array names could come in from s7 as either strings or symbols, if using keyword array names
+    t_s4m *x = get_max_obj(s7);
+    s7_pointer *res;
+    t_max_err err;
+    long vector_offset = 0;     // where in the array to start copying from
+    long count = NULL;
+    char *array_name;
+    char err_msg[128];
+    long index;
+    // check on these
+    s7_pointer s7_vector_arg, s7_value_arg, s7_return_value;
+    int num_args = (int) s7_list_length(s7, args);
+
+    //post("num_args: %i", num_args);
+
+    // first arg is the vector, after that args are as above in marray to vector
+    if( ! s7_is_vector(s7_list_ref(s7, args, 0) ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "vector->array: arg 1 must be a Scheme vector"));
+        }
+    s7_vector_arg = s7_list_ref(s7, args, 0);
+
+    if( s7_is_symbol( s7_cadr(args) ) ){ 
+        array_name = (char *)s7_symbol_name( s7_cadr(args) );
+    } else if( s7_is_string( s7_cadr(args) ) ){
+        array_name = (char *)s7_string( s7_cadr(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "vector->array: array name is not a keyword, string, or symbol"));
+    }
+    // get optional start index
+    if( num_args >= 3 ){
+        if( ! s7_is_integer(s7_list_ref(s7, args, 2) ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "arg 3 must be an integer of starting index"));
+        }
+        vector_offset = (long) s7_integer( s7_list_ref(s7, args, 2) );
+    }
+    // get optional count
+    if( num_args >= 4 ){
+        if( ! s7_is_integer(s7_list_ref(s7, args, 3) ) ){
+            return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+                "vector->array: arg 4 must be an integer count of points to copy"));
+        }
+        count = (long) s7_integer( s7_list_ref(s7, args, 3) );
+        if(count <= 0){
+          return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "vector->array: arg 4 (optional) must be a positive integer"));
+        }
+    }
+
+    // temp, vector length
+    int vector_len = (int) s7_vector_length(s7_vector_arg);
+    
+    // sanity checks 
+    if( vector_offset >= vector_len || vector_offset * -1 > vector_len){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "vector->array: vector offset out of range"));
+    }
+    // allow negative offsets to count backwards from end
+    if( vector_offset < 0 ){
+        vector_offset = vector_len + vector_offset;
+        if(vector_offset < 0) vector_offset = 0;
+    }
+    if( count == NULL) 
+        count = vector_len - vector_offset;
+
+    // sanity checks 
+    //post("array: %s length: %i offset: %i count: %i", array_name, vector_len, vector_offset, count);
+    if( count > vector_len - vector_offset ){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "vector->array: count out of range"));
+    }
+    if( vector_len <= 0 || count <= 0){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "vector->array: out-of-bounds error"));
+    }
+
+    // look up the named array, make a new one if not found
+    t_atomarray* array = arrayobj_findregistered_retain( gensym(array_name) );
+    bool is_new_array = false;
+    if(array == NULL){
+        // make a new, empty array and register it (refcount++)
+        //post("making new array with name %s", array_name);
+        t_symbol* array_name_sym = gensym(array_name);
+        array = arrayobj_register(atomarray_new(0, NULL), &array_name_sym); 
+        // copied from the simplearray example, sets to free any object types stored in the array
+        atomarray_flags(array, ATOMARRAY_FLAG_FREECHILDREN); 
+        is_new_array = true;
+    }else{
+        // clear the array, free any objects inside of it
+        atomarray_dispose(array); 
+        // array is now empty 
+    }
+
+    t_atom temp_atom;
+    long i, j;
+    // make the vector we return to s7 (which is the copied portion)
+    s7_pointer new_s7_vector = s7_make_vector(s7, (s7_int) count); 
+
+    for(i = vector_offset, j=0; i < count + vector_offset; i++, j++) {
+        //post("setting point: %i", i);
+        err = s7_obj_to_max_atom(s7, s7_vector_ref(s7, s7_vector_arg, i), &temp_atom); 
+        // the 1 below is because we are doing this one atom at a time
+        atomarray_appendatoms(array, 1, &temp_atom);
+        s7_vector_set(s7, new_s7_vector, j, s7_vector_ref(s7, s7_vector_arg, i) );
+    }
+
+    // we don't release if we made a new array
+    if(is_new_array == false)
+        arrayobj_release(array);
+    // return the portion of the vector copied
+    return new_s7_vector;
+}
+
+// LEFT OFF
+static s7_pointer s7_list_to_marray(s7_scheme *s7, s7_pointer args) {
+    // hmm, no s7_list_to_vector function in the FFI.... weird
+    //s7_pointer source_vector = s7_list_to_vector(s7, s7_list_ref(s7, args, 0) );
+    //return s7_vector_to_marray(s7, s7_cons(s7, source_vector, s7_cdr(s7, args)));
+}
 
 
 // test of replacing an arrays contents safely

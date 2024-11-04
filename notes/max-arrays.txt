@@ -8,16 +8,20 @@ Done
 - array-size
 - (array-ref {array-name} {int index})
 - (array-set! {array-name} {int index} value)
+- array->vector {name} {opt-start} {opt-count} 
+- array->list 
 
 TODO
-- array->vector {name} {opt-start} {opt-count} 
-- array->list
-- vector->array
+- vector->array vector array-name {opt-start} {opt-count}
 - list->array
 
-MAYBE/LATER
-- array-prepend
-- array-append
-- array-clear
+LATER:
+- nested array set/get (array-ref 'myarray '(0 1 0))
 
+
+
+- working on vector to array
+ 
+
+- case can be either already exists or not... 
 
