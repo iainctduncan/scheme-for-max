@@ -200,6 +200,7 @@ static s7_pointer s7_load_from_max(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_post(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_max_output(s7_scheme *s7, s7_pointer args);
 
+// Max tables
 static s7_pointer s7_is_table(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_table_length(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_table_ref(s7_scheme *s7, s7_pointer args);
@@ -208,25 +209,25 @@ static s7_pointer s7_table_to_vector(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_vector_set_from_table(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_table_set_from_vector(s7_scheme *s7, s7_pointer args);
 
+// Max buffers
 static s7_pointer s7_is_buffer(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_size(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_ref(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_set(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_buffer_to_vector(s7_scheme *s7, s7_pointer args);
-
 static s7_pointer s7_buffer_set_from_vector(s7_scheme *s7, s7_pointer args);
 
+// Max dicts
 static s7_pointer s7_dict_ref(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_ref_recurser(s7_scheme *s7, t_atom *atom_container, s7_pointer key_list);
 static s7_pointer s7_dict_set(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_set_recurser(s7_scheme *s7, t_atom *atom_container, s7_pointer key_list, t_atom *value);
 static s7_pointer s7_dict_replace(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_dict_replace_recurser(s7_scheme *s7, t_atom *atom_container, s7_pointer key_list, t_atom *value);
-
 static s7_pointer s7_dict_to_hashtable(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_hashtable_to_dict(s7_scheme *s7, s7_pointer args);
 
-// IN PROG - Max arrays
+// Max arrays
 static s7_pointer s7_is_marray(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_marray_size(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_marray_ref(s7_scheme *s7, s7_pointer args);
@@ -3688,7 +3689,7 @@ static s7_pointer s7_marray_size(s7_scheme *s7, s7_pointer args) {
     }
 }
 
-static s7_pointer s7_marray_ref(s7_scheme *s7, s7_pointer args){
+static s7_pointer s7_marray_ref_old(s7_scheme *s7, s7_pointer args){
     // array names could come in from s7 as either strings or symbols, if using keyword array names
     t_s4m *x = get_max_obj(s7);
     s7_pointer *res;
@@ -3700,15 +3701,15 @@ static s7_pointer s7_marray_ref(s7_scheme *s7, s7_pointer args){
         array_name = (char *)s7_string( s7_car(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "array name is not a keyword, string, or symbol"));
+            "array-ref: array name is not a keyword, string, or symbol"));
     }
     long index = (long) s7_integer( s7_cadr(args) ); 
     t_atomarray* marray = arrayobj_findregistered_retain( gensym(array_name) );
     if( marray==NULL ){
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
-            "error fetching array"));
+            "array-ref: error fetching array"));
     }
-    post("array size: %i", marray->ac);
+    //post("array size: %i", marray->ac);
     if( index >= marray->ac ){
         sprintf(err_msg, "index %i out of range for Max array %s", index, array_name);
         return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, err_msg));
@@ -3719,6 +3720,66 @@ static s7_pointer s7_marray_ref(s7_scheme *s7, s7_pointer args){
     arrayobj_release(marray);
     // now we need to convert to scheme value
     return max_atom_to_s7_obj(s7, &max_atom); 
+}
+
+// recursive version, accepts list of keys
+static s7_pointer s7_marray_ref(s7_scheme *s7, s7_pointer args){
+    post("marray_ref()");
+    // array names could come in from s7 as either strings or symbols, if using keyword array names
+    t_s4m *x = get_max_obj(s7);
+    s7_pointer *s7_value = NULL;
+    bool list_index = false;
+    char *array_name;
+    char err_msg[128];
+
+    if( s7_is_symbol( s7_car(args) ) ){ 
+        array_name = (char *)s7_symbol_name( s7_car(args) );
+    } else if( s7_is_string( s7_car(args) ) ){
+        array_name = (char *)s7_string( s7_car(args) );
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "array-ref: array name is not a keyword, string, or symbol"));
+    }
+
+
+    //long index = (long) s7_integer( s7_cadr(args) ); 
+    // get the index, which could be an integer or list
+    long index;
+    s7_pointer index_arg = s7_cadr(args);
+    if( s7_is_integer( index_arg ) ){ 
+        index = s7_integer( index_arg );
+    }else if( s7_is_list(s7, index_arg ) ){
+        list_index = true; 
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "array-ref arg 2 must be an integer or list"));
+    }
+
+    // get the array
+    t_atomarray* marray = arrayobj_findregistered_retain( gensym(array_name) );
+    if( marray==NULL ){
+        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
+            "array-ref: error fetching array"));
+    }
+    
+    // case regular integer key
+    t_atom max_atom;
+    if( !list_index ){
+        if(index >= marray->ac ){
+          sprintf(err_msg, "index %i out of range for Max array %s", index, array_name);
+          return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, err_msg));
+        }
+        atomarray_getindex(marray, index, &max_atom);
+        // convert to scheme value 
+        s7_value = max_atom_to_s7_obj(s7, &max_atom); 
+    }
+    else {  // we were give a list index, need to recurse
+        atom_setobj(&max_atom, (void *)marray);
+        // we can use the dict_ref_recurser because it works for dicts or atom arrays
+        s7_value = s7_dict_ref_recurser(s7, &max_atom, index_arg);
+    }
+    arrayobj_release(marray);
+    return s7_value;
 }
 
 
@@ -3738,19 +3799,19 @@ static s7_pointer s7_marray_set(s7_scheme *s7, s7_pointer args){
         array_name = (char *)s7_string( s7_car(args) );
     }else{
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "array name is not a keyword, string, or symbol"));
+            "array-set! array name is not a keyword, string, or symbol"));
     }
     // look up the named array, return error if not found
     t_atomarray* array = arrayobj_findregistered_retain( gensym(array_name) );
     if(array == NULL){
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
-            "no array found"));
+            "array-set! no array found"));
     }
     // get index arg, check range and error if beyond array length
     index = (long) s7_integer( s7_cadr(args) ); 
     if(index >= array->ac){
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
-            "array index out of range"));
+            "array-set! array index out of range"));
     }
     // make atom pointers to be our data copy that we can mutate and then write 
     // to the array
@@ -3764,7 +3825,7 @@ static s7_pointer s7_marray_set(s7_scheme *s7, s7_pointer args){
         arrayobj_release(array);
         sysmem_freeptr(av);
         return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "unhandled type for array storage"));
+            "array-set! unhandled type for array storage"));
     }
 
     // clear the contents of the named array
