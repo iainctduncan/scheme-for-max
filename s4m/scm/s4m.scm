@@ -196,5 +196,12 @@
 (define s4m-done-bootstrap #t)
 
 
+; attempt at implementing array-set! in scm by wrapping array->vector and vice versa
+(define (array-set! array-name index value)
+  (let ((vec (array->vector array-name)))
+    (set! (vec index) value)
+    (vector->array vec array-name)
+    value))
+
 
 ;(post "s4m.scm init complete")

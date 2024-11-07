@@ -23,6 +23,7 @@
 
 #include "s4m-grid.h"
 #include "s4m-carray.h"
+#include "ext_systhread.h"
 
 #define MAX_NUM_OUTLETS 32
 #define MAX_NUM_INLETS 32       // note: changing requires making more s4m_callback_msg_inlet_X handlers
@@ -34,6 +35,7 @@
 // object struct
 typedef struct _s4m {
     t_object obj;
+    t_systhread_mutex	s4m_mutex;        // mutex for altering arrays etc
     s7_scheme *s7;
 
     t_symbol *source_file;              // main source file name (if one passed as object arg)
@@ -625,7 +627,8 @@ void s4m_init_s7(t_s4m *x){
     s7_define_function(x->s7, "array?", s7_is_marray, 1, 0, false, "(array? 'foo) returns true if array named foo exists");
     s7_define_function(x->s7, "array-size", s7_marray_size, 1, 0, false, "(array-size 'foo) returns framecount of array"); 
     s7_define_function(x->s7, "array-ref", s7_marray_ref, 2, 0, false, "(array-ref :foo 4) returns value at index 4 from array :foo");
-    s7_define_function(x->s7, "array-set!", s7_marray_set, 3, 0, false, "(array-set! :foo 4 99) sets value at index 4 of array :foo to 99");
+    //s7_define_function(x->s7, "array-set!", s7_marray_set, 3, 0, false, "(array-set! :foo 4 99) sets value at index 4 of array :foo to 99");
+    // NB array-set! is currently defined in s4m.c, which seems to work reliably
     s7_define_function(x->s7, "array->vector", s7_marray_to_vector, 1, 2, false, "create new vector from array");
     s7_define_function(x->s7, "a->v", s7_marray_to_vector, 1, 2, false, "create new vector from Max array");
     s7_define_function(x->s7, "array->list", s7_marray_to_list, 1, 2, false, "create new list from Max array");
@@ -3689,42 +3692,9 @@ static s7_pointer s7_marray_size(s7_scheme *s7, s7_pointer args) {
     }
 }
 
-static s7_pointer s7_marray_ref_old(s7_scheme *s7, s7_pointer args){
-    // array names could come in from s7 as either strings or symbols, if using keyword array names
-    t_s4m *x = get_max_obj(s7);
-    s7_pointer *res;
-    char *array_name;
-    char err_msg[128];
-    if( s7_is_symbol( s7_car(args) ) ){ 
-        array_name = (char *)s7_symbol_name( s7_car(args) );
-    } else if( s7_is_string( s7_car(args) ) ){
-        array_name = (char *)s7_string( s7_car(args) );
-    }else{
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "array-ref: array name is not a keyword, string, or symbol"));
-    }
-    long index = (long) s7_integer( s7_cadr(args) ); 
-    t_atomarray* marray = arrayobj_findregistered_retain( gensym(array_name) );
-    if( marray==NULL ){
-        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
-            "array-ref: error fetching array"));
-    }
-    //post("array size: %i", marray->ac);
-    if( index >= marray->ac ){
-        sprintf(err_msg, "index %i out of range for Max array %s", index, array_name);
-        return s7_error(s7, s7_make_symbol(s7, "out-of-range"), s7_make_string(s7, err_msg));
-    }
-    // fetch a copy of the second atom in a previously existing array
-    t_atom max_atom;
-    atomarray_getindex(marray, index, &max_atom);
-    arrayobj_release(marray);
-    // now we need to convert to scheme value
-    return max_atom_to_s7_obj(s7, &max_atom); 
-}
-
-// recursive version, accepts list of keys
+// array-ref, can be called with index or list of keys 
 static s7_pointer s7_marray_ref(s7_scheme *s7, s7_pointer args){
-    post("marray_ref()");
+    //post("marray_ref()");
     // array names could come in from s7 as either strings or symbols, if using keyword array names
     t_s4m *x = get_max_obj(s7);
     s7_pointer *s7_value = NULL;
@@ -3741,8 +3711,6 @@ static s7_pointer s7_marray_ref(s7_scheme *s7, s7_pointer args){
             "array-ref: array name is not a keyword, string, or symbol"));
     }
 
-
-    //long index = (long) s7_integer( s7_cadr(args) ); 
     // get the index, which could be an integer or list
     long index;
     s7_pointer index_arg = s7_cadr(args);
@@ -3782,8 +3750,8 @@ static s7_pointer s7_marray_ref(s7_scheme *s7, s7_pointer args){
     return s7_value;
 }
 
-
-static s7_pointer s7_marray_set(s7_scheme *s7, s7_pointer args){
+// mixing what I figured out with the cloning
+static s7_pointer s7_marray_set_not_working(s7_scheme *s7, s7_pointer args){
     // array names could come in from s7 as either strings or symbols, if using keyword array names
     t_s4m *x = get_max_obj(s7);
     s7_pointer *res;
@@ -3791,6 +3759,7 @@ static s7_pointer s7_marray_set(s7_scheme *s7, s7_pointer args){
     char *array_name;
     char err_msg[128];
     long index;
+    bool is_list_index = false;
     s7_pointer s7_value_arg, s7_return_value;
 
     if( s7_is_symbol( s7_car(args) ) ){ 
@@ -3807,38 +3776,61 @@ static s7_pointer s7_marray_set(s7_scheme *s7, s7_pointer args){
         return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
             "array-set! no array found"));
     }
-    // get index arg, check range and error if beyond array length
-    index = (long) s7_integer( s7_cadr(args) ); 
-    if(index >= array->ac){
-        return s7_error(s7, s7_make_symbol(s7, "io-error"), s7_make_string(s7, 
-            "array-set! array index out of range"));
+    
+    // get the index, which could be an integer or list
+    s7_pointer index_arg = s7_cadr(args);
+    if( s7_is_integer( index_arg ) ){ 
+        index = s7_integer( index_arg );
+    }else if( s7_is_list(s7, index_arg ) ){
+        is_list_index = true; 
+    }else{
+        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+            "array-set! arg 2 must be an integer or list"));
     }
-    // make atom pointers to be our data copy that we can mutate and then write 
-    // to the array
-    long ac = 0;
-    t_atom *av = NULL;
-    atomarray_copyatoms(array, &ac, &av);
+
     // convert the scheme value and write into the correct copied atom
     s7_value_arg = s7_caddr(args);
-    err = s7_obj_to_max_atom(s7, s7_value_arg, av + index);
+    
+    // convert from scm, store in value_atom pointer
+    t_atom *new_value_atom = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
+    err = s7_obj_to_max_atom(s7, s7_value_arg, new_value_atom);
     if(err){
-        arrayobj_release(array);
-        sysmem_freeptr(av);
-        return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
-            "array-set! unhandled type for array storage"));
+      arrayobj_release(array);
+      // todo free value_atom
+      return s7_error(s7, s7_make_symbol(s7, "wrong-type-arg"), s7_make_string(s7, 
+          "array-set! unhandled type for array storage"));
     }
 
-    // clear the contents of the named array
+    // make array clone to work on (taken from simplearray.c example in the SDK)
+    t_atomarray* clone = (t_atomarray*)object_clone( (t_object*)array ); // CLONE, do not potentially modify upstream data
+    // dispose of previous array (presumably this is thread safe)
     atomarray_dispose(array);
-    // copy new atoms back in
-    atomarray_appendatoms(array, ac, av);
-    arrayobj_release(array);
+ 
+    long clone_ac;
+    t_atom *clone_atoms;
+    // get a reference to the atoms from the clone array (not a copy!)
+    atomarray_getatoms(clone, &clone_ac, &clone_atoms); 
     
-    // free copied atoms list
-    sysmem_freeptr(av);
+    // maybe this??
+    err = s7_obj_to_max_atom(s7, s7_value_arg, clone_atoms + index);
+    // update contents of the target atom pointer to be that from our scm to max conversion
+    //memcpy(clone_atoms + index, new_value_atom, sizeof(t_atom));
 
+    // seems to work ok, then I get: 
+    //Max(44177,0x1764e3000) malloc: Heap corruption detected, free list is damaged at 0x6000051882c0
+
+    // copy atoms from the CLONE back to the original array pointer
+    atomarray_appendatoms(array, clone->ac, clone->av);
+    // clear and free the clone
+    atomarray_clear(clone); 
+    object_free(clone);
+    // done with the array, release 
+    arrayobj_release(array);
     return s7_value_arg;
 }
+
+
+
 
 static s7_pointer s7_marray_to_vector(s7_scheme *s7, s7_pointer args) {
     // array names could come in from s7 as either strings or symbols, if using keyword array names

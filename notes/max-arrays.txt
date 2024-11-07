@@ -2,26 +2,50 @@ Notes on adding Max Arrays for v0.5
 
 - working in branch max-arrays
 
+BRAINSTORM
+- could I send messages from scheme to an array somehow using all Max's array messages
+  - I could probably create an array box and do it?
+    array-send 'foobar 'insert 0 1
+
+-could implement the most useful ones later, not sure if it's necessary?
+  array-append! array-prepend! array-insert! array-replace! array-delete! array-clear!
+
+- maybe add facility to make an invisible object for a named array?
+  i think that would be more generally useful
+  (max-obj 'array 'name (ht :name foo :hidden #t )
+  (send 'name ...)
+
+
+  (max-obj-del 'name)
 FUNCTIONS
 Done
 - array?  
 - array-size
 - (array-ref {array-name} {int index})
-- (array-set! {array-name} {int index} value)
 - array->vector {name} {opt-start} {opt-count} 
 - array->list 
-
-TODO
 - vector->array vector array-name {opt-start} {opt-count}
 - list->array
+- nested array to dict conversion. just works!
+- recursive array-ref
 
-LATER:
+- (array-set! {array-name} {int index} value) - in s4m.scm
+
+NOTES
+- strangely, I could not get array-set working reliably with nested arrays/dicts
+  - heap crashes, weird free problems
+  - left the not working C version unused in s4m.c to go back to when SDK docs available
+- in the meantime, I implemented it in scheme, and that seems to work fine
+  - which is probably not that much slower because I think we have to clone anyway?
+  - maybe mention in docs that it is not particularly fast
+- I guess this will do until I can find out from C74 how to do it correctly
+
+- probably worth testing whether what I do with dicts is safe too?
+
+In prog
 - nested array set/get (array-ref 'myarray '(0 1 0))
+- copy how I did it for dicts...
 
 
 
-- working on vector to array
- 
-
-- case can be either already exists or not... 
 
