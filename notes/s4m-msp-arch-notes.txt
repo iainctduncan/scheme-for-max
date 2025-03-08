@@ -1,0 +1,10 @@
+Notes on how the arch differs from s4m
+
+
+Question:
+- could I safely run s7 from the non audio thread if I check that DSP is not running?
+- would this work in max for live?
+- or could I somehow manually ensure s7 only runs in one at a time?  (mutex or whatever)?
+
+Loading files
+

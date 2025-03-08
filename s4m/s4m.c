@@ -32,6 +32,7 @@
 #define BOOTSTRAP_FILE "s4m.scm"
 #define MIN_HEAP_KB 8
 #define DEFAULT_HEAP_KB 32
+
 // object struct
 typedef struct _s4m {
     t_object obj;
@@ -1092,7 +1093,7 @@ void s4m_read(t_s4m *x, t_symbol *s){
 // internal method to read in a source file
 // is_main_source_file is whether it's the box argument 
 void s4m_doread(t_s4m *x, t_symbol *s, bool is_main_source_file){
-    //post("s4m_doread()");
+    post("s4m_doread(), MAX_PATH_CHARS: %i", MAX_PATH_CHARS);
     t_fourcc filetype = 'TEXT', outtype;
     char filename[MAX_PATH_CHARS];
     short path_id;
@@ -1850,7 +1851,7 @@ void s4m_s7_call(t_s4m *x, s7_pointer funct, s7_pointer args){
 
 // call s7_load, with error logging
 void s4m_s7_load(t_s4m *x, char *full_path){
-    // post("s4m_s7_load() %s", full_path);
+    post("s4m_s7_load() %s", full_path);
     int gc_loc;
     s7_pointer old_port;
     const char *errmsg = NULL;
