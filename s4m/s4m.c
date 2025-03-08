@@ -23,6 +23,7 @@
 
 #include "s4m-grid.h"
 #include "s4m-carray.h"
+#include "s4m-msp.h"
 
 #define MAX_NUM_OUTLETS 32
 #define MAX_NUM_INLETS 32       // note: changing requires making more s4m_callback_msg_inlet_X handlers
@@ -319,7 +320,7 @@ char *trim_symbol_quote(char *input){
 * main C code 
 */
 void ext_main(void *r){
-    post("Scheme For Max 0.5.0 - (c) Iain C.T. Duncan April 2024 - with carrays");
+    post("Scheme For Max 0.5.0 - (c) Iain C.T. Duncan - Mar 2025 msp version");
 
     t_class *c;
     common_symbols_init();
@@ -413,6 +414,9 @@ void ext_main(void *r){
 
     // initialize s4mgrid stuff
     s4mgrid_main(r);
+    // init s4m_msp stuff
+    s4m_msp_main(r);
+
     //post("s4m.c ext_main() done");
 }
 
