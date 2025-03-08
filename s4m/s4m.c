@@ -10,6 +10,7 @@
 #include "ext_atomarray.h"
 #include "ext_time.h"
 #include "ext_itm.h"
+#include "ext_critical.h"
 #include "jpatcher_api.h"
 #include "jgraphics.h"
 
@@ -35,7 +36,11 @@
 // object struct
 typedef struct _s4m {
     t_object obj;
-    t_systhread_mutex	s4m_mutex;        // mutex for altering arrays etc
+
+    // 2024-11 trying out these to figure out how to make recursive atomarray and dict building threadsafe
+    t_critical s4m_critical;
+    t_systhread_mutex	s4m_mutex;
+
     s7_scheme *s7;
 
     t_symbol *source_file;              // main source file name (if one passed as object arg)
@@ -559,6 +564,10 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     s4m_init_s7(x);
     //post("running scan...");
     s4m_scan(x);
+
+    // init the critical region and mutex
+    critical_new(&x->s4m_critical);
+    systhread_mutex_new(&x->s4m_mutex,0);
 
     // set initialized flag, used to prevent some changes after object creation
     x->initialized = true;
@@ -2435,6 +2444,7 @@ void s4m_execute_callback(t_s4m *x, t_symbol *s, short ac, t_atom *av){
 
 // convert a max atom to the appropriate type of s7 pointer
 // NB: trying to add gc protection here broke everything, don't do it
+// NB: putting critical_enter and exit in here did not protect against my dictionary_getkeys thread issue
 s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
     //post("max_atom_to_s7_obj()");
     s7_pointer s7_obj;
@@ -2453,10 +2463,14 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
         }   
     }
     // case for nested dicts, which get turned into hash-tables
+    // this one seems to crash sometimes with low thread race conditions
     else if( atomisdictionary(ap) ){
         t_symbol **keys = NULL;
-        long num_keys = 0;
+        long num_keys;
+        // 2024-11-07 we can crash on the below if writing from the low thread and max objects concurrently 
+        // 2024-11-07 trying ordered version to see if it behaves better: NOPE
         dictionary_getkeys( atom_getobj(ap), &num_keys, &keys);
+
         s7_obj = s7_make_hash_table(s7, num_keys);
         for(int i=0; i < num_keys; i++){
             t_symbol *key_sym = *(keys + i); 
@@ -2524,6 +2538,7 @@ s7_pointer max_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
 }
 
 // todo, get this puppy working for arrays and dictionaries too
+// NB: putting critical_enter and exit in here did not protect against my dictionary_getkeys thread issue
 t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
     //post("s7_obj_to_max_atom");
     
@@ -2595,6 +2610,7 @@ t_max_err s7_obj_to_max_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
     else{
         post("ERROR: unhandled Scheme to Max conversion for: %s", s7_object_to_c_string(s7, s7_obj));
         // TODO: should return t_errs I guess?
+        critical_exit(0);
         return (t_max_err) 1;     
     } 
     return (t_max_err) 0;
@@ -3830,10 +3846,9 @@ static s7_pointer s7_marray_set_not_working(s7_scheme *s7, s7_pointer args){
 }
 
 
-
-
 static s7_pointer s7_marray_to_vector(s7_scheme *s7, s7_pointer args) {
     // array names could come in from s7 as either strings or symbols, if using keyword array names
+
     t_s4m *x = get_max_obj(s7);
     s7_pointer *res;
     t_max_err err;
@@ -3895,8 +3910,8 @@ static s7_pointer s7_marray_to_vector(s7_scheme *s7, s7_pointer args) {
             "array out-of-bounds error"));
         arrayobj_release(array);
     }
-    s7_pointer *new_vector = s7_make_vector(s7, vec_len); 
 
+    s7_pointer *new_vector = s7_make_vector(s7, vec_len); 
     t_atom source_atom;
     long i, j;
     for(i = array_offset, j=0; j < vec_len; i++, j++) {
@@ -3905,6 +3920,7 @@ static s7_pointer s7_marray_to_vector(s7_scheme *s7, s7_pointer args) {
     }
 
     arrayobj_release(array);
+    
     return new_vector;
 }
 

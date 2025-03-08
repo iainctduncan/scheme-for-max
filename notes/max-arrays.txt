@@ -47,5 +47,60 @@ In prog
 - copy how I did it for dicts...
 
 
+- TODO:
+make a fuzzy tester that hammers them from both low and high threads at the same time off metros
+to check for safety
 
+
+- it would be worth finding out if I can call objects with nested atom arrays in their call sig
+  - if so, I could also call array replace by delegating to a max object
+
+
+Made a fuzzy tester
+- it grinds with both low and high thread, slamming in flat and nested sets
+- the grinder is able to make it crash sometimes, damn it
+  - this was without calling array replace msg
+  - crashed on the dict set. 
+  - I need to check if this would happen on dictionary setting too
+- seems like the instability only comes from nested setting, so I think
+  what I actually have is an issue in the recursive dictionary setting code
+- the fuzzer seems to be able to run for a long time without issue unless I have nested creation in there
+
+- not sure about this, but it even seems fine with nested vectors,
+  maybe the issue is only in dicts??
+  - need to run a super long grind on various conditions to find out
+
+- the grinder can run for ages if only using nested vectors!
+
+- crashes on 2459 dictionary_getkeys, always in the same spot
+  - this is max_atom_to_s7_obj, called from array-set! hence being called from 
+    array->vector (not vector to array)
+- it looks like this only happens if the low thread writer is on, implying some kind of race condition deal
+  - and it seems fine if ONLY low thread writers are on
+
+- tried out surrounding my writes with critical regions and mutexes
+  - did not work, still get crashes on dictionary_get_keys
+  - trying putting the critical around the entire function marray_to_vector function
+  - tried putting mutex lock around too, no better
+  - no, this does not fix it either
+
+- it would be interesting to know if this would happen from Max's JS code too?
+
+
+
+- TO FIGURE OUT
+  - if I make a grinder of array->vector, will low and high crash together??
+
+  - is it fine with both the low and high thread if run alone? (while Max accesses too in both)
+    - seems to be, running longer test to verify this.
+  - is it fine with both threads running if not using dicts?
+  - if it is, why can't I protect this somehow? or where do I need to protect it
+  - should the dictionary_get_keys have the same thread safety as atomarray_getatoms
+
+- it seems like the issue is ONLY array->vector (called in array-set) if both
+  s4m low and high threads are calling it 
+  - i.e. I can run array-set! in s4m-low concurrently with both low and high max array.replace messages
+    and it takes a long time, but it DOES still crash
+
+- TODO: is it totally safe when not makeing a *nested* conversion?
 
