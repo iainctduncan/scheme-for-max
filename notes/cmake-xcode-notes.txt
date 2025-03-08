@@ -1,0 +1,14 @@
+Cmake reminders:
+
+- make build dir and go in in
+- cmake -G Xcode ..
+
+- set destination
+  Product -> Destination -> Any Mac
+- edit Scheme 
+  - choose ALL Build -> My Mac
+
+- this seems to work for the debugger running
+- I don't know if it also builds the universal?
+ 
+

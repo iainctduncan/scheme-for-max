@@ -18,6 +18,9 @@ void *s4m_msp_new(t_symbol *s, long argc, t_atom *argv);
 void s4m_msp_free(t_s4m_msp *x);
 void s4m_msp_main(void *r);
 void s4m_msp_bang(t_s4m_msp *x);
+void s4m_msp_dsp64(t_s4m_msp *x, t_object *dsp64, short *count, double samplerate, long maxvectorsize, long flags);
+void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
+        double **outs, long numouts, long sampleframes, long flags, void *userparam);
 
 
 #endif
