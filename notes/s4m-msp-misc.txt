@@ -1,0 +1,12 @@
+Misc functions
+
+Determine thread:
+ post("in audio thread: %i", systhread_isaudiothread() );
+ post("in main thread: %i", systhread_ismainthread() );
+
+Determine if in pfft
+https://sdk.cdn.cycling74.com/max-sdk-8.2.0/group__pfft.html
+
+Is audio thread running?
+int sys_getdspstate();
+

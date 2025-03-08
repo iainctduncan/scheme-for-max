@@ -522,6 +522,7 @@ void *s4m_new(t_symbol *s, long argc, t_atom *argv){
     if(argc){
         atom_arg_getsym(&x->source_file, 0, argc, argv);
         if(x->source_file != _sym_nothing){
+            // protect against an attribute being taken as the source file 
             if(x->source_file->s_name[0] == '@'){
                 x->source_file = _sym_nothing;
             }

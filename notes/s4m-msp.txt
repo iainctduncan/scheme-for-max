@@ -1,21 +1,24 @@
 Notes on attempt to make isolated s4m~
 
+
+Progress
+
+- first step, make a new object that is audio pass through
+- created the shell, added new s4m_msp_init_s7 function
+- got s7 initializing
+- made a new boostrap file, s4m-msp.scm, and got it loading
+- can't include this in both places #include "common/commonsyms.c", so using gensym("") instead of _sym_nothing
+
+
+
 Thoughts:
 - patches don't start with DSP on, so perhaps we can simply 
   force that running the interpreter outside of dsp can *only* happen if dsp
   is not running? (is there a way to check that)
 - next: get loading some scheme, make a different bootstrap file
+ 
 
+Left off:
+- I don't think x->source_file got setup properly, it's just null all the time
 
-
-Progress
-
-- first step, make a new object that is audio pass through
-
-- created the shell, added new s4m_msp_init_s7 function
-
-- got s7 initializing
-
-- next step is getting it bootstrapping
-
-- I think 
+- left off, about to alter the vector in scheme

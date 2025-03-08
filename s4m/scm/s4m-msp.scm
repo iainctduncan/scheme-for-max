@@ -34,4 +34,4 @@
     (max-post (log-string args))
 ))
 
-(post "s4m-msp.scm init complete")
+(post "  - s4m-msp.scm bootstrap complete")

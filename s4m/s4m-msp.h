@@ -20,6 +20,10 @@ typedef struct _s4m_msp {
   t_symbol *source_file_full_path;    // full path to show users where the file is
   short *source_file_path_id;         // path to source file
   t_filehandle source_file_handle;    // file handle for the source file
+
+  bool initialized;                   // gets set to true after object initialization complete
+  char log_repl;                      // whether to post the return values of evaluating scheme functions
+  char log_null;                      // whether to post the return value of nil to the console
  
 } t_s4m_msp;
 
@@ -38,10 +42,12 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
 
 void s4m_msp_s7_load(t_s4m_msp *x, char *full_path);
 void s4m_msp_doread(t_s4m_msp *x, t_symbol *s, bool is_main_source_file);
-
+void s4m_msp_s7_call(t_s4m_msp *x, s7_pointer funct, s7_pointer args);
+void s4m_msp_post_s7_res(t_s4m_msp *x, s7_pointer res);
 
 t_s4m_msp *get_msp_obj(s7_scheme *s7);
 static s7_pointer s7_msp_load_from_max(s7_scheme *s7, s7_pointer args);
 static s7_pointer s7_msp_post(s7_scheme *s7, s7_pointer args);
+
 
 #endif

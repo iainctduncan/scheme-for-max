@@ -47,6 +47,28 @@ void *s4m_msp_new(t_symbol *s, long argc, t_atom *argv) {
 		  outlet_new(x, "signal"); 		// signal outlet (note "signal" rather than NULL)
 	  }
 
+    x->source_file = NULL;
+    x->source_file_full_path = NULL;
+    x->source_file_path_id = NULL;
+    x->source_file_handle = NULL;
+    // init source file from argument
+    x->source_file = gensym("");
+    if(argc){
+        atom_arg_getsym(&x->source_file, 0, argc, argv);
+        if(x->source_file != gensym("")){
+            // protect against an attribute being taken as the source file 
+            if(x->source_file->s_name[0] == '@'){
+                x->source_file = gensym("");
+            }
+        } 
+        post("s4m_msp_new() source file: %s", x->source_file->s_name);
+    }
+
+    // by default we log return values
+    // if I set it to true here, then the attribute does not get saved with the patcher
+    x->log_repl = true;
+    x->log_null = false;
+
     post("  - in main thread: %i", systhread_ismainthread() );
     post("  - dsp running: %i", sys_getdspstate() );
     s4m_msp_init_s7(x);
@@ -88,13 +110,39 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
 	t_double *outL = outs[0];	// we get audio for each outlet of the object from the **outs argument
 	int n = sampleframes;
 
-	// this perform method simply copies the input to the output, offsetting the value
-	while (n--)
-		*outL++ = *inL++ * 0.5;
+	// from example code
+	//while (n--)
+	//	*outL++ = *inL++ * 0.5;
 
+  // only going to pass through once in a while to make things easier to debug
   if(x->dsp_frame % x->frames_per_call == 0){
     post("frame: %i, call into s7", x->dsp_frame);
-    post("in audio thread: %i", systhread_isaudiothread() );
+
+    // build s7 vector of incoming samples
+    s7_pointer *s7_audio_in = s7_make_vector(x->s7, sampleframes);
+    for(int i=0; i < sampleframes; i++){
+      s7_vector_set(x->s7, s7_audio_in, i, s7_make_real(x->s7, *inL++ ) ); 
+    }
+    // this works to check if something is a vector, in vector is valid
+    // if( s7_is_vector(s7_audio_in) ){ post(" made input vector"); }
+    
+    // call into s7, get back output buffer
+    s7_pointer s7_args = s7_nil(x->s7); 
+    s7_args = s7_cons(x->s7, s7_audio_in, s7_args); 
+    s7_pointer *s7_audio_out = s7_call(x->s7, s7_name_to_value(x->s7, "perform"), s7_args);
+
+    // working
+    //if( s7_is_vector(s7_audio_out) ){ post(" got back a vector"); }
+
+    // write audio back
+    for(int i=0; i < sampleframes; i++){
+      s7_pointer *s7_out_samp = s7_vector_ref(x->s7, s7_audio_out, i);                            /* (vector-ref vec index) */
+      *outL++ = (double) s7_real(s7_out_samp);
+    }
+
+  }else{
+	  while (n--)
+		  *outL++ = *inL++ * 0.5;
   }
 
   // inc the count of how many vectors we've rendered
@@ -122,15 +170,22 @@ void s4m_msp_init_s7(t_s4m_msp *x){
   s7_define_function(x->s7, "max-post", s7_msp_post, 1, 0, false, "send strings to the max log");
   s7_define_function(x->s7, "load-from-max", s7_msp_load_from_max, 1, 0, false, "load files from the max path");
  
+  // make the address of this object available in scheme as "maxobj" so that 
+  // scheme functions can get access to our C functions
+  uintptr_t max_obj_ptr = (uintptr_t)x;
+  s7_define_variable(x->s7, "maxobj", s7_make_integer(x->s7, max_obj_ptr)); 
 
   // bootstrap the scheme code
   s4m_msp_doread(x, gensym( MSP_BOOTSTRAP_FILE ), false);
   // load a file given from a user arg, and save filename
   // the convoluted stuff below is to prevent saving @ins or something
   // as the sourcefile name if object used with param args but no sourcefile 
-  //if( x->source_file != _sym_nothing){
-  //    s4m_msp_doread(x, x->source_file, true);
-  //}
+ 
+  //post("x->source_file: %s", x->source_file->s_name);
+  if( x->source_file != gensym("") ){
+    //post(" - loading mainsource file");
+    s4m_msp_doread(x, x->source_file, true);
+  }
 
   post("  - s4m_msp_init_s7 complete");
 }
@@ -138,7 +193,7 @@ void s4m_msp_init_s7(t_s4m_msp *x){
 // call s7_load, with error logging
 // copied as is from s4m for now
 void s4m_msp_s7_load(t_s4m_msp *x, char *full_path){
-    post("s4m_msp_s7_load() %s", full_path);
+    //post("s4m_msp_s7_load() %s", full_path);
     int gc_loc;
     s7_pointer old_port;
     const char *errmsg = NULL;
@@ -165,10 +220,9 @@ void s4m_msp_s7_load(t_s4m_msp *x, char *full_path){
 
 // internal method to read in a source file
 // is_main_source_file is whether it's the box argument
-// currently the same as in s4m, which may or may not work
-// XXX this is crashing, why?
+// currently mostly the same as in s4m, which may or may not work
 void s4m_msp_doread(t_s4m_msp *x, t_symbol *s, bool is_main_source_file){
-    post("s4m_msp_doread()");
+    //post("s4m_msp_doread() for symbol %s", s->s_name);
     
     t_fourcc filetype = 'TEXT', outtype;
     char filename[MAX_PATH_CHARS];
@@ -196,6 +250,52 @@ void s4m_msp_doread(t_s4m_msp *x, t_symbol *s, bool is_main_source_file){
     s4m_msp_s7_load(x, full_path);
 }
 
+// call s7_call, with error logging
+void s4m_msp_s7_call(t_s4m_msp *x, s7_pointer funct, s7_pointer args){
+    post("s4m_msp_s7_call()");
+    int gc_loc;
+    s7_pointer old_port;
+    const char *errmsg = NULL;
+    char *msg = NULL;
+    old_port = s7_set_current_error_port(x->s7, s7_open_output_string(x->s7));
+    gc_loc = s7_gc_protect(x->s7, old_port);
+    // the actual call
+    s7_pointer res = s7_call(x->s7, funct, args);
+    errmsg = s7_get_output_string(x->s7, s7_current_error_port(x->s7));
+    if ((errmsg) && (*errmsg)){
+        msg = (char *)calloc(strlen(errmsg) + 1, sizeof(char));
+        strcpy(msg, errmsg);
+    }
+    s7_close_output_port(x->s7, s7_current_error_port(x->s7));
+    s7_set_current_error_port(x->s7, old_port);
+    s7_gc_unprotect_at(x->s7, gc_loc);
+    if (msg){
+        object_error((t_object *)x, "s4m Error: %s", msg);
+        free(msg);
+    }else{
+        if( (x->log_repl && x->log_null && s7_is_null(x->s7, res)  ) ||
+            (x->log_repl && !s7_is_null(x->s7, res) && !s7_is_unspecified(x->s7, res)  ) ){
+            s4m_msp_post_s7_res(x, res);
+        }
+    }
+}
+
+// log results to the max console, without printing null list for side effect results
+void s4m_msp_post_s7_res(t_s4m_msp *x, s7_pointer res) {
+    // check if an s4m-filter-result function is defined, and if so, use it
+    if( s7_is_defined(x->s7, "s4m-filter-result")){
+        s7_pointer s7_args = s7_nil(x->s7); 
+        s7_args = s7_cons(x->s7, res, s7_args); 
+        res = s7_call(x->s7, s7_name_to_value(x->s7, "s4m-filter-result"), s7_args);
+    }
+    // skip posting to console if filter-result returns the keyword :no-log
+    // else we want the default logging
+    char *log_out = s7_object_to_c_string(x->s7, res);
+    if( strcmp(log_out, ":no-log") && log_out[0] != '{' ){
+        post("s4m~> %s", s7_object_to_c_string(x->s7, res) );
+    }
+}
+
 //--------------------------------------------------------------------------------
 // s7 functions, currently not shared with s4m - can try refactoring to share later 
 // load a scheme file, searching the max paths to find it
@@ -210,7 +310,9 @@ t_s4m_msp *get_msp_obj(s7_scheme *s7){
 
 static s7_pointer s7_msp_load_from_max(s7_scheme *s7, s7_pointer args) {
     // all added functions have this form, args is a list, s7_car(args) is the first arg, etc 
+    //post("s7_msp_load_from_max()");
     char *file_name = (char *)s7_string( s7_car(args) );
+    //post("  - file: %s", file_name);
     t_s4m_msp *x = get_msp_obj(s7);
     s4m_msp_doread(x, gensym(file_name), false);    
     return s7_nil(s7);

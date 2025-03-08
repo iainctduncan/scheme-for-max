@@ -57,8 +57,8 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "signal" ],
-					"patching_rect" : [ 292.0, 164.0, 38.0, 22.0 ],
-					"text" : "s4m~"
+					"patching_rect" : [ 292.0, 164.0, 140.0, 22.0 ],
+					"text" : "s4m~ s4m-msp-test.scm"
 				}
 
 			}
