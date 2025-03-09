@@ -110,15 +110,11 @@ void s4m_msp_dsp64(t_s4m_msp *x, t_object *dsp64, short *count, double samplerat
 void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins, 
         double **outs, long numouts, long sampleframes, long flags, void *userparam){
 	t_double *inL = ins[0];		// we get audio for each inlet of the object from the **ins argument
+  t_double *inR = ins[1];
 	t_double *outL = outs[0];	// we get audio for each outlet of the object from the **outs argument
-  t_double *inR;
-  t_double *outR;
-
-  if( numins > 1 ) inR = ins[1];
-  if( numouts > 1 ) outR = outs[1];
+  t_double *outR = outs[1];
   int n = sampleframes;
 
-	// from example code
 	//while (n--)
 	//	*outL++ = *inL++ * 0.5;
 
@@ -153,7 +149,7 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
     for(int i=0; i < sampleframes; i++){
       s7_pointer *s7_out_samp_L = s7_vector_ref(x->s7, s7_audio_out_L, i);      /* (vector-ref vec index) */
       *outL++ = (double) s7_real(s7_out_samp_L);
-      s7_pointer *s7_out_samp_R = s7_vector_ref(x->s7, s7_audio_out_L, i);    /* (vector-ref vec index) */
+      s7_pointer *s7_out_samp_R = s7_vector_ref(x->s7, s7_audio_out_R, i);    /* (vector-ref vec index) */
       *outR++ = (double) s7_real(s7_out_samp_R);
     }
 
@@ -177,7 +173,7 @@ void s4m_msp_bang(t_s4m_msp *x) {
 
 // init and set up the s7 interpreter, and load main source file if present
 void s4m_msp_init_s7(t_s4m_msp *x){
-  post("s4m_msp_init_s7(): initializing s7 interpreter");
+  post("s4m_msp_init_s7(): initializing s7");
   // S7 initialization, it's possible this should actually happen in main and be attached
   // to the class as opposed to the instance. Not sure about that.
   // initialize interpreter
@@ -204,7 +200,7 @@ void s4m_msp_init_s7(t_s4m_msp *x){
     s4m_msp_doread(x, x->source_file, true);
   }
 
-  post("  - s4m_msp_init_s7 complete");
+  //post("  - s4m_msp_init_s7 complete");
 }
 
 // call s7_load, with error logging

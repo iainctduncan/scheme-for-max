@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 289.0, 371.0, 356.0, 549.0 ],
+		"rect" : [ 160.0, 253.0, 681.0, 549.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -40,13 +40,78 @@
 		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
+					"id" : "obj-8",
+					"maxclass" : "number",
+					"maximum" : 64,
+					"minimum" : 0,
+					"numinlets" : 1,
+					"numoutlets" : 2,
+					"outlettype" : [ "", "bang" ],
+					"parameter_enable" : 0,
+					"patching_rect" : [ 231.0, 11.0, 50.0, 22.0 ]
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-7",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 231.0, 42.0, 81.0, 22.0 ],
+					"text" : "(set! *bin* $1)"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-6",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 386.0, 48.0, 103.0, 22.0 ],
+					"text" : "(post :vol *vol*)"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"format" : 6,
+					"id" : "obj-5",
+					"maxclass" : "flonum",
+					"maximum" : 1.0,
+					"minimum" : 0.0,
+					"numinlets" : 1,
+					"numoutlets" : 2,
+					"outlettype" : [ "", "bang" ],
+					"parameter_enable" : 0,
+					"patching_rect" : [ 132.0, 11.0, 50.0, 22.0 ]
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-4",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 132.0, 42.0, 81.0, 22.0 ],
+					"text" : "(set! *vol* $1)"
+				}
+
+			}
+, 			{
+				"box" : 				{
 					"id" : "obj-3",
 					"maxclass" : "newobj",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "signal" ],
-					"patching_rect" : [ 102.0, 211.0, 59.0, 22.0 ],
-					"text" : "saw~ 110"
+					"patching_rect" : [ 13.0, 11.0, 54.0, 22.0 ],
+					"text" : "saw~ 65"
 				}
 
 			}
@@ -59,9 +124,10 @@
 					"maxclass" : "live.gain~",
 					"numinlets" : 1,
 					"numoutlets" : 4,
+					"orientation" : 1,
 					"outlettype" : [ "signal", "", "float", "list" ],
 					"parameter_enable" : 1,
-					"patching_rect" : [ 102.0, 319.0, 70.0, 87.0 ],
+					"patching_rect" : [ 13.0, 186.0, 87.0, 33.0 ],
 					"saved_attribute_attributes" : 					{
 						"valueof" : 						{
 							"parameter_initial" : [ -70 ],
@@ -89,7 +155,7 @@
 					"maxclass" : "ezdac~",
 					"numinlets" : 2,
 					"numoutlets" : 0,
-					"patching_rect" : [ 102.0, 427.0, 39.0, 39.0 ],
+					"patching_rect" : [ 13.0, 246.0, 39.0, 39.0 ],
 					"prototypename" : "helpfile"
 				}
 
@@ -101,7 +167,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 2,
 					"outlettype" : [ "signal", "" ],
-					"patching_rect" : [ 102.0, 278.0, 138.0, 22.0 ],
+					"patching_rect" : [ 13.0, 86.0, 138.0, 22.0 ],
 					"text" : "pfft~ pfft-subpatch 512 4"
 				}
 
@@ -137,6 +203,41 @@
 				}
 
 			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-1", 1 ],
+					"source" : [ "obj-4", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-4", 0 ],
+					"source" : [ "obj-5", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-1", 1 ],
+					"source" : [ "obj-6", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-1", 1 ],
+					"source" : [ "obj-7", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-7", 0 ],
+					"source" : [ "obj-8", 0 ]
+				}
+
+			}
  ],
 		"parameters" : 		{
 			"obj-16" : [ "live.gain~", "live.gain~", 0 ],
@@ -158,6 +259,10 @@
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
+			}
+, 			{
+				"name" : "s4m~.mxo",
+				"type" : "iLaX"
 			}
  ],
 		"autosave" : 0

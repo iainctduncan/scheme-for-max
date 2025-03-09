@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 556.0, 358.0, 864.0, 473.0 ],
+		"rect" : [ 1122.0, 284.0, 588.0, 473.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -40,6 +40,18 @@
 		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
+					"id" : "obj-2",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 2,
+					"outlettype" : [ "signal", "signal" ],
+					"patching_rect" : [ 73.0, 183.0, 120.0, 22.0 ],
+					"text" : "s4m~ spectral-1.scm"
+				}
+
+			}
+, 			{
+				"box" : 				{
 					"bubble" : 1,
 					"fontname" : "Arial",
 					"fontsize" : 13.0,
@@ -48,7 +60,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 646.0, 282.0, 198.0, 40.0 ],
+					"patching_rect" : [ 388.0, 273.0, 198.0, 40.0 ],
 					"text" : "message output to the parent patch via a pfft~ outlet"
 				}
 
@@ -63,7 +75,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 640.0, 92.0, 209.0, 40.0 ],
+					"patching_rect" : [ 382.0, 83.0, 209.0, 40.0 ],
 					"text" : "message input to our spectral subpatch from a pfft~ inlet"
 				}
 
@@ -106,7 +118,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "int" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 718.0, 175.0, 24.0, 24.0 ]
+					"patching_rect" : [ 460.0, 166.0, 24.0, 24.0 ]
 				}
 
 			}
@@ -116,7 +128,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 738.0, 175.0, 112.0, 20.0 ],
+					"patching_rect" : [ 480.0, 166.0, 112.0, 20.0 ],
 					"style" : "helpfile_label",
 					"text" : "fullspectrum flag"
 				}
@@ -128,7 +140,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 751.0, 197.0, 111.0, 20.0 ],
+					"patching_rect" : [ 493.0, 188.0, 111.0, 20.0 ],
 					"style" : "helpfile_label",
 					"text" : "FFT hop size"
 				}
@@ -140,7 +152,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 732.0, 226.0, 167.0, 20.0 ],
+					"patching_rect" : [ 474.0, 217.0, 167.0, 20.0 ],
 					"style" : "helpfile_label",
 					"text" : "FFT half-frame size (sigvs)"
 				}
@@ -156,7 +168,7 @@
 					"numoutlets" : 2,
 					"outlettype" : [ "", "bang" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 699.0, 202.0, 53.0, 23.0 ],
+					"patching_rect" : [ 441.0, 193.0, 53.0, 23.0 ],
 					"triangle" : 0
 				}
 
@@ -171,7 +183,7 @@
 					"numoutlets" : 2,
 					"outlettype" : [ "", "bang" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 680.0, 228.0, 53.0, 23.0 ],
+					"patching_rect" : [ 422.0, 219.0, 53.0, 23.0 ],
 					"triangle" : 0
 				}
 
@@ -186,7 +198,7 @@
 					"numoutlets" : 2,
 					"outlettype" : [ "", "bang" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 661.0, 254.0, 53.0, 23.0 ],
+					"patching_rect" : [ 403.0, 245.0, 53.0, 23.0 ],
 					"triangle" : 0
 				}
 
@@ -200,7 +212,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 4,
 					"outlettype" : [ "int", "int", "int", "int" ],
-					"patching_rect" : [ 661.0, 148.0, 76.0, 23.0 ],
+					"patching_rect" : [ 403.0, 139.0, 76.0, 23.0 ],
 					"text" : "fftinfo~"
 				}
 
@@ -211,7 +223,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 713.0, 255.0, 110.0, 20.0 ],
+					"patching_rect" : [ 455.0, 246.0, 110.0, 20.0 ],
 					"style" : "helpfile_label",
 					"text" : "FFT size"
 				}
@@ -220,11 +232,11 @@
 , 			{
 				"box" : 				{
 					"id" : "obj-1",
-					"linecount" : 2,
+					"linecount" : 4,
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 89.0, 325.0, 503.0, 33.0 ],
+					"patching_rect" : [ 18.0, 329.0, 269.0, 60.0 ],
 					"style" : "helpfile_label",
 					"text" : "(signal outlets appear to the left of message outlets and cannot be shared, so we must number the inlets 1 and 1 in order to get two outlets on our parent pfft~ )"
 				}
@@ -238,7 +250,7 @@
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 607.0, 291.0, 40.0, 23.0 ],
+					"patching_rect" : [ 349.0, 282.0, 40.0, 23.0 ],
 					"text" : "out 1"
 				}
 
@@ -252,7 +264,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 607.0, 101.0, 32.0, 23.0 ],
+					"patching_rect" : [ 349.0, 92.0, 32.0, 23.0 ],
 					"text" : "in 2"
 				}
 
@@ -291,7 +303,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 737.0, 138.0, 184.0, 33.0 ],
+					"patching_rect" : [ 479.0, 129.0, 184.0, 33.0 ],
 					"style" : "helpfile_label",
 					"text" : "optional fftinfo~ reports useful values when dsp is turned on"
 				}
@@ -312,15 +324,29 @@
  ],
 		"lines" : [ 			{
 				"patchline" : 				{
-					"destination" : [ "obj-16", 1 ],
+					"destination" : [ "obj-2", 1 ],
 					"source" : [ "obj-15", 1 ]
 				}
 
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-16", 0 ],
+					"destination" : [ "obj-2", 0 ],
 					"source" : [ "obj-15", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-16", 1 ],
+					"source" : [ "obj-2", 1 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-16", 0 ],
+					"source" : [ "obj-2", 0 ]
 				}
 
 			}
@@ -354,13 +380,26 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-2", 0 ],
+					"order" : 1,
+					"source" : [ "obj-6", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-5", 0 ],
+					"order" : 0,
 					"source" : [ "obj-6", 0 ]
 				}
 
 			}
  ],
-		"dependency_cache" : [  ],
+		"dependency_cache" : [ 			{
+				"name" : "s4m~.mxo",
+				"type" : "iLaX"
+			}
+ ],
 		"autosave" : 0
 	}
 
