@@ -9,11 +9,15 @@
 ;   (set! (buf i) (* 0.1 (buf i))))
 
 
+(define *vol* 1.0)
+
 (define (perform inbuf) 
   (post "(perform)")
   (let ((outbuf (make-vector (length inbuf) 0.0)))
     (do ((i 0 (+ 1 i))) ((>= i (length inbuf)))
-      (set! (outbuf i) (* 0.5 (inbuf i))))
+
+      (set! (outbuf i) (* *vol* (inbuf i))))
+    
     outbuf))
 
 (post "perform function" perform)

@@ -11,7 +11,7 @@
 #include "s7.h"
 
 #include "s4m-msp.h"
-
+#include "s4m-helpers.h"
 
 void post_threads(){
     post("threads: dsp on: %i", sys_getdspstate(), "in main: %i", systhread_ismainthread() );
@@ -25,6 +25,8 @@ void s4m_msp_main(void *r){
 
     // bang forces an update
     class_addmethod(c, (method)s4m_msp_bang, "bang", 0);
+    class_addmethod(c, (method)s4m_msp_msg, "anything", A_GIMME, 0);
+
     class_addmethod(c, (method)s4m_msp_dsp64,		"dsp64",	A_CANT, 0);    
 	  class_dspinit(c);
 
@@ -252,7 +254,7 @@ void s4m_msp_doread(t_s4m_msp *x, t_symbol *s, bool is_main_source_file){
 
 // call s7_call, with error logging
 void s4m_msp_s7_call(t_s4m_msp *x, s7_pointer funct, s7_pointer args){
-    post("s4m_msp_s7_call()");
+    //post("s4m_msp_s7_call()");
     int gc_loc;
     s7_pointer old_port;
     const char *errmsg = NULL;
@@ -295,6 +297,289 @@ void s4m_msp_post_s7_res(t_s4m_msp *x, s7_pointer res) {
         post("s4m~> %s", s7_object_to_c_string(x->s7, res) );
     }
 }
+
+// the generic message hander, fires on any symbol messages, which includes lists of numbers or strings
+void s4m_msp_msg(t_s4m_msp *x, t_symbol *s, long argc, t_atom *argv){
+    bool in_isr = isr();
+    int inlet_num = proxy_getinlet((t_object *)x);
+    //post("s4m_msp_msg(): selector is %s, isr: %i, inlet_num: %i", s->s_name, in_isr, inlet_num);
+    s4m_msp_handle_msg(x, inlet_num, s, argc, argv);
+    return;
+}
+
+void s4m_msp_handle_msg(t_s4m_msp *x, int inlet_num, t_symbol *s, long argc, t_atom *argv){
+    //post("s4m_msp_handle_msg(): inlet_num: %i arguments: %ld isr: %i", inlet_num, argc, isr());
+    t_atom *ap;
+
+    // handle incoming messages that are complete code
+    if(inlet_num == 0 && s->s_name[0] == '('){
+      //post("caught raw code, first sym: %s", s->s_name);
+      s4m_msp_eval_atoms_as_string(x, s, argc, argv);
+      return;
+    }
+
+    // treat input to inlet 0 as a list of atoms that should be evaluated as a scheme expression
+    // as if the list were encloded in parens
+    // make an S7 list out of them, and send to S7 to eval (treat them as code list)
+    if(inlet_num == 0){
+        s7_pointer s7_args = s7_nil(x->s7); 
+        // loop through the args backwards to build the cons list 
+        for(int i = argc-1; i >= 0; i--) {
+            ap = argv + i;
+            // XXX: temp hack
+            //s7_args = s7_cons(x->s7, max_atom_to_s7_obj(x->s7, ap), s7_args); 
+            s7_args = s7_cons(x->s7, msp_atom_to_s7_obj(x->s7, ap), s7_args); 
+        }
+        // add the first message to the arg list (it's always a symbol)
+        s7_args = s7_cons(x->s7, s7_make_symbol(x->s7, s->s_name), s7_args); 
+        // call the s7 eval function, sending in all args as an s7 list
+        //post("calling s4m_msp-eval on s7_args: %s", s7_object_to_c_string(x->s7, s7_args));
+        s4m_msp_s7_call(x, s7_name_to_value(x->s7, "s4m-eval"), s7_args);
+    }
+    // messages to non-zero inlets (handled by dispatch)
+    // not yet implemented (code available to copy in s4m
+    // TODO later
+}
+
+void s4m_msp_eval_atoms_as_string(t_s4m_msp *x, t_symbol *sym, long argc, t_atom *argv){
+    //post("s4m_msp_eval_atoms_as_string() argc: %i", argc);
+    char *token_1 = sym->s_name;
+    int token_1_size = strlen(token_1);
+    long size = 0;
+    char *atoms_as_text = NULL;
+
+    // single token handler, just eval the symbol
+    if(argc == 0){
+        s4m_msp_s7_eval_c_string(x, token_1);
+        return;
+    }
+    // multiple token, more complex
+    t_max_err err = atom_gettext(argc, argv, &size, &atoms_as_text, OBEX_UTIL_ATOM_GETTEXT_DEFAULT);
+    if(err == MAX_ERR_NONE && size && atoms_as_text) {
+        int code_str_size = token_1_size + size + 1;
+        char *code_str = (char *)sysmem_newptr( sizeof( char ) * code_str_size);
+        sprintf(code_str, "%s %s", token_1, atoms_as_text);
+        // now we have code, but we need to clean up Max escape chars
+        char *code_str_clean = (char *)sysmem_newptr( sizeof( char ) * code_str_size);
+        for(int i=0, j=0; i < code_str_size; i++, j++){
+            if(code_str[j] == '\\') code_str_clean[i] = code_str[++j];
+            else code_str_clean[i] = code_str[j];
+        }
+        // call s4m
+        s4m_msp_s7_eval_c_string(x, code_str_clean);
+        sysmem_freeptr(code_str);
+        sysmem_freeptr(code_str_clean);
+    }else{
+       object_error((t_object *)x, "s4m~: Error parsing input");
+    }
+    if (atoms_as_text) {
+        sysmem_freeptr(atoms_as_text);
+    }
+}
+
+// eval from c string with error logging
+// cloned from s4m
+void s4m_msp_s7_eval_c_string(t_s4m_msp *x, char *code_str){
+    //post("s4m_msp_s7_eval_c_string()");
+    int gc_loc;
+    s7_pointer old_port;
+    const char *errmsg = NULL;
+    char *msg = NULL;
+    old_port = s7_set_current_error_port(x->s7, s7_open_output_string(x->s7));
+    gc_loc = s7_gc_protect(x->s7, old_port);
+    //post("calling s7_eval_c_string");
+    s7_pointer res = s7_eval_c_string(x->s7, code_str);
+    errmsg = s7_get_output_string(x->s7, s7_current_error_port(x->s7));
+    if ((errmsg) && (*errmsg)){
+        msg = (char *)calloc(strlen(errmsg) + 1, sizeof(char));
+        strcpy(msg, errmsg);
+    }
+    s7_close_output_port(x->s7, s7_current_error_port(x->s7));
+    s7_set_current_error_port(x->s7, old_port);
+    s7_gc_unprotect_at(x->s7, gc_loc);
+    if (msg){
+        object_error((t_object *)x, "s4m~ Error: %s", msg);
+        free(msg);
+    }else{
+        if( (x->log_repl && x->log_null && s7_is_null(x->s7, res) ) ||
+            (x->log_repl && !s7_is_null(x->s7, res) ) ){
+            s4m_msp_post_s7_res(x, res);
+        }
+    }
+}
+
+//--------------------------------------------------------------------------------
+// stuff that should be refactored to be shared with s4m
+
+// calling these msp_atom_to... is silly and temporary
+
+// convert a max atom to the appropriate type of s7 pointer
+// NB: trying to add gc protection here broke everything, don't do it
+s7_pointer msp_atom_to_s7_obj(s7_scheme *s7, t_atom *ap){
+    //post("msp_atom_to_s7_obj()");
+    s7_pointer s7_obj;
+  
+    // case for arrays of atoms, which will be turned into S7 vectors
+    // pertinent docs: https://cycling74.com/sdk/max-sdk-8.0.3/html/group__atomarray.html
+    if( atomisatomarray(ap) ){
+        long length;
+        t_atom *inner_ap;
+        atomarray_getatoms( atom_getobj(ap), &length, &inner_ap);
+        // make and fill the vector recursively
+        s7_obj = s7_make_vector(s7, length);   
+        for(int i=0; i < length; i++){
+            s7_vector_set(s7, s7_obj, i, 
+                msp_atom_to_s7_obj(s7, inner_ap + i )); 
+        }   
+    }
+    // case for nested dicts, which get turned into hash-tables
+    else if( atomisdictionary(ap) ){
+        t_symbol **keys = NULL;
+        long num_keys = 0;
+        dictionary_getkeys( atom_getobj(ap), &num_keys, &keys);
+        s7_obj = s7_make_hash_table(s7, num_keys);
+        for(int i=0; i < num_keys; i++){
+            t_symbol *key_sym = *(keys + i); 
+            t_atom *value = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
+            dictionary_getatom( atom_getobj(ap), key_sym, value);
+            s7_hash_table_set(s7, s7_obj, 
+                s7_make_symbol(s7, key_sym->s_name),    // key
+                msp_atom_to_s7_obj(s7, value)           // val
+            );         
+            sysmem_freeptr(value); 
+        }
+        // free the keys
+        if(keys) 
+            dictionary_freekeys( atom_getobj(ap), num_keys, keys);
+    }
+    // case for string atoms, as can be the case if strings are mixed in arrays  
+    else if( atomisstring(ap) ){
+        char *str = string_getptr( atom_getobj(ap) );
+        s7_obj = s7_make_string(s7, str);
+    }
+    // simple types
+    else {
+      switch (atom_gettype(ap)) {
+        case A_LONG:
+            //post("int %ld", atom_getlong(ap));
+            s7_obj = s7_make_integer(s7, atom_getlong(ap));
+            break;
+        case A_FLOAT:
+            //post("float %.2f", atom_getfloat(ap));
+            s7_obj = s7_make_real(s7, atom_getfloat(ap));
+            break;
+        case A_SYM: 
+            //post("A_SYM %ld: %s", atom_getsym(ap)->s_name);
+            // if sent \"foobar\" from max, we want an S7 string "foobar"
+            if( in_quotes(atom_getsym(ap)->s_name) ){
+                char *trimmed_sym = trim_quotes(atom_getsym(ap)->s_name);
+                //post(" ... creating s7 string");
+                s7_obj = s7_make_string(s7, trimmed_sym);
+            }else if( is_quoted_symbol(atom_getsym(ap)->s_name) ){
+            // if sent 'foobar, we actually want in s7 the list: ('quote 'foobar)
+                s7_obj = s7_nil(s7); 
+                s7_obj = s7_cons(s7, s7_make_symbol(s7, trim_symbol_quote(atom_getsym(ap)->s_name)), s7_obj);
+                s7_obj = s7_cons(s7, s7_make_symbol(s7, "quote"), s7_obj); 
+            }else{
+            // otherwise, make it an s7 symbol
+            // NB: foo -> foo, 'foo -> (symbol "foo")
+                t_symbol *sym = atom_getsym(ap); 
+                //post(" ... creating s7 symbol from %s ", sym->s_name);
+                if( sym == gensym("#t") || sym == gensym("#true") ){
+                    s7_obj = s7_t(s7);
+                }else if( sym == gensym("#f") || sym == gensym("#false") ){
+                    s7_obj = s7_f(s7);
+                }else{
+                    s7_obj = s7_make_symbol(s7, sym->s_name);
+                }
+            }
+            break;
+        default:
+            // unhandled types return an s7 nil
+            post("ERROR: unknown atom type (%ld)", atom_gettype(ap));
+            s7_obj = s7_nil(s7);
+      }
+    }
+    return s7_obj;
+}
+
+// todo, get this puppy working for arrays and dictionaries too
+t_max_err s7_obj_to_msp_atom(s7_scheme *s7, s7_pointer *s7_obj, t_atom *atom){
+    //post("s7_obj_to_msp_atom");
+    // s7 vectors get turned into atom arrays, with recursive calls
+    if( s7_is_vector(s7_obj) ){
+        // need to make a new atomarray and then set that on the atom
+        int vector_len = s7_vector_length(s7_obj);
+        // make a new empty atom array
+        t_atomarray *aa = NULL;
+        aa = atomarray_new(0, NULL);
+        for(int i=0; i < vector_len; i++){
+            t_atom *ap = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
+            s7_obj_to_msp_atom(s7, s7_vector_ref(s7, s7_obj, i), ap);         
+            atomarray_appendatom(aa, ap); 
+        }
+        atom_setobj(atom, (void *)aa);
+    }
+
+    // s7 hashtables get turned into dictionaries
+    else if( s7_is_hash_table(s7_obj) ){
+        //post("hash table to dict"); 
+        // get a list of key/value cons pairs in the hash by calling (map values the-hash-table)
+        s7_pointer key_val_list = s7_call(s7, s7_name_to_value(s7, "map"), 
+            s7_list(s7, 2, s7_name_to_value(s7, "values"), s7_obj));
+        int num_pairs = s7_list_length(s7, key_val_list);
+        // make a new dictionary and populate it with keys and atoms
+        t_dictionary *dict = dictionary_new();
+        for(int i=0; i < num_pairs; i++){
+            t_atom *ap = (t_atom *)sysmem_newptr( sizeof( t_atom ) );
+            s7_pointer kv_pair = s7_list_ref(s7, key_val_list, i);
+            s7_pointer key = s7_car( kv_pair ); 
+            s7_pointer val = s7_cdr( kv_pair );
+            char *key_str = s7_object_to_c_string(s7, key);
+            // set the value of the atom with a recursive call and append to dict
+            s7_obj_to_msp_atom(s7, val, ap);
+            dictionary_appendatom(dict, gensym(key_str), ap);
+        }
+        atom_setobj(atom, (void *)dict);
+    }
+
+    // booleans are cast to ints 
+    else if( s7_is_boolean(s7_obj) ){
+        // post("creating int from s7 boolean");
+        atom_setlong(atom, (int)s7_boolean(s7, s7_obj));  
+    }
+    else if( s7_is_integer(s7_obj)){
+        // post("creating int atom, %i", s7_integer(s7_obj));
+        atom_setlong(atom, s7_integer(s7_obj));
+    }
+    else if( s7_is_real(s7_obj)){
+        // post("creating float atom, %.2f", s7_real(s7_obj));
+        atom_setfloat(atom, s7_real(s7_obj));
+    }
+    else if( s7_is_symbol(s7_obj) ){
+        // both s7 symbols and strings are converted to max symbols
+        /// post("creating symbol atom, %s", s7_symbol_name(s7_obj));
+        atom_setsym(atom, gensym( s7_symbol_name(s7_obj)));
+    }
+    else if( s7_is_string(s7_obj) ){
+        //post("creating symbol atom from string, %s", s7_string(s7_obj));
+        atom_setsym(atom, gensym( s7_string(s7_obj)));
+    }
+    else if( s7_is_character(s7_obj) ){
+        //post("creating symbol atom from character");
+        char out[2] = " \0";
+        out[0] = s7_character(s7_obj);
+        atom_setsym(atom, gensym(out));
+    }
+    else{
+        post("ERROR: unhandled Scheme to Max conversion for: %s", s7_object_to_c_string(s7, s7_obj));
+        // TODO: should return t_errs I guess?
+        return (t_max_err) 1;     
+    } 
+    return (t_max_err) 0;
+}
+
+
 
 //--------------------------------------------------------------------------------
 // s7 functions, currently not shared with s4m - can try refactoring to share later 

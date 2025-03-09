@@ -14,6 +14,8 @@ include_directories(
 
 # all included files go here
 file(GLOB PROJECT_SRC
+	"s4m-helpers.h"
+	"s4m-helpers.c"
 	"s4m.c"
 	"s7.h"
 	"s7.c"

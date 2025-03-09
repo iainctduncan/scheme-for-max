@@ -4,6 +4,15 @@
 ;; stuff.scm contains the scheme level s7 helper definitions and must be loaded for various
 ;;(define s4m-done-bootstrap #t)
 
+;; The function used when we send code to inlet 0 that we want evaluated
+;; called from C when a message is sent to max that we want treated as scheme code
+;; we add rootlet as the environment so that definitions created that way are visible
+;; to all other code
+(define s4m-eval
+  (lambda args
+    ;(post "s4m-eval :" args)
+    (eval args (rootlet))))
+
 ;*******************************************************************************
 ;; text output functions - same as in s4m (refactor later)
 ;; helper for building string reps for posting to console

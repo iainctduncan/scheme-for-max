@@ -25,6 +25,8 @@
 #include "s4m-carray.h"
 #include "s4m-msp.h"
 
+#include "s4m-helpers.h"
+
 #define MAX_NUM_OUTLETS 32
 #define MAX_NUM_INLETS 32       // note: changing requires making more s4m_callback_msg_inlet_X handlers
 #define MAX_ATOMS_PER_MESSAGE 1024
@@ -282,6 +284,8 @@ static s7_pointer s7_init_live_api(s7_scheme *s7, s7_pointer args);
 /********************************************************************************
 / some helpers */
 // return true if a string begins and ends with quotes
+// moving to s4m-helpers.c
+/*
 int in_quotes(char *string){
     //post("in_quotes, input: %s", string);
     if(string[0] == '"' && string[ strlen(string)-1 ] == '"'){
@@ -316,6 +320,7 @@ char *trim_symbol_quote(char *input){
     trimmed[i-1] = '\0';
     return trimmed;
 }
+*/
 
 /********************************************************************************
 * main C code 

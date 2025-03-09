@@ -39341,7 +39341,6 @@ s7_pointer s7_vector_ref(s7_scheme *sc, s7_pointer vec, s7_int index)
     return(out_of_range(sc, sc->vector_ref_symbol, int_two, wrap_integer1(sc, index), its_too_large_string));
   return(vector_getter(vec)(sc, vec, index));
 }
-
 s7_pointer s7_vector_set(s7_scheme *sc, s7_pointer vec, s7_int index, s7_pointer a)
 {
   if (index >= vector_length(vec))
