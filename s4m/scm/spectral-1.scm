@@ -3,16 +3,18 @@
 (define *vol* 0.0)
 (define *bin* 0)
 
+(define block-size 256)
+
 ; very weird that I have to print the inL to make it work first
 ; some kind of timing error
 (define (perform inL inR)
   (post "perform")
   (post "  - inL" inL)
   (post "  - inR" inR)
-  (let* ((outL (make-vector (length inL) 0.0))
-         (outR (make-vector (length inR) 0.0)))
+  (let* ((outL (make-vector block-size 0.0))
+         (outR (make-vector block-size 0.0)))
 
-    (do ((i 0 (+ 1 i))) ((>= i (length inL)))
+    (do ((i 0 (+ 1 i))) ((>= i block-size))
       (let ((bin-vol (if (< i *bin*) *vol* 1.0)))
         (set! (outL i) (* bin-vol (inL i)))
         (set! (outR i) (* bin-vol (inR i)))

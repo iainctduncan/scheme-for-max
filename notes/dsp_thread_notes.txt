@@ -1,0 +1,12 @@
+
+
+- according docs we can use clocks to send things back from the dsp thread
+
+https://sdk.cdn.cycling74.com/max-sdk-8.2.0/chapter_msp_anatomy.html#chapter_msp_anatomy_struct
+"Thread protection inside the perform routine is minimal. You can use a clock, but you cannot use qelems or outlets."
+
+- buffers promise to be thread safe, other stuff does not
+- buffers default bit depth is int16
+
+- why not make a buffer act as a ringbuffer?
+

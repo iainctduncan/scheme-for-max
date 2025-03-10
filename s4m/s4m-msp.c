@@ -13,6 +13,7 @@
 #include "s4m-msp.h"
 #include "s4m-helpers.h"
 
+
 void post_threads(){
     post("threads: dsp on: %i", sys_getdspstate(), "in main: %i", systhread_ismainthread() );
 }
@@ -23,7 +24,6 @@ void s4m_msp_main(void *r){
     c = class_new("s4m~", (method)s4m_msp_new, (method)s4m_msp_free, 
           (long) sizeof(t_s4m_msp), 0L, A_GIMME, 0);
 
-    // bang forces an update
     class_addmethod(c, (method)s4m_msp_bang, "bang", 0);
     class_addmethod(c, (method)s4m_msp_msg, "anything", A_GIMME, 0);
 
@@ -149,7 +149,7 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
     for(int i=0; i < sampleframes; i++){
       s7_pointer *s7_out_samp_L = s7_vector_ref(x->s7, s7_audio_out_L, i);      /* (vector-ref vec index) */
       *outL++ = (double) s7_real(s7_out_samp_L);
-      s7_pointer *s7_out_samp_R = s7_vector_ref(x->s7, s7_audio_out_R, i);    /* (vector-ref vec index) */
+      s7_pointer *s7_out_samp_R = s7_vector_ref(x->s7, s7_audio_out_L, i);    /* (vector-ref vec index) */
       *outR++ = (double) s7_real(s7_out_samp_R);
     }
 
@@ -162,13 +162,44 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
   x->dsp_frame++; 
 }
 
+// pop messages off - this will move to the dsp thread
 void s4m_msp_bang(t_s4m_msp *x) {
-  post("s4m_msp_bang()");
-  if( sys_getdspstate() ){
-    post(" - DSP is running");
-  }else{
-    post(" - DSP not running");
-  }
+    post("s4m_msp_bang() - popping messages");
+    //if( sys_getdspstate() ){
+    //  post(" - DSP is running");
+    //}else{
+    //  post(" - DSP not running");
+    //}
+
+
+    // begin code to pop messages
+    t_buffer_ref *buf_ref = buffer_ref_new((t_object *)x, gensym(RBUF_NAME));
+    t_buffer_obj *buf_obj = buffer_ref_getobject(buf_ref);
+    if(buf_obj == NULL){
+        object_error((t_object *)x, "Unable to reference buffer named %s", RBUF_NAME);                
+        return; 
+    }
+    float *buf = buffer_locksamples(buf_obj);
+   
+    int num_messages = (int) buf[0];
+    char msg_in[1024]; 
+    int head = 1;
+    post(" - buff has %i messages", num_messages);
+    for(int m=0; m < num_messages; m++){
+        // seek to top of next msg
+        head = (m * RBUF_MSG_SIZE) + 1;
+        for(int i=0; i < RBUF_MSG_SIZE; i++){
+            msg_in[i] = buf[head + i];
+            if(msg_in[i] == '\0'){
+                post("  - got msg: %s", msg_in);
+                break;
+            }
+        }
+    }
+    buf[0] = (float) 0;
+
+    buffer_unlocksamples(buf_obj);
+    object_free(buf_ref);
 }
 
 // init and set up the s7 interpreter, and load main source file if present
@@ -310,11 +341,43 @@ void s4m_msp_post_s7_res(t_s4m_msp *x, s7_pointer res) {
 }
 
 // the generic message hander, fires on any symbol messages, which includes lists of numbers or strings
-void s4m_msp_msg(t_s4m_msp *x, t_symbol *s, long argc, t_atom *argv){
+void s4m_msp_msg(t_s4m_msp *x, t_symbol *sym, long argc, t_atom *argv){
     bool in_isr = isr();
     int inlet_num = proxy_getinlet((t_object *)x);
-    //post("s4m_msp_msg(): selector is %s, isr: %i, inlet_num: %i", s->s_name, in_isr, inlet_num);
-    s4m_msp_handle_msg(x, inlet_num, s, argc, argv);
+    post("s4m_msp_msg(): selector is %s, isr: %i, inlet_num: %i", sym->s_name, in_isr, inlet_num);
+    //s4m_msp_handle_msg(x, inlet_num, s, argc, argv);
+   
+    // stuff from s4m eval_atoms_as_string to convert max message to string
+    //post("s4m_eval_atoms_as_string() argc: %i", argc);
+    char *token_1 = sym->s_name;
+    int token_1_size = strlen(token_1);
+    long size = 0;
+    char *atoms_as_text = NULL;
+
+    // multiple token, more complex
+    t_max_err err = atom_gettext(argc, argv, &size, &atoms_as_text, OBEX_UTIL_ATOM_GETTEXT_DEFAULT);
+    if(err == MAX_ERR_NONE && size && atoms_as_text) {
+        int code_str_size = token_1_size + size + 1;
+        char *code_str = (char *)sysmem_newptr( sizeof( char ) * code_str_size);
+        sprintf(code_str, "%s %s", token_1, atoms_as_text);
+        // now we have code, but we need to clean up Max escape chars
+        char *code_str_clean = (char *)sysmem_newptr( sizeof( char ) * code_str_size);
+        for(int i=0, j=0; i < code_str_size; i++, j++){
+            if(code_str[j] == '\\') code_str_clean[i] = code_str[++j];
+            else code_str_clean[i] = code_str[j];
+        }
+        // send it off
+        post(" - string is: '%s'", code_str_clean);
+        s4m_msp_put_rbuf_msg(x, code_str_clean);
+
+        sysmem_freeptr(code_str);
+        sysmem_freeptr(code_str_clean);
+    }else{
+       object_error((t_object *)x, "s4m: Error parsing input");
+    }
+    if (atoms_as_text) {
+        sysmem_freeptr(atoms_as_text);
+    }
     return;
 }
 
@@ -418,6 +481,33 @@ void s4m_msp_s7_eval_c_string(t_s4m_msp *x, char *code_str){
         }
     }
 }
+
+// send a string message to the dsp thread over the buffer
+void s4m_msp_put_rbuf_msg(t_s4m_msp *x, char *msg){
+    post("s4m_msp_put_rbuf_msg() msg: ", msg);
+    t_buffer_ref *buf_ref = buffer_ref_new((t_object *)x, gensym(RBUF_NAME));
+    t_buffer_obj *buf_obj = buffer_ref_getobject(buf_ref);
+    if(buf_obj == NULL){
+        object_error((t_object *)x, "Unable to reference buffer named %s", RBUF_NAME);                
+        return; 
+    }
+    float *buf = buffer_locksamples(buf_obj);
+   
+    int num_messages = (int) buf[0];
+    post(" - buff has %i messages, setting to %i", num_messages, num_messages + 1);
+    buf[0] = (float)(num_messages + 1);
+
+    int start = (num_messages * RBUF_MSG_SIZE) + 1;
+    
+    for(int i=0; i < RBUF_MSG_SIZE; i++){
+        buf[start + i] = (float) msg[i];
+        if( msg[i] == '\0') break;
+    }
+    buffer_unlocksamples(buf_obj);
+    object_free(buf_ref);
+}
+
+
 
 //--------------------------------------------------------------------------------
 // stuff that should be refactored to be shared with s4m

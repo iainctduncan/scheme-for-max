@@ -2,3 +2,5 @@ Cmake reminders:
 
 - make build dir and go in in
 - cmake -G Xcode ..
+
+

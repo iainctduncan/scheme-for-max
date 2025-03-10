@@ -4,10 +4,15 @@
 #include "ext.h"
 #include "ext_obex.h"                        // required for new style Max object
 #include "ext_obex_util.h"                        // required for new style Max object
+#include "ext_buffer.h"
 #include "z_dsp.h"
 #include "s7.h"
+#include "string.h"
 
 #define MSP_BOOTSTRAP_FILE "s4m-msp.scm"
+// temp
+#define RBUF_NAME "s4m_msp_to_dsp"
+#define RBUF_MSG_SIZE 1024
 
 typedef struct _s4m_msp {
   t_pxobject m_obj;
@@ -49,6 +54,8 @@ void s4m_msp_msg(t_s4m_msp *x, t_symbol *s, long argc, t_atom *argv);
 void s4m_msp_handle_msg(t_s4m_msp *x, int inlet_num, t_symbol *s, long argc, t_atom *argv);
 void s4m_msp_eval_atoms_as_string(t_s4m_msp *x, t_symbol *sym, long argc, t_atom *argv);
 void s4m_msp_s7_eval_c_string(t_s4m_msp *x, char *code_str);
+
+void s4m_msp_put_rbuf_msg(t_s4m_msp *x, char *msg);
 
 t_s4m_msp *get_msp_obj(s7_scheme *s7);
 static s7_pointer s7_msp_load_from_max(s7_scheme *s7, s7_pointer args);

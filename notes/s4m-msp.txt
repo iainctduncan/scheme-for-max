@@ -8,7 +8,8 @@ Progress
 - got s7 initializing
 - made a new boostrap file, s4m-msp.scm, and got it loading
 - can't include this in both places #include "common/commonsyms.c", so using gensym("") instead of _sym_nothing
-
+- got audio going in an out to scm over a vector
+  - should ask Bill about using shared memory instead??
 
 
 Thoughts:
@@ -19,6 +20,6 @@ Thoughts:
  
 
 Left off:
-- I don't think x->source_file got setup properly, it's just null all the time
+- got spectral 
 
-- left off, about to alter the vector in scheme
+- look at "thread safe priority queues"
