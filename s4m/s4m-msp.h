@@ -56,6 +56,7 @@ void s4m_msp_eval_atoms_as_string(t_s4m_msp *x, t_symbol *sym, long argc, t_atom
 void s4m_msp_s7_eval_c_string(t_s4m_msp *x, char *code_str);
 
 void s4m_msp_put_rbuf_msg(t_s4m_msp *x, char *msg);
+void s4m_msp_consume_messages(t_s4m_msp *x);
 
 t_s4m_msp *get_msp_obj(s7_scheme *s7);
 static s7_pointer s7_msp_load_from_max(s7_scheme *s7, s7_pointer args);

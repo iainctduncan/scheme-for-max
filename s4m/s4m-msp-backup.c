@@ -118,15 +118,12 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
 	//while (n--)
 	//	*outL++ = *inL++ * 0.5;
 
-  // get the messages off the queue
-  s4m_msp_consume_messages(x);
-  
-
   // only going to pass through once in a while to make things easier to debug
-  if(x->dsp_frame % x->frames_per_call == 0 && 0){
+  if(x->dsp_frame % x->frames_per_call == 0){
     //post("frame: %i, call into s7", x->dsp_frame);
 
     // TODO this can be optimized later to share memory
+
     // build s7 vector of incoming samples
     s7_pointer *s7_audio_in_L = s7_make_vector(x->s7, sampleframes);
     s7_pointer *s7_audio_in_R = s7_make_vector(x->s7, sampleframes);
@@ -158,15 +155,16 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
 
   }else{
 	  while (n--)
-		  *outL++ = *inL++ * 1.0;
+		  *outL++ = *inL++ * 0.0;
   }
 
   // inc the count of how many vectors we've rendered
   x->dsp_frame++; 
 }
 
+/*
 void s4m_msp_consume_messages(t_s4m_msp *x){
-    //post("s4m_msp_consume_messages()");
+    post("s4m_msp_consume_messages()");
     // begin code to pop messages
     t_buffer_ref *buf_ref = buffer_ref_new((t_object *)x, gensym(RBUF_NAME));
     t_buffer_obj *buf_obj = buffer_ref_getobject(buf_ref);
@@ -176,28 +174,26 @@ void s4m_msp_consume_messages(t_s4m_msp *x){
     }
     float *buf = buffer_locksamples(buf_obj);
     int num_messages = (int) buf[0];
-    // if there are any messages, consume them
-    if( num_messages > 0 ){
-        int head = 1;
-        char msg_in[1024]; 
-        post(" - buff has %i messages", num_messages);
-        for(int m=0; m < num_messages; m++){
-            // seek to top of next msg
-            head = (m * RBUF_MSG_SIZE) + 1;
-            for(int i=0; i < RBUF_MSG_SIZE; i++){
-                msg_in[i] = buf[head + i];
-                if(msg_in[i] == '\0'){
-                    post("  - got msg: %s", msg_in);
-                    s4m_msp_s7_eval_c_string(x, msg_in);
-                    break;
-                }
+    char msg_in[1024]; 
+    int head = 1;
+    post(" - buff has %i messages", num_messages);
+    for(int m=0; m < num_messages; m++){
+        // seek to top of next msg
+        head = (m * RBUF_MSG_SIZE) + 1;
+        for(int i=0; i < RBUF_MSG_SIZE; i++){
+            msg_in[i] = buf[head + i];
+            if(msg_in[i] == '\0'){
+                post("  - got msg: %s", msg_in);
+                //s4m_msp_s7_eval_c_string(x, msg_in);
+                break;
             }
         }
-        buf[0] = (float) 0;
     }
+    buf[0] = (float) 0;
     buffer_unlocksamples(buf_obj);
     object_free(buf_ref);
 }
+*/
 
 // pop messages off - this will move to the dsp thread
 void s4m_msp_bang(t_s4m_msp *x){
@@ -208,7 +204,7 @@ void s4m_msp_bang(t_s4m_msp *x){
     //  post(" - DSP not running");
     //}
 
-    //s4m_msp_consume_messages(x);
+    s4m_msp_consume_messages(x);
 }
 
 // init and set up the s7 interpreter, and load main source file if present
@@ -353,7 +349,7 @@ void s4m_msp_post_s7_res(t_s4m_msp *x, s7_pointer res) {
 void s4m_msp_msg(t_s4m_msp *x, t_symbol *sym, long argc, t_atom *argv){
     bool in_isr = isr();
     int inlet_num = proxy_getinlet((t_object *)x);
-    //post("s4m_msp_msg(): selector is %s, isr: %i, inlet_num: %i", sym->s_name, in_isr, inlet_num);
+    post("s4m_msp_msg(): selector is %s, isr: %i, inlet_num: %i", sym->s_name, in_isr, inlet_num);
     //s4m_msp_handle_msg(x, inlet_num, s, argc, argv);
    
     // stuff from s4m eval_atoms_as_string to convert max message to string
@@ -376,7 +372,7 @@ void s4m_msp_msg(t_s4m_msp *x, t_symbol *sym, long argc, t_atom *argv){
             else code_str_clean[i] = code_str[j];
         }
         // send it off
-        //post(" - string is: '%s'", code_str_clean);
+        post(" - string is: '%s'", code_str_clean);
         s4m_msp_put_rbuf_msg(x, code_str_clean);
 
         sysmem_freeptr(code_str);
@@ -503,7 +499,7 @@ void s4m_msp_put_rbuf_msg(t_s4m_msp *x, char *msg){
     float *buf = buffer_locksamples(buf_obj);
    
     int num_messages = (int) buf[0];
-    //post(" - buff has %i messages, setting to %i", num_messages, num_messages + 1);
+    post(" - buff has %i messages, setting to %i", num_messages, num_messages + 1);
     buf[0] = (float)(num_messages + 1);
 
     int start = (num_messages * RBUF_MSG_SIZE) + 1;
