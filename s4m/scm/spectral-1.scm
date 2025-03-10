@@ -9,8 +9,8 @@
 ; some kind of timing error
 (define (perform inL inR)
   (post "perform")
-  (post "  - inL" inL)
-  (post "  - inR" inR)
+  (post "  - inL" (inL 0))
+  (post "  - inR" (inR 0))
   (let* ((outL (make-vector block-size 0.0))
          (outR (make-vector block-size 0.0)))
 

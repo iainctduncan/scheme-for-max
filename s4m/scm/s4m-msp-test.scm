@@ -3,17 +3,17 @@
 (define *vol* 1.0)
 
 
-; something weird going on that without the post message we get a crash where the first vector is empty
-(define (perform inL inR)
-  (post "perform")
-  ;(post "  - inL" inL)
-  ;(post "  - inR" inR)
-  (let* ((outL (make-vector (length inL) 0.0))
-         (outR (make-vector (length inR) 0.0)))
-    (do ((i 0 (+ 1 i))) ((>= i (length inR)))
-      (set! (outL i) (* *vol* (inL i)))
-      (set! (outR i) (* *vol* (inR i)))
-      )
-    ; return a list of numchans and chans vectors
-    (list outL outR)))
+; uses globals in-l, in-r, out-l, out-r, defined on c side
+(define (perform frames)
+  ;(post "perform new")
+  ;(post "in-l" in-l)
+  ;(post "in-r" in-r)
+ 
+  (do ((i 0 (+ 1 i))) ((>= i frames))
+    (set! (out-l i) 
+      (* (in-l i) *vol*))
+    (set! (out-r i) 
+      (* (in-r i) *vol*))
+    ))
+
 

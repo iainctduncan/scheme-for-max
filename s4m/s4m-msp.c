@@ -114,14 +114,44 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
 	t_double *outL = outs[0];	// we get audio for each outlet of the object from the **outs argument
   t_double *outR = outs[1];
   int n = sampleframes;
+  uint32_t gc1, gc2, gc3, gc4;
 
-	//while (n--)
-	//	*outL++ = *inL++ * 0.5;
-
-  // get the messages off the queue
+  // get the s4m messages off the queue and eval them
   s4m_msp_consume_messages(x);
+  // TODO: check if I need to freeing stuff afterwards?
   
+  //s7_pointer s7_make_float_vector_wrapper(s7_scheme *sc, s7_int len, s7_double *data, s7_int dims, s7_int *dim_info, bool free_data);
+  s7_pointer *s7_in_l = s7_make_float_vector_wrapper(x->s7, sampleframes, inL, 1, NULL, false);
+  gc1 = s7_gc_protect(x->s7, s7_in_l);
+  s7_define_variable(x->s7, "in-l", s7_in_l);
+  s7_pointer *s7_in_r = s7_make_float_vector_wrapper(x->s7, sampleframes, inR, 1, NULL, false);
+  gc2 = s7_gc_protect(x->s7, s7_in_r);
+  s7_define_variable(x->s7, "in-r", s7_in_r);
 
+  s7_pointer *s7_out_l = s7_make_float_vector_wrapper(x->s7, sampleframes, outL, 1, NULL, false);
+  gc3 = s7_gc_protect(x->s7, s7_out_l);
+  s7_define_variable(x->s7, "out-l", s7_out_l);
+  s7_pointer *s7_out_r = s7_make_float_vector_wrapper(x->s7, sampleframes, outR, 1, NULL, false);
+  gc4 = s7_gc_protect(x->s7, s7_out_r);
+  s7_define_variable(x->s7, "out-r", s7_out_r);
+ 
+  s7_pointer s7_args = s7_nil(x->s7); 
+  s7_args = s7_cons(x->s7, s7_make_integer(x->s7, sampleframes), s7_args); 
+  s7_call(x->s7, s7_name_to_value(x->s7, "perform"), s7_args);
+
+  s7_gc_unprotect_at(x->s7, gc1); 
+  s7_gc_unprotect_at(x->s7, gc2); 
+  s7_gc_unprotect_at(x->s7, gc3); 
+  s7_gc_unprotect_at(x->s7, gc4); 
+
+  // code to pass through audio
+	//while (n--){
+	//  *outL++ = *inL++ * 1.0;
+	//  *outR++ = *inR++ * 1.0;
+  //}
+
+
+  /*
   // only going to pass through once in a while to make things easier to debug
   if(x->dsp_frame % x->frames_per_call == 0 && 0){
     //post("frame: %i, call into s7", x->dsp_frame);
@@ -150,16 +180,20 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
       
     // write audio back
     for(int i=0; i < sampleframes; i++){
-      s7_pointer *s7_out_samp_L = s7_vector_ref(x->s7, s7_audio_out_L, i);      /* (vector-ref vec index) */
+      s7_pointer *s7_out_samp_L = s7_vector_ref(x->s7, s7_audio_out_L, i);      
       *outL++ = (double) s7_real(s7_out_samp_L);
-      s7_pointer *s7_out_samp_R = s7_vector_ref(x->s7, s7_audio_out_L, i);    /* (vector-ref vec index) */
+      s7_pointer *s7_out_samp_R = s7_vector_ref(x->s7, s7_audio_out_L, i);    
       *outR++ = (double) s7_real(s7_out_samp_R);
     }
 
   }else{
-	  while (n--)
-		  *outL++ = *inL++ * 1.0;
+      // audio pass through
+	    while (n--){
+		    *outL++ = *inL++ * 1.0;
+		    *outR++ = *inR++ * 1.0;
+      }
   }
+  */
 
   // inc the count of how many vectors we've rendered
   x->dsp_frame++; 
@@ -180,14 +214,14 @@ void s4m_msp_consume_messages(t_s4m_msp *x){
     if( num_messages > 0 ){
         int head = 1;
         char msg_in[1024]; 
-        post(" - buff has %i messages", num_messages);
+        //post(" - buff has %i messages", num_messages);
         for(int m=0; m < num_messages; m++){
             // seek to top of next msg
             head = (m * RBUF_MSG_SIZE) + 1;
             for(int i=0; i < RBUF_MSG_SIZE; i++){
                 msg_in[i] = buf[head + i];
                 if(msg_in[i] == '\0'){
-                    post("  - got msg: %s", msg_in);
+                    //post("  - got msg: %s", msg_in);
                     s4m_msp_s7_eval_c_string(x, msg_in);
                     break;
                 }
@@ -202,13 +236,11 @@ void s4m_msp_consume_messages(t_s4m_msp *x){
 // pop messages off - this will move to the dsp thread
 void s4m_msp_bang(t_s4m_msp *x){
     post("s4m_msp_bang() - popping messages");
-    //if( sys_getdspstate() ){
-    //  post(" - DSP is running");
-    //}else{
-    //  post(" - DSP not running");
-    //}
-
-    //s4m_msp_consume_messages(x);
+    if( sys_getdspstate() ){
+      post(" - DSP is running");
+    }else{
+      post(" - DSP not running");
+    }
 }
 
 // init and set up the s7 interpreter, and load main source file if present
@@ -390,6 +422,7 @@ void s4m_msp_msg(t_s4m_msp *x, t_symbol *sym, long argc, t_atom *argv){
     return;
 }
 
+// not currently active, will be active when we eval messages directly if dsp off
 void s4m_msp_handle_msg(t_s4m_msp *x, int inlet_num, t_symbol *s, long argc, t_atom *argv){
     //post("s4m_msp_handle_msg(): inlet_num: %i arguments: %ld isr: %i", inlet_num, argc, isr());
     t_atom *ap;
@@ -400,7 +433,6 @@ void s4m_msp_handle_msg(t_s4m_msp *x, int inlet_num, t_symbol *s, long argc, t_a
       s4m_msp_eval_atoms_as_string(x, s, argc, argv);
       return;
     }
-
     // treat input to inlet 0 as a list of atoms that should be evaluated as a scheme expression
     // as if the list were encloded in parens
     // make an S7 list out of them, and send to S7 to eval (treat them as code list)
@@ -409,7 +441,7 @@ void s4m_msp_handle_msg(t_s4m_msp *x, int inlet_num, t_symbol *s, long argc, t_a
         // loop through the args backwards to build the cons list 
         for(int i = argc-1; i >= 0; i--) {
             ap = argv + i;
-            // XXX: temp hack
+            // XXX: temp hack, s4m and s4m_msp should share code later
             //s7_args = s7_cons(x->s7, max_atom_to_s7_obj(x->s7, ap), s7_args); 
             s7_args = s7_cons(x->s7, msp_atom_to_s7_obj(x->s7, ap), s7_args); 
         }

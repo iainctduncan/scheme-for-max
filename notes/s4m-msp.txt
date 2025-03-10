@@ -17,9 +17,15 @@ Thoughts:
   force that running the interpreter outside of dsp can *only* happen if dsp
   is not running? (is there a way to check that)
 - next: get loading some scheme, make a different bootstrap file
- 
 
-Left off:
-- got spectral 
+ISSUES TO FIX:
+- the buffer will need to be unique to the s4m instance, so it will need to be created
+  by it and have a unique handle
 
-- look at "thread safe priority queues"
+- trying messages through buffer, seems to be fine
+
+NEXT
+- need to have audio pass in to scheme properly
+- need to have scheme errors not tank the dsp routine
+
+
