@@ -1,26 +1,23 @@
-(post "spectral-1.scm loading...")
+(post "spectral-1.scm loading")
 
-(define *vol* 0.0)
-(define *bin* 0)
+(define vol 1.0)
+(define bin 512)
 
-(define block-size 256)
+(define (perform frames)
+  (post "spectral perform - frames:" frames)
 
-; very weird that I have to print the inL to make it work first
-; some kind of timing error
-(define (perform inL inR)
-  (post "perform")
-  (post "  - inL" (inL 0))
-  (post "  - inR" (inR 0))
-  (let* ((outL (make-vector block-size 0.0))
-         (outR (make-vector block-size 0.0)))
+  (do ((i 0 (+ 1 i))) ((>= i frames))
+    (let ((bin-vol (if (<= i bin) vol 1.0))
+          (sig-l (float-vector-ref in-l i))
+          (sig-r (float-vector-ref in-r i)))
+      ;(post "setting i: " i)
 
-    (do ((i 0 (+ 1 i))) ((>= i block-size))
-      (let ((bin-vol (if (< i *bin*) *vol* 1.0)))
-        (set! (outL i) (* bin-vol (inL i)))
-        (set! (outR i) (* bin-vol (inR i)))
-        ))
-    ; return a list of numchans and chans vectors
-    (list outL outR)))
+      (float-vector-set! out-l i (* sig-l bin-vol))
+      (float-vector-set! out-r i (* sig-r bin-vol))
+      
+      )))
 
 
-(post "spectral-1.scm loaded")
+
+
+(post "spectral-1.scm loaded?")

@@ -45,9 +45,9 @@ void *s4m_msp_new(t_symbol *s, long argc, t_atom *argv) {
     x = (t_s4m_msp *)object_alloc(s4m_msp_class);
     if (x) {
 		  dsp_setup((t_pxobject *)x, 2);	// MSP inlets: arg is # of inlets and is REQUIRED!
-		  // use 0 if you don't need inlets
-		  outlet_new(x, "signal"); 		// signal outlet (note "signal" rather than NULL)
-		  outlet_new(x, "signal"); 		// signal outlet (note "signal" rather than NULL)
+		  // create two outlets
+		  outlet_new((t_object *)x, "signal");
+		  outlet_new((t_object *)x, "signal");
 	  }
 
     x->source_file = NULL;
@@ -75,7 +75,6 @@ void *s4m_msp_new(t_symbol *s, long argc, t_atom *argv) {
     post("  - in main thread: %i", systhread_ismainthread() );
     post("  - dsp running: %i", sys_getdspstate() );
     s4m_msp_init_s7(x);
- 
  
     // counter for debugging occasionally from dsp thread
     x->dsp_frame = 0;
@@ -113,27 +112,54 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
   t_double *inR = ins[1];
 	t_double *outL = outs[0];	// we get audio for each outlet of the object from the **outs argument
   t_double *outR = outs[1];
-  int n = sampleframes;
+  //int n = sampleframes;
   uint32_t gc1, gc2, gc3, gc4;
 
   // get the s4m messages off the queue and eval them
   s4m_msp_consume_messages(x);
-  // TODO: check if I need to freeing stuff afterwards?
-  
+  post("s4m_msp_perform()... numins: %i numouts: %i frames: %i", numins, numouts, sampleframes);
+  //post("in[0][0] %f", ins[0][0]);
+  //post("in[1][0] %f", ins[1][0]);
+  // the input is definitely different, we can see that in the console
+
+  // sample code to pass through audio
+  //for(int i = 0; i < sampleframes; i++){
+  //  outs[0][i] = ins[0][i];
+  //  outs[1][i] = ins[0][i];
+  //}
+
+  // it's like the outs are the same thing, though they do have different memory addresses.
+  // send input 1 to both outs
+
+  //post("outs[0]: %i outs[1]: %i", (void *) outs[0], (void *) outs[1]); 
+  //for(int i = 0; i < sampleframes; i++){
+  //  //outs[0][i] = ins[0][i];
+  //  //outs[1][i] = ins[1][i];
+  //  // why the fuck does reversing them fix it?
+  //  outs[0][i] = ins[1][i];
+  //  outs[1][i] = ins[0][i];
+  //}
+
   //s7_pointer s7_make_float_vector_wrapper(s7_scheme *sc, s7_int len, s7_double *data, s7_int dims, s7_int *dim_info, bool free_data);
   s7_pointer *s7_in_l = s7_make_float_vector_wrapper(x->s7, sampleframes, inL, 1, NULL, false);
   gc1 = s7_gc_protect(x->s7, s7_in_l);
   s7_define_variable(x->s7, "in-l", s7_in_l);
+
   s7_pointer *s7_in_r = s7_make_float_vector_wrapper(x->s7, sampleframes, inR, 1, NULL, false);
   gc2 = s7_gc_protect(x->s7, s7_in_r);
   s7_define_variable(x->s7, "in-r", s7_in_r);
 
   s7_pointer *s7_out_l = s7_make_float_vector_wrapper(x->s7, sampleframes, outL, 1, NULL, false);
   gc3 = s7_gc_protect(x->s7, s7_out_l);
-  s7_define_variable(x->s7, "out-l", s7_out_l);
+  //s7_define_variable(x->s7, "out-l", s7_out_l);
+
   s7_pointer *s7_out_r = s7_make_float_vector_wrapper(x->s7, sampleframes, outR, 1, NULL, false);
   gc4 = s7_gc_protect(x->s7, s7_out_r);
-  s7_define_variable(x->s7, "out-r", s7_out_r);
+  //s7_define_variable(x->s7, "out-r", s7_out_r);
+  // trying swapping
+  // XXX for some totally fucked reason this works
+  s7_define_variable(x->s7, "out-l", s7_out_r);
+  s7_define_variable(x->s7, "out-r", s7_out_l);
  
   s7_pointer s7_args = s7_nil(x->s7); 
   s7_args = s7_cons(x->s7, s7_make_integer(x->s7, sampleframes), s7_args); 
@@ -144,59 +170,10 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
   s7_gc_unprotect_at(x->s7, gc3); 
   s7_gc_unprotect_at(x->s7, gc4); 
 
-  // code to pass through audio
-	//while (n--){
-	//  *outL++ = *inL++ * 1.0;
-	//  *outR++ = *inR++ * 1.0;
-  //}
-
-
-  /*
-  // only going to pass through once in a while to make things easier to debug
-  if(x->dsp_frame % x->frames_per_call == 0 && 0){
-    //post("frame: %i, call into s7", x->dsp_frame);
-
-    // TODO this can be optimized later to share memory
-    // build s7 vector of incoming samples
-    s7_pointer *s7_audio_in_L = s7_make_vector(x->s7, sampleframes);
-    s7_pointer *s7_audio_in_R = s7_make_vector(x->s7, sampleframes);
-    for(int i=0; i < sampleframes; i++){
-      s7_vector_set(x->s7, s7_audio_in_L, i, s7_make_real(x->s7, *inL++ ) ); 
-      s7_vector_set(x->s7, s7_audio_in_R, i, s7_make_real(x->s7, *inR++ ) ); 
-    }
-    // this works to check if something is a vector, in vector is valid
-    // if( s7_is_vector(s7_audio_in) ){ post(" made input vector"); }
-    
-    // call into s7, get back output pair of output buffers
-    // fix this to be better/faster
-    s7_pointer s7_args = s7_nil(x->s7); 
-    s7_args = s7_cons(x->s7, s7_audio_in_R, s7_args); 
-    s7_args = s7_cons(x->s7, s7_audio_in_L, s7_args); 
-
-    // returned back is a list of channels, and vectors
-    s7_pointer *s7_audio_outs = s7_call(x->s7, s7_name_to_value(x->s7, "perform"), s7_args);
-    s7_pointer *s7_audio_out_L = s7_list_ref(x->s7, s7_audio_outs, 0);
-    s7_pointer *s7_audio_out_R = s7_list_ref(x->s7, s7_audio_outs, 1);
-      
-    // write audio back
-    for(int i=0; i < sampleframes; i++){
-      s7_pointer *s7_out_samp_L = s7_vector_ref(x->s7, s7_audio_out_L, i);      
-      *outL++ = (double) s7_real(s7_out_samp_L);
-      s7_pointer *s7_out_samp_R = s7_vector_ref(x->s7, s7_audio_out_L, i);    
-      *outR++ = (double) s7_real(s7_out_samp_R);
-    }
-
-  }else{
-      // audio pass through
-	    while (n--){
-		    *outL++ = *inL++ * 1.0;
-		    *outR++ = *inR++ * 1.0;
-      }
-  }
-  */
+  // TODO: check if I need to freeing stuff afterwards? I don't think so?
 
   // inc the count of how many vectors we've rendered
-  x->dsp_frame++; 
+  //x->dsp_frame++; 
 }
 
 void s4m_msp_consume_messages(t_s4m_msp *x){
