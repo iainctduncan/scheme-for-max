@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 286.0, 148.0, 681.0, 549.0 ],
+		"rect" : [ 227.0, 528.0, 544.0, 420.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -57,7 +57,7 @@
 					"numinlets" : 3,
 					"numoutlets" : 1,
 					"outlettype" : [ "signal" ],
-					"patching_rect" : [ 60.0, 184.0, 68.0, 22.0 ],
+					"patching_rect" : [ 31.0, 188.0, 68.0, 22.0 ],
 					"text" : "selector~ 2"
 				}
 
@@ -188,7 +188,7 @@
 					"orientation" : 1,
 					"outlettype" : [ "signal", "", "float", "list" ],
 					"parameter_enable" : 1,
-					"patching_rect" : [ 60.0, 219.0, 87.0, 33.0 ],
+					"patching_rect" : [ 31.0, 217.0, 87.0, 33.0 ],
 					"saved_attribute_attributes" : 					{
 						"valueof" : 						{
 							"parameter_initial" : [ -70 ],
@@ -216,7 +216,7 @@
 					"maxclass" : "ezdac~",
 					"numinlets" : 2,
 					"numoutlets" : 0,
-					"patching_rect" : [ 64.0, 271.0, 39.0, 39.0 ],
+					"patching_rect" : [ 35.0, 269.0, 39.0, 39.0 ],
 					"prototypename" : "helpfile"
 				}
 

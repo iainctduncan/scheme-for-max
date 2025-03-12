@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 1061.0, 87.0, 588.0, 473.0 ],
+		"rect" : [ 941.0, 260.0, 588.0, 473.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -81,8 +81,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 2,
 					"outlettype" : [ "signal", "signal" ],
-					"patching_rect" : [ 68.0, 187.0, 120.0, 22.0 ],
-					"text" : "s4m~ spectral-1.scm"
+					"patching_rect" : [ 68.0, 187.0, 156.0, 22.0 ],
+					"text" : "s4m~ spectral-centroid.scm"
 				}
 
 			}
@@ -287,6 +287,10 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 349.0, 282.0, 40.0, 23.0 ],
+					"saved_object_attributes" : 					{
+						"attr_comment" : ""
+					}
+,
 					"text" : "out 1"
 				}
 
@@ -301,6 +305,10 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 349.0, 92.0, 32.0, 23.0 ],
+					"saved_object_attributes" : 					{
+						"attr_comment" : ""
+					}
+,
 					"text" : "in 2"
 				}
 
