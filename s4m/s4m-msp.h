@@ -29,7 +29,9 @@ typedef struct _s4m_msp {
   bool initialized;                   // gets set to true after object initialization complete
   char log_repl;                      // whether to post the return values of evaluating scheme functions
   char log_null;                      // whether to post the return value of nil to the console
-
+  
+  t_object *patcher;   
+  t_object *rbuf_obj; 
 } t_s4m_msp;
 
 static t_class *s4m_msp_class;

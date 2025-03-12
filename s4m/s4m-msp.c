@@ -70,11 +70,18 @@ void *s4m_msp_new(t_symbol *s, long argc, t_atom *argv) {
     // by default we log return values
     // if I set it to true here, then the attribute does not get saved with the patcher
     x->log_repl = true;
-    x->log_null = false;
 
+    x->log_null = false;
+    
+    // save the patcher object (equiv of thispatcher)
+    //object_obex_lookup(x, gensym("#P"), &x->patcher);
+    //x->rbuf_obj = newobject_sprintf(x->patcher, "@maxclass newobj @text \"buffer~ 1000\" @size 4 @hidden 0 @patching_position %.2f %.2f", 10, 10);
+    
     post("  - in main thread: %i", systhread_ismainthread() );
     post("  - dsp running: %i", sys_getdspstate() );
     s4m_msp_init_s7(x);
+
+
  
     // counter for debugging occasionally from dsp thread
     x->dsp_frame = 0;
@@ -117,7 +124,7 @@ void s4m_msp_perform64(t_s4m_msp *x, t_object *dsp64, double **ins, long numins,
 
   // get the s4m messages off the queue and eval them
   s4m_msp_consume_messages(x);
-  post("s4m_msp_perform()... numins: %i numouts: %i frames: %i", numins, numouts, sampleframes);
+  //post("s4m_msp_perform()... numins: %i numouts: %i frames: %i", numins, numouts, sampleframes);
   //post("in[0][0] %f", ins[0][0]);
   //post("in[1][0] %f", ins[1][0]);
   // the input is definitely different, we can see that in the console
@@ -501,6 +508,7 @@ void s4m_msp_s7_eval_c_string(t_s4m_msp *x, char *code_str){
 }
 
 // send a string message to the dsp thread over the buffer
+
 void s4m_msp_put_rbuf_msg(t_s4m_msp *x, char *msg){
     post("s4m_msp_put_rbuf_msg() msg: ", msg);
     t_buffer_ref *buf_ref = buffer_ref_new((t_object *)x, gensym(RBUF_NAME));
@@ -525,7 +533,33 @@ void s4m_msp_put_rbuf_msg(t_s4m_msp *x, char *msg){
     object_free(buf_ref);
 }
 
+/*
+void s4m_msp_put_rbuf_msg(t_s4m_msp *x, char *msg){
+    post("s4m_msp_put_rbuf_msg() msg: ", msg);
+    //t_buffer_ref *buf_ref = buffer_ref_new((t_object *)x, gensym(RBUF_NAME));
+    //t_buffer_obj *buf_obj = buffer_ref_getobject(buf_ref);
+    
+    //if(buf_obj == NULL){
+    //    object_error((t_object *)x, "Unable to reference buffer named %s", RBUF_NAME);                
+    //    return; 
+    //}
+    //float *buf = buffer_locksamples(buf_obj);
+    float *buf = buffer_locksamples( (t_buffer_obj *) x->rbuf_obj);
+   
+    int num_messages = (int) buf[0];
+    //post(" - buff has %i messages, setting to %i", num_messages, num_messages + 1);
+    buf[0] = (float)(num_messages + 1);
 
+    int start = (num_messages * RBUF_MSG_SIZE) + 1;
+    
+    for(int i=0; i < RBUF_MSG_SIZE; i++){
+        buf[start + i] = (float) msg[i];
+        if( msg[i] == '\0') break;
+    }
+    buffer_unlocksamples( (t_buffer_obj *) x->rbuf_obj);
+    //object_free(buf_ref);
+}
+*/
 
 //--------------------------------------------------------------------------------
 // stuff that should be refactored to be shared with s4m
