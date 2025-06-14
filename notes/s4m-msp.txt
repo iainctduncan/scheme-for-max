@@ -29,3 +29,4 @@ NEXT
 - need to have scheme errors not tank the dsp routine
 
 
+- audio in2 is not working
