@@ -1,30 +1,27 @@
-# Scheme For Max - v0.4 (Sep 2022)
+# Scheme For Max - v0.4.1 (June 2025)
 Scheme For Max (s4m) is an open source Max/MSP external to enable scripting, live coding, and algorithmic music in 
-Max/MSP with s7 Scheme Lisp. It is available as a packages for Mac (Intel and M1) and Win64, and as source. It has been developed and tested on Max 8. It also works in Max for Live on Ableton Live 10 and 11.
+Max/MSP with s7 Scheme Lisp. It is available as a packages for Mac (Intel and M1) and Win64, and as source. It has been developed and tested on Max 8 extensively,
+but also runs on Max 9 (version 0.5 will be Max 9 based). It also works in Max for Live on Ableton Live 10 and up.
 
 ## Recent News
-**2022-09-22**: Scheme for Max 0.4 is up as a beta release! New features include the s4m grid and arrays, gc timers, and more Live examples.
-
-**2022-07-28**: There is now an official forum thanks to the Discourse community program. https://schemeformax.discourse.group/
-
-**2022-02-22**: There is now a Universal Binary build for Apple Silicon up for 0.3. This is a drop in replacement for the external object and should work on M1 and Intel Macs.
-
-**2021-11-27**: 0.3.0 is released. This includes convenience features like directly passing code messages to the s4m object, a threading macro similar to Clojure and Rackets, supporting delay from the low-priority thread, garbage collector interface functions, and tools for using the Ableton Live API from Max4Live. Please report any bugs as github issues. Note: This has not been built for Apple Silicon yet. If you are able to help do this, please get in touch.
-
-**2021-04-20**: I've put up an e-book tutorial on writing sequencers, along with sample code and patchers in the Scheme for Max Sequencing toolkit here:
-https://iainctduncan.github.io/s4m-stk/
-
-**2021-03-15**: I have released a free e-book on learning S7 Scheme and Scheme For Max, suitable for new and experienced programmers!
-https://iainctduncan.github.io/learn-scheme-for-max/index.html
+**2025-06-13**: Scheme for Max 0.4.1 is up, which adds S4M-Score, a facility for making text-based, metrical scores in Max, with similarities
+to those in Nyquist, Common Music, and Csound. Docs, video, and a conference paper are forthcoming. In the meantime, checkout the
+**s4m-score-demo.maxpat** Max patch in the Patchers folder, which uses **s4m-score.scm** and **s4m-score-demo.scm** in the Extras folder.
 
 **Main Documentation** lives here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
 **Demos and Tutorial videos** on YouTube Music With Lisp channel: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA
 
-## About
-Scheme-For-Max provides two objects: s4m (the interpreter, formerly named s4m.scm) and s4m.repl (a REPL GUI patcher)
+**Ebooks:**: I have released a free e-book on learning S7 Scheme and Scheme For Max, suitable for new and experienced programmers!
+https://iainctduncan.github.io/learn-scheme-for-max/index.html
+Also an ebook on creating sequencers with S4M.
+https://iainctduncan.github.io/s4m-stk/
 
-Features of v0.4 include:
+
+## About
+Scheme-For-Max provides two objects: s4m (the interpreter) and s4m.repl (a REPL GUI patcher)
+
+Features of v0.4.1 include:
 
 * Hot reloading of scheme code
 * A built in REPL terminal editor for interactive coding 
@@ -43,6 +40,7 @@ Features of v0.4 include:
 * garbage collection functions, timer, and heap-size control for performance
 * s4m arrays - typed fixed arrays with fast i/o for sharing between instances
 * s4m.grid - a fast read-only grid UI that can read from s4m arrays
+* s4m-score - a library for making text scores with all kinds of Lisp goodies
 
 Scheme-for-Max uses S7 Scheme, an embeddable Scheme Lisp implementation by Bill Schottstaedt at
 CCRMA, based originally on Tiny Scheme.  S7 is a minimal Scheme, with many nice features for algorithmic 
@@ -66,7 +64,7 @@ Note: if you get errors with the s4m object not being found, double check that t
 Currently tested on Max 8, on Mac up to Monterey (Intel and M1) and Windows 10. 
 Please report problems installing on the forum.
 
-The current "production beta" is 0.4.0. 
+The current "production beta" is 0.4.1. 
 
 ### Installing on Mac OSX Big Sur (or newer)
 As above, move the Scheme-For-Max folder into `~/Documents/Max 8/Packages`. Open the `extensions` folder, 
@@ -80,8 +78,6 @@ sample source code in the package. Clicking "launch" on the package menu will op
 
 Narative documentation is here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
-The online community lives here: https://schemeformax.discourse.group/
-
 Learn S7 Scheme and Scheme For Max E-book: https://iainctduncan.github.io/learn-scheme-for-max/index.html 
 
 Tutorials on sequencing with Scheme For Max: https://iainctduncan.github.io/s4m-stk/
@@ -93,8 +89,7 @@ To file tickets about errors or improvement suggestions for the docs, use the do
 The S7 reference document is here: https://ccrma.stanford.edu/software/snd/snd/s7.html
 
 For release and tutorial announcements, questions, suggestions, installation issues, and bug reports, 
-please join the scheme-for-max forum or check the discussion board on this github page.
-https://schemeformax.discourse.group/
+check the discussion board on this github page.
 
 ## Building from Source
 You will need the newest Max SDK and Max 8.3, and some understanding of how to build Max externals. The S7 sources are included here. Details on building from source are in the narrative docs here https://iainctduncan.github.io/scheme-for-max-docs/building.html
