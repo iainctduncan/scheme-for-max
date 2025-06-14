@@ -1,18 +1,30 @@
-# Scheme For Max - v0.4 (Sep 2022)
+# Scheme For Max - v0.4.1 (June 2025)
 Scheme For Max (s4m) is an open source Max/MSP external to enable scripting, live coding, and algorithmic music in 
-Max/MSP and Ableton Live with s7 Scheme Lisp. It is available as a packages for Mac (Intel and M1) and Win64, and as source. It has been developed and tested on Max 8. It also works in Max for Live on Ableton Live 10 and 11.
+Max/MSP and Ableton Live with s7 Scheme Lisp. It is available as a packages for Mac (Intel and M1) and Win64, and as source. 
+It has been developed and tested on Max 8 extensively,
+but also runs on Max 9 (version 0.5 will be Max 9 based). It also works in Max for Live on Ableton Live 10 and up.
 
 ## Recent News
+**2025-06-13**: Scheme for Max 0.4.1 is up, which adds S4M-Score, a facility for making text-based, metrical scores in Max, with similarities
+to those in Nyquist, Common Music, and Csound. Docs, video, and a conference paper are forthcoming. In the meantime, checkout the
+**s4m-score-demo.maxpat** Max patch in the Patchers folder, which uses **s4m-score.scm** and **s4m-score-demo.scm** in the Extras folder.
+
 **2024-10-18** In main branch (but not on any releases) s4m arrays have been renamed "carrays" in preparation for adding Max Array support in v0.5
 
 **Main Documentation** lives here: https://iainctduncan.github.io/scheme-for-max-docs/ 
 
 **Demos and Tutorial videos** on YouTube Music With Lisp channel: https://www.youtube.com/channel/UC6ftX7yuEi5uUFkRVJbJyWA
 
-## About
-Scheme-For-Max provides two objects: s4m (the interpreter, formerly named s4m.scm) and s4m.repl (a REPL GUI patcher)
+**Ebooks:**: I have released a free e-book on learning S7 Scheme and Scheme For Max, suitable for new and experienced programmers!
+https://iainctduncan.github.io/learn-scheme-for-max/index.html
+Also an ebook on creating sequencers with S4M.
+https://iainctduncan.github.io/s4m-stk/
 
-Features of v0.4 include:
+
+## About
+Scheme-For-Max provides two objects: s4m (the interpreter) and s4m.repl (a REPL GUI patcher)
+
+Features of v0.4.1 include:
 
 * Hot reloading of scheme code
 * A built in REPL terminal editor for interactive coding 
@@ -31,6 +43,7 @@ Features of v0.4 include:
 * garbage collection functions, timer, and heap-size control for performance
 * s4m arrays - typed fixed arrays with fast i/o for sharing between instances
 * s4m.grid - a fast read-only grid UI that can read from s4m arrays
+* s4m-score - a library for making text scores with all kinds of Lisp goodies
 
 Scheme-for-Max uses S7 Scheme, an embeddable Scheme Lisp implementation by Bill Schottstaedt at
 CCRMA, the author of Common Lisp Music and Snd, among many other things.  S7 is a minimal Scheme, with many nice features for algorithmic 
@@ -54,7 +67,7 @@ Note: if you get errors with the s4m object not being found, double check that t
 Currently tested on Max 8, on Mac up to Monterey (Intel and M1) and Windows 10. 
 Please report problems installing on the forum.
 
-The current "production beta" is 0.4.0. 
+The current "production beta" is 0.4.1. 
 
 ### Installing on Mac OSX Big Sur (or newer)
 As above, move the Scheme-For-Max folder into `~/Documents/Max 8/Packages`. Open the `extensions` folder, 
